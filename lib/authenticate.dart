@@ -21,7 +21,7 @@ class _AuthenticateState extends State<Authenticate> {
 
   getFormWidget(context) {
     return Scaffold(
-      
+
     );
   }
 
