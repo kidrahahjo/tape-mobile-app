@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:wavemobileapp/authenticate.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(Wrapper());
 }
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+class Wrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp();
+    return MaterialApp(
+      title: 'Wave',
+      debugShowCheckedModeBanner: false,
+      home: Authenticate()
+    );
   }
 }
