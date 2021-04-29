@@ -7,7 +7,7 @@ enum AppBarState {
 }
 
 
-class AppBar extends StatefulWidget {
+class CustomAppBar extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
     return _AppBarState();
@@ -15,15 +15,13 @@ class AppBar extends StatefulWidget {
 }
 
 
-class _AppBarState extends State<AppBar> {
+class _AppBarState extends State<CustomAppBar> {
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return Container(
-      height: 56.0,
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      decoration: BoxDecoration(color: Colors.blue[500]),
-      child: Text('Wave')
+    return AppBar(
+      title: Text('Wave'),
+      centerTitle: true,
     );
   }
 }
