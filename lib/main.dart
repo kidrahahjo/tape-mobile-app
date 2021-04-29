@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:wavemobileapp/authenticate.dart';
+import './chatpage.dart';
 
 void main() {
   runApp(Wrapper());
@@ -9,10 +9,8 @@ void main() {
 class Wrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Wave',
-      debugShowCheckedModeBanner: false,
-      home: Authenticate()
+    return CupertinoApp(
+      home: ChatPage(),
     );
   }
 }
