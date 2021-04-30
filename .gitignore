@@ -8,6 +8,8 @@
 .buildlog/
 .history
 .svn/
+local.properties
+.gradle/
 
 # IntelliJ related
 *.iml

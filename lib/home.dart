@@ -1,5 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:wavemobileapp/authenticate.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -10,30 +11,21 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final _auth = FirebaseAuth.instance;
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return CupertinoPageScaffold(
-      child: CustomScrollView(
-        slivers: [
-          CupertinoSliverNavigationBar(
-            largeTitle: Text("Chats"),
-            stretch: true,
-          ),
-          SliverList(
-            delegate:
-                SliverChildBuilderDelegate((BuildContext context, int index) {
-              return Column(children: [
-                Container(
-                  padding: EdgeInsets.all(20),
-                  width: double.infinity,
-                  child: Text("Contact"),
-                ),
-                Divider()
-              ]);
-            }),
-          ),
-        ],
+    return Scaffold(
+      body: Center(
+        child: Text('Home Screen'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await _auth.signOut();
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => Authenticate()));
+        },
+        child: Icon(Icons.logout),
       ),
     );
   }
