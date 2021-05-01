@@ -33,7 +33,6 @@ class _InitialiserState extends State<Initialiser> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _auth = FirebaseAuth.instance;
     _user = _auth.currentUser;
@@ -50,6 +49,6 @@ class _InitialiserState extends State<Initialiser> {
           )
         : _user == null
             ? Authenticate()
-            : Home();
+            : Home(_user);
   }
 }

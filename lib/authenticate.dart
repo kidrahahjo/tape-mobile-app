@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wavemobileapp/app_bar.dart';
 import 'package:wavemobileapp/home.dart';
+import 'package:wavemobileapp/onboarding.dart';
 
 enum MobileAuthenticationState {
   SHOW_MOBILE_FORM_STATE,
@@ -32,20 +33,23 @@ class _AuthenticateState extends State<Authenticate> {
   bool showLoading = false;
 
 
-  void signInWithPhoneAuthCredential(phoneAuthCredential, context) async {
+  Future<void> signInWithPhoneAuthCredential(phoneAuthCredential, context) async {
     setState(() {
       this.showLoading = true;
     });
 
     try {
-      final auth_credential = await _auth.signInWithCredential(phoneAuthCredential);
-
+      UserCredential auth_credential = await _auth.signInWithCredential(phoneAuthCredential);
       setState(() {
         this.showLoading = false;
       });
 
       if (auth_credential?.user != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+        if (auth_credential?.user?.displayName == null) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Onboarding(auth_credential)));
+        }else{
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home(auth_credential.user)));
+        }
       }
 
     } on FirebaseAuthException catch (e) {
