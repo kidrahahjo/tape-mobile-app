@@ -20,12 +20,23 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   User _user;
 
+  bool showLoading = false;
+
   final _auth = FirebaseAuth.instance;
 
   Future<void> signOut(auth) async {
+    setState(() {
+      showLoading = true;
+    });
     await auth.signOut();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.clear();
+    setState(() {
+      showLoading = false;
+    });
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => Authenticate()));
+
   }
 
   _HomeState(@required this._user);
@@ -41,10 +52,21 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return showLoading ? Scaffold(body: Center(child: CircularProgressIndicator(),),) : Scaffold(
       appBar: AppBar(
         title: Text('Wave'),
         centerTitle: true,
+        actions: <Widget>[
+          IconButton(
+            onPressed: () async {
+              await signOut(_auth);
+            },
+            icon: Icon(
+              Icons.logout,
+              color: Colors.white,
+            ),
+          )
+        ],
       ),
       body: HomeScreen(_user),
       floatingActionButton: FloatingActionButton(
