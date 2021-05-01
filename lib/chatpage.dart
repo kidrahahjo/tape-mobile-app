@@ -58,8 +58,6 @@ class _RecordButtonState extends State<RecordButton> {
   FlutterSoundRecorder _myRecorder = FlutterSoundRecorder();
 
   Future<void> _record() async {
-    await Permission.microphone.request();
-
     await _myRecorder.startRecorder(
       toFile: 'foo.aac',
       codec: Codec.aacADTS,
@@ -73,6 +71,8 @@ class _RecordButtonState extends State<RecordButton> {
   @override
   void initState() {
     super.initState();
+
+    Permission.microphone.request();
     _myRecorder.openAudioSession().then((value) {
       setState(() {
         bool _mRecorderIsInited = true;
