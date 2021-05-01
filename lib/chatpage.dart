@@ -2,7 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-void main() => runApp(ChatPage());
+import 'dart:io';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(ChatPage());
+}
 
 class ChatPage extends StatefulWidget {
   @override
@@ -57,6 +65,17 @@ class RecordButton extends StatefulWidget {
 class _RecordButtonState extends State<RecordButton> {
   FlutterSoundRecorder _myRecorder = FlutterSoundRecorder();
 
+  firebase_storage.FirebaseStorage storage =
+      firebase_storage.FirebaseStorage.instance;
+
+  Future<void> _uploadAudio(String filePath) async {
+    File file = File(filePath);
+
+    await firebase_storage.FirebaseStorage.instance
+        .ref('audio/foo.aac')
+        .putFile(file);
+  }
+
   Future<void> _record() async {
     await _myRecorder.startRecorder(
       toFile: 'foo.aac',
@@ -66,12 +85,12 @@ class _RecordButtonState extends State<RecordButton> {
 
   Future<void> _stopRecorder() async {
     await _myRecorder.stopRecorder();
+    _uploadAudio('/data/user/0/com.example.wavemobileapp/cache/foo.aac');
   }
 
   @override
   void initState() {
     super.initState();
-
     Permission.microphone.request();
     _myRecorder.openAudioSession().then((value) {
       setState(() {
@@ -134,8 +153,12 @@ class _PlaybackButtonState extends State<PlaybackButton> {
   }
 
   void _play() async {
+    String downloadURL = await firebase_storage.FirebaseStorage.instance
+        .ref('audio/foo.aac')
+        .getDownloadURL();
+
     await _myPlayer.startPlayer(
-        fromURI: 'foo.aac',
+        fromURI: downloadURL,
         codec: Codec.mp3,
         whenFinished: () {
           setState(() => _isPlaying = !_isPlaying);
