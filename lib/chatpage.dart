@@ -138,7 +138,7 @@ class _PlaybackButtonState extends State<PlaybackButton> {
         fromURI: 'foo.aac',
         codec: Codec.mp3,
         whenFinished: () {
-          setState(() {});
+          setState(() => _isPlaying = !_isPlaying);
         });
   }
 
