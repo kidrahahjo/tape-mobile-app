@@ -33,24 +33,23 @@ class _AuthenticateState extends State<Authenticate> {
   bool showLoading = false;
 
 
-  void signInWithPhoneAuthCredential(phoneAuthCredential, context) async {
+  Future<void> signInWithPhoneAuthCredential(phoneAuthCredential, context) async {
     setState(() {
       this.showLoading = true;
     });
 
     try {
-      final auth_credential = await _auth.signInWithCredential(phoneAuthCredential);
+      UserCredential auth_credential = await _auth.signInWithCredential(phoneAuthCredential);
       setState(() {
         this.showLoading = false;
       });
 
       if (auth_credential?.user != null) {
-        if (auth_credential.additionalUserInfo?.isNewUser) {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-        }else{
+        if (auth_credential?.user?.displayName == null) {
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Onboarding(auth_credential)));
+        }else{
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home(auth_credential.user)));
         }
-
       }
 
     } on FirebaseAuthException catch (e) {

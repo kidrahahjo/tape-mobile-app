@@ -1,31 +1,43 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:wavemobileapp/authenticate.dart';
+import 'package:wavemobileapp/app_bar.dart';
 
 class Home extends StatefulWidget {
+  User user;
+
+  Home(@required this.user);
+
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
-    return _HomeState();
+    return _HomeState(user);
   }
 }
 
 class _HomeState extends State<Home> {
-  final _auth = FirebaseAuth.instance;
+  User _user;
+
+  _HomeState(@required this._user);
+
+  homeScreen(context){
+  return Column(
+    children: <Widget>[
+      CustomAppBar(),
+      Spacer(),
+      Text("Welcome ${_user.displayName}"),
+      Spacer(),
+    ],
+  );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Text('Home Screen'),
-      ),
+      body: homeScreen(context),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await _auth.signOut();
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => Authenticate()));
+          print(_user);
         },
-        child: Icon(Icons.logout),
+        child: Icon(Icons.contacts),
       ),
     );
   }
