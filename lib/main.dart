@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:wavemobileapp/authenticate.dart';
 import 'package:wavemobileapp/home.dart';
+import 'package:wavemobileapp/shared_preferences_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,11 @@ class _InitialiserState extends State<Initialiser> {
     super.initState();
     _auth = FirebaseAuth.instance;
     _user = _auth.currentUser;
+    if (_user != null) {
+      SharedPreferenceHelper().saveUserId(_user.uid);
+      SharedPreferenceHelper().saveDisplayName(_user.displayName);
+      SharedPreferenceHelper().saveUserPhoneNumber(_user.phoneNumber);
+    }
     isLoading = false;
   }
 

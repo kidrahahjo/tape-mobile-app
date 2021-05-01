@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:wavemobileapp/app_bar.dart';
+import 'package:wavemobileapp/database.dart';
 import 'package:wavemobileapp/home.dart';
+import 'package:wavemobileapp/shared_preferences_helper.dart';
 
 class Onboarding extends StatefulWidget {
   dynamic auth_credential;
@@ -34,22 +35,37 @@ class _OnboardingState extends State<Onboarding> {
       // Instantiating the user again due to this
       // https://stackoverflow.com/questions/51709733/what-use-case-has-the-reload-function-of-a-firebaseuser-in-flutter
       User user = await FirebaseAuth.instance.currentUser;
-      setState(() {
-        showLoading = false;
-      });
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home(user)));
-    } catch (e){
-      setState(() {
-        showLoading = false;
-      });
-      final ScaffoldMessengerState scaffoldMessenger = ScaffoldMessenger.of(context);
-      scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text(e.message))
+
+      SharedPreferenceHelper().saveUserId(user.uid);
+      SharedPreferenceHelper().saveDisplayName(user.displayName);
+      SharedPreferenceHelper().saveUserPhoneNumber(user.phoneNumber);
+
+      Map<String, String> data = {
+        "displayName": user.displayName,
+        "phoneNumber": user.phoneNumber,
+      };
+
+      DatabaseMethods().addUserInfoToDatabase(user.uid, data).then(
+          (value) {
+            setState(() {
+              showLoading = false;
+            });
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (context) => Home(user)));
+          }
       );
+
+    } catch (e) {
+      setState(() {
+        showLoading = false;
+      });
+      final ScaffoldMessengerState scaffoldMessenger =
+          ScaffoldMessenger.of(context);
+      scaffoldMessenger.showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 
-  onboardForm(context){
+  onboardForm(context) {
     return Column(
       children: <Widget>[
         CustomAppBar(),
@@ -66,15 +82,14 @@ class _OnboardingState extends State<Onboarding> {
             onPressed: () async {
               String name = nameController.text;
               if (name.length == 0) {
-                final ScaffoldMessengerState scaffoldMessenger = ScaffoldMessenger.of(context);
+                final ScaffoldMessengerState scaffoldMessenger =
+                    ScaffoldMessenger.of(context);
                 scaffoldMessenger.showSnackBar(
-                    SnackBar(content: Text("Please enter a display name"))
-                );
-              }else{
+                    SnackBar(content: Text("Please enter a display name")));
+              } else {
                 updateUserDisplayName(name, context);
               }
-            }
-        ),
+            }),
         Spacer()
       ],
     );
@@ -83,9 +98,11 @@ class _OnboardingState extends State<Onboarding> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: showLoading ? Center(child: CircularProgressIndicator(),): onboardForm(context),
+      body: showLoading
+          ? Center(
+              child: CircularProgressIndicator(),
+            )
+          : onboardForm(context),
     );
   }
-
-
 }
