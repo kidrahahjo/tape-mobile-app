@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:wavemobileapp/authenticate.dart';
 import 'package:wavemobileapp/chatpage.dart';
 import 'package:wavemobileapp/home.dart';
+import 'package:wavemobileapp/shared_preferences_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,10 +34,14 @@ class _InitialiserState extends State<Initialiser> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _auth = FirebaseAuth.instance;
     _user = _auth.currentUser;
+    if (_user != null) {
+      SharedPreferenceHelper().saveUserId(_user.uid);
+      SharedPreferenceHelper().saveDisplayName(_user.displayName);
+      SharedPreferenceHelper().saveUserPhoneNumber(_user.phoneNumber);
+    }
     isLoading = false;
   }
 
@@ -50,6 +55,6 @@ class _InitialiserState extends State<Initialiser> {
           )
         : _user == null
             ? Authenticate()
-            : Home();
+            : Home(_user);
   }
 }
