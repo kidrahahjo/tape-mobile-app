@@ -46,10 +46,12 @@ class _OnboardingState extends State<Onboarding> {
       };
 
       DatabaseMethods().addUserInfoToDatabase(user.uid, data).then(
-          (value) {
+          (value) async {
             setState(() {
               showLoading = false;
             });
+
+            await DatabaseMethods().addCollectionInUser(user.uid).then((value) => null);
             Navigator.pushReplacement(
                 context, MaterialPageRoute(builder: (context) => Home(user)));
           }
