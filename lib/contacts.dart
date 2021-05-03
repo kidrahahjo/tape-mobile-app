@@ -1,6 +1,10 @@
 import 'package:contacts_service/contacts_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wavemobileapp/chatpage.dart';
+import 'package:wavemobileapp/shared_preferences_helper.dart';
 
 class ContactsPage extends StatefulWidget {
   @override
@@ -32,13 +36,17 @@ class ContactsList extends StatefulWidget {
 }
 
 class _ContactsListState extends State<ContactsList> {
-  Map<String, String> _contacts;
   List<String> mobile;
   List<String> name;
   List<String> UIDs = [];
 
   _ContactsListState(
       @required this.mobile, @required this.name, @required this.UIDs);
+
+  openUserChatScreen(userUID, userName, context) async {
+    String myUID = await FirebaseAuth.instance.currentUser.uid;
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ChatPage(myUID, userUID, userName)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +56,9 @@ class _ContactsListState extends State<ContactsList> {
         String phone = mobile?.elementAt(index);
         String displayName = name?.elementAt(index);
         String uid = UIDs?.elementAt(index);
-
         return InkWell(
           onTap: () {
-            final ScaffoldMessengerState scaffoldMessenger =
-                ScaffoldMessenger.of(context);
-            scaffoldMessenger.showSnackBar(
-                SnackBar(content: Text("Hey, $displayName's UID is: $uid")));
+            openUserChatScreen(uid, displayName, context);
           },
           child: Container(
             alignment: Alignment.centerLeft,
@@ -98,8 +102,8 @@ class _ContactsState extends State<ContactsPage> {
 
   @override
   void initState() {
-    getContacts();
     super.initState();
+    getContacts();
   }
 
   String fetchCorrectPhone(String phone) {
@@ -108,10 +112,14 @@ class _ContactsState extends State<ContactsPage> {
       return phone;
     } else if (phone.startsWith('+')) {
       return 'Null';
-    } else if (phone.startsWith('0')) {
-      String num = '+91' + int.parse('012345').toString();
-      if (num.length == 13) {
-        return num;
+    } else {
+      try {
+        String num = '+91' + int.parse(phone).toString();
+        if (num.length == 13) {
+          return num;
+        }
+      } catch (e){
+        return 'Null';
       }
     }
     return 'Null';
@@ -137,7 +145,8 @@ class _ContactsState extends State<ContactsPage> {
 
     await collection.get().then((value) => {
           value.docs.forEach((element) {
-            if (phoneNumbers.contains(element['phoneNumber'])) {
+            String num = element['phoneNumber'];
+            if (phoneNumbers.contains(num)) {
               presentUIDs.add(element.id);
               presentNumbers.add(element['phoneNumber']);
               presentNames.add(element['displayName']);
