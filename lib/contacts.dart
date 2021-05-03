@@ -56,7 +56,6 @@ class _ContactsListState extends State<ContactsList> {
         String phone = mobile?.elementAt(index);
         String displayName = name?.elementAt(index);
         String uid = UIDs?.elementAt(index);
-
         return InkWell(
           onTap: () {
             openUserChatScreen(uid, displayName, context);
@@ -113,10 +112,14 @@ class _ContactsState extends State<ContactsPage> {
       return phone;
     } else if (phone.startsWith('+')) {
       return 'Null';
-    } else if (phone.startsWith('0')) {
-      String num = '+91' + int.parse('012345').toString();
-      if (num.length == 13) {
-        return num;
+    } else {
+      try {
+        String num = '+91' + int.parse(phone).toString();
+        if (num.length == 13) {
+          return num;
+        }
+      } catch (e){
+        return 'Null';
       }
     }
     return 'Null';
@@ -142,7 +145,8 @@ class _ContactsState extends State<ContactsPage> {
 
     await collection.get().then((value) => {
           value.docs.forEach((element) {
-            if (phoneNumbers.contains(element['phoneNumber'])) {
+            String num = element['phoneNumber'];
+            if (phoneNumbers.contains(num)) {
               presentUIDs.add(element.id);
               presentNumbers.add(element['phoneNumber']);
               presentNames.add(element['displayName']);

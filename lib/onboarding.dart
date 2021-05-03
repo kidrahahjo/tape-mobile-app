@@ -51,7 +51,6 @@ class _OnboardingState extends State<Onboarding> {
               showLoading = false;
             });
 
-            await DatabaseMethods().addCollectionInUser(user.uid).then((value) => null);
             Navigator.pushReplacement(
                 context, MaterialPageRoute(builder: (context) => Home(user)));
           }

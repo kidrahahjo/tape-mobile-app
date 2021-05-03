@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:collection';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
@@ -8,19 +12,17 @@ import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:uuid/uuid.dart';
 import 'package:wavemobileapp/database.dart';
 
-
 class ChatPage extends StatefulWidget {
   String myUID;
   String userUID;
   String userName;
 
-  ChatPage(@required this.myUID, @required this.userUID,
-      @required this.userName);
+  ChatPage(
+      @required this.myUID, @required this.userUID, @required this.userName);
 
   @override
   _ChatPageState createState() => _ChatPageState(myUID, userUID, userName);
 }
-
 
 class _ChatPageState extends State<ChatPage> {
   String myUID;
@@ -30,30 +32,53 @@ class _ChatPageState extends State<ChatPage> {
   String chatForMeUID;
   String chatForUserUID;
 
-  bool isFetchingChats = true;
   bool uploadingToFirebase = false;
   bool isRecording = false;
+  bool isWavePlaying = false;
 
   String audioUID = null;
 
   FlutterSoundRecorder _myRecorder = FlutterSoundRecorder();
+  FlutterSoundPlayer _myPlayer = FlutterSoundPlayer();
 
-  _ChatPageState(@required this.myUID, @required this.userUID,
-      @required this.userName) {
+  Stream waves;
+  Queue urlsToAudio = new Queue();
+
+  Timer timer;
+
+  _ChatPageState(
+      @required this.myUID, @required this.userUID, @required this.userName) {
     this.chatForUserUID = myUID + "_" + userUID;
     this.chatForMeUID = userUID + "_" + myUID;
+  }
+
+  getWaves() async {
+    waves = await DatabaseMethods().fetchChatFromDatabase(myUID, userUID);
+    setState(() {});
   }
 
   @override
   void initState() {
     super.initState();
+    getWaves();
+    timer = Timer.periodic(Duration(seconds: 10), (Timer t) => checkForNewWaves());
     // request for microphone permission
     Permission.microphone.request();
+    uploadingToFirebase = false;
+    isRecording = false;
+    isWavePlaying = false;
+    urlsToAudio = new Queue();
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
   }
 
   failedToSendSnackBar() {
     final ScaffoldMessengerState scaffoldMessenger =
-    ScaffoldMessenger.of(context);
+        ScaffoldMessenger.of(context);
     scaffoldMessenger.showSnackBar(
         SnackBar(content: Text("Failed to send wave to $userName")));
   }
@@ -64,22 +89,17 @@ class _ChatPageState extends State<ChatPage> {
     await firebase_storage.FirebaseStorage.instance
         .ref('audio/$chatForUserUID/$audio_uid.aac')
         .putFile(file);
+    DateTime current_time = DateTime.now();
 
-    Map<String, DateTime> data = {
-      "lastModifiedAt": DateTime.now()
-    };
-
-    await DatabaseMethods().updateLastTimeStamp(myUID, userUID, data).then(
-      (value) {
-        audioUID = null;
-        setState((){
-          this.uploadingToFirebase = false;
-        });
-      }
-    );
-
+    await DatabaseMethods()
+        .updateSentMessage(myUID, userUID, audio_uid, current_time)
+        .then((value) {
+      audioUID = null;
+      setState(() {
+        this.uploadingToFirebase = false;
+      });
+    });
   }
-
 
   Future<void> _record() async {
     setState(() {
@@ -93,7 +113,6 @@ class _ChatPageState extends State<ChatPage> {
       codec: Codec.aacADTS,
     );
   }
-
 
   Future<void> _stopRecorder(audio_uid) async {
     setState(() {
@@ -118,6 +137,87 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+
+    Future _startPlaying() async {
+      setState(() {
+        isWavePlaying = true;
+      });
+      print(urlsToAudio);
+      if (urlsToAudio.length == 0) {
+        // do nothing
+        setState(() {
+          urlsToAudio = new Queue();
+          isWavePlaying = false;
+        });
+      }
+      else {
+        String audio_stored = "audio/" + chatForMeUID + "/" + urlsToAudio.first + ".aac";
+        String downloadURL = await firebase_storage.FirebaseStorage.instance
+            .ref(audio_stored)
+            .getDownloadURL();
+        print(audio_stored);
+        _myPlayer.openAudioSession();
+        try {
+          await _myPlayer.startPlayer(
+              fromURI: downloadURL,
+              codec: Codec.mp3,
+              whenFinished: () async {
+                String lastAudioPlayed = urlsToAudio.removeFirst();
+                await DatabaseMethods().updateChatMessageState(
+                    myUID, userUID, lastAudioPlayed);
+                setState(() {
+                  isWavePlaying = !isWavePlaying;
+                });
+              });
+        } catch (e) {
+          String lastAudioPlayed = urlsToAudio.removeFirst();
+          await DatabaseMethods().updateChatMessageState(
+              myUID, userUID, lastAudioPlayed);
+          setState(() {
+            isWavePlaying = !isWavePlaying;
+          });
+        }
+      }
+    }
+
+    Future _stopPlaying() async {
+      if (_myPlayer != null) {
+        await _myPlayer.stopPlayer();
+        await _myPlayer.closeAudioSession();
+      }
+      setState(() {
+        isWavePlaying = false;
+      });
+    }
+
+  checkForNewWaves() {
+    print(isRecording);
+    print(isWavePlaying);
+    if (!isRecording && !isWavePlaying) {
+      setState(() {});
+    }
+  }
+
+  Widget wavePlayerWidget() {
+    List<String> uids = [];
+    return StreamBuilder(
+      stream: waves,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          for (QueryDocumentSnapshot doc in snapshot.data.docs) {
+            uids.add(doc.id);
+          }
+        }
+        for (String id in uids) {
+          if (!urlsToAudio.contains(id)) {
+            urlsToAudio.add(id);
+          }
+        }
+        return Text("No waves from $userName, yet!");
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,7 +228,9 @@ class _ChatPageState extends State<ChatPage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         mainAxisSize: MainAxisSize.max,
         children: <Widget>[
-          SizedBox(height: 20,),
+          SizedBox(
+            height: 20,
+          ),
           Center(
             child: Text(
               userName,
@@ -136,66 +238,55 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
           Spacer(),
-          // Spacer(),
-          GestureDetector(
-            onTapDown: (details) => _record(),
-            onTapUp: (details) => _stopRecorder(audioUID),
-            child: Container(
-              height: 100,
-              width: 100,
-              child: Icon(Icons.mic),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(50),
-                color: Colors.white,
-                border: Border.all(width: 1, color: isRecording ? Colors.blue : Colors.black26),
-              ),
+          Container(
+            height: 200,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+              border: Border.all(width: 1, color: Colors.black26),
             ),
+            child: urlsToAudio.length == 0
+                ? Center(
+                    child: wavePlayerWidget(),
+                  )
+                : IconButton(
+                    icon: isWavePlaying
+                        ? Icon(Icons.stop)
+                        : Icon(Icons.play_arrow),
+                    onPressed: () {
+                      if (isWavePlaying) {
+                        _stopPlaying();
+                      } else {
+                        _startPlaying();
+                      }
+                    }),
           ),
+          Spacer(),
+          uploadingToFirebase
+              ? Center(child: Text("Uploading..."))
+              : GestureDetector(
+                  onTapDown: (details) => _record(),
+                  onTapUp: (details) => _stopRecorder(audioUID),
+                  child: Container(
+                    height: 100,
+                    width: 100,
+                    child: Icon(Icons.mic),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(50),
+                      color: Colors.white,
+                      border: Border.all(
+                          width: 1,
+                          color: isRecording ? Colors.blue : Colors.black26),
+                    ),
+                  ),
+                ),
         ],
       ),
     );
   }
 }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       home: Scaffold(
-//         appBar: AppBar(
-//           leading: Icon(Icons.arrow_back),
-//         ),
-//         backgroundColor: Colors.white,
-//         body: Padding(
-//           padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
-//           child: Column(
-//             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//             mainAxisSize: MainAxisSize.max,
-//             children: <Widget>[
-//               Center(
-//                 child: Text(
-//                   "Hardik",
-//                   textScaleFactor: 2,
-//                 ),
-//               ),
-//               Container(
-//                 height: 200,
-//                 width: double.infinity,
-//                 decoration: BoxDecoration(
-//                   borderRadius: BorderRadius.circular(20),
-//                   color: Colors.white,
-//                   border: Border.all(width: 1, color: Colors.black26),
-//                 ),
-//                 child: PlaybackButton(),
-//               ),
-//               RecordButton(),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-//
 // class PlaybackButton extends StatefulWidget {
 //   @override
 //   _PlaybackButtonState createState() => _PlaybackButtonState();
