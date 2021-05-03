@@ -13,6 +13,15 @@ class DatabaseMethods {
         .snapshots();
   }
 
+  Future<Stream<QuerySnapshot>> fetchTotalChats (String myUID) async {
+    return FirebaseFirestore.instance
+        .collection("users")
+        .doc(myUID)
+        .collection("chats")
+        .orderBy("lastModifiedAt", descending: true)
+        .snapshots();
+  }
+
   Future addUserInfoToDatabase(String userIdKey,
       Map<String, String> data) async {
     return FirebaseFirestore.instance
@@ -21,7 +30,7 @@ class DatabaseMethods {
         .set(data);
   }
 
-  Future updateSentMessage(String myUID, String userUID, String messageUID,
+  Future updateSentMessage(String myUID, String userUID, String messageUID, String user_name,
       DateTime current_time) async {
     try {
       await FirebaseFirestore.instance
@@ -41,6 +50,7 @@ class DatabaseMethods {
           .collection("chats")
           .doc(myUID)
           .set({
+        "userName": user_name,
         "lastModifiedAt": current_time,
       });
       return FirebaseFirestore.instance
@@ -49,6 +59,7 @@ class DatabaseMethods {
           .collection("chats")
           .doc(userUID)
           .set({
+        "userName": user_name,
         "lastModifiedAt": current_time,
       });
     } catch (e) {
@@ -67,5 +78,12 @@ class DatabaseMethods {
         .update({
       "isRead": true,
     });
+  }
+
+  Future<Stream<DocumentSnapshot>> getUserName(String user_uid) async {
+    return FirebaseFirestore.instance
+        .collection("users")
+        .doc(user_uid)
+        .snapshots();
   }
 }

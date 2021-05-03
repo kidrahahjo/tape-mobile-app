@@ -92,7 +92,7 @@ class _ChatPageState extends State<ChatPage> {
     DateTime current_time = DateTime.now();
 
     await DatabaseMethods()
-        .updateSentMessage(myUID, userUID, audio_uid, current_time)
+        .updateSentMessage(myUID, userUID, audio_uid, userName, current_time)
         .then((value) {
       audioUID = null;
       setState(() {
@@ -142,7 +142,6 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         isWavePlaying = true;
       });
-      print(urlsToAudio);
       if (urlsToAudio.length == 0) {
         // do nothing
         setState(() {
@@ -155,7 +154,6 @@ class _ChatPageState extends State<ChatPage> {
         String downloadURL = await firebase_storage.FirebaseStorage.instance
             .ref(audio_stored)
             .getDownloadURL();
-        print(audio_stored);
         _myPlayer.openAudioSession();
         try {
           await _myPlayer.startPlayer(
@@ -191,8 +189,6 @@ class _ChatPageState extends State<ChatPage> {
     }
 
   checkForNewWaves() {
-    print(isRecording);
-    print(isWavePlaying);
     if (!isRecording && !isWavePlaying) {
       setState(() {});
     }
