@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wavemobileapp/authenticate.dart';
+import 'package:wavemobileapp/chatpage.dart';
 import 'package:wavemobileapp/contacts.dart';
+import 'package:wavemobileapp/database.dart';
 
 class Home extends StatefulWidget {
   User user;
@@ -22,7 +27,12 @@ class _HomeState extends State<Home> {
 
   bool showLoading = false;
 
+  Stream chatsStream;
+  String _now;
+
   final _auth = FirebaseAuth.instance;
+
+  Timer timer;
 
   Future<void> signOut(auth) async {
     setState(() {
@@ -41,13 +51,79 @@ class _HomeState extends State<Home> {
 
   _HomeState(@required this._user);
 
+  @override
+  void initState() {
+    getChats();
+    timer = Timer.periodic(Duration(seconds: 5), (Timer t) => checkForNewWaves());
+    super.initState();
+  }
+
+  checkForNewWaves() {
+    setState(() {
+      _now = DateTime.now().second.toString();
+    });
+  }
+  getChats() async {
+    chatsStream = await DatabaseMethods().fetchTotalChats(_user.uid);
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   //Check contacts permission
   Future<PermissionStatus> _getPermission() async {
-    final PermissionStatus permission = await Permission.contacts.status;
+    PermissionStatus permission = await Permission.contacts.status;
     if (!permission.isGranted) {
       await Permission.contacts.request();
     }
+    permission = await Permission.contacts.status;
     return permission;
+  }
+
+  Widget Chats() {
+    return StreamBuilder(
+      stream: chatsStream,
+      builder: (context, snapshot) {
+        return snapshot.hasData
+            ? ListView.builder(
+            itemCount: snapshot.data.docs.length,
+            shrinkWrap: true,
+            itemBuilder: (context, index) {
+              DocumentSnapshot ds = snapshot.data.docs[index];
+              String user_uid = ds.id;
+              String user_name = ds.data()['userName'].toString();
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                      context, MaterialPageRoute(builder: (context) => ChatPage(_user.uid, user_uid, user_name)));
+                },
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  margin: EdgeInsets.symmetric(horizontal: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 25),
+                  decoration:
+                  BoxDecoration(border: Border(bottom: BorderSide(width: 1))),
+                  height: 64,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        user_name,
+                        textAlign: TextAlign.left,
+                        style: TextStyle(fontSize: 20),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            })
+            : Center(child: Text("No waves yet!"));
+      },
+    );
   }
 
   @override
@@ -68,7 +144,7 @@ class _HomeState extends State<Home> {
           )
         ],
       ),
-      body: HomeScreen(_user),
+      body: Chats(),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.contacts),
         onPressed: () async {
@@ -89,35 +165,3 @@ class _HomeState extends State<Home> {
   }
 }
 
-
-class HomeScreen extends StatefulWidget{
-  User user;
-
-  HomeScreen(@required this.user);
-
-  @override
-  State<StatefulWidget> createState() {
-    return _HomeScreenState(user);
-  }
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  User user;
-
-  _HomeScreenState(@required this.user);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-          children: <Widget>[
-            Expanded(
-            child:  Center(
-                child: Text("Chats goes here"),
-              )
-            )
-          ]
-      ),
-    );
-  }
-}
