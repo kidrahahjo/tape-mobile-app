@@ -16,16 +16,18 @@ class ChatPage extends StatefulWidget {
   String myUID;
   String userUID;
   String userName;
+  String myName;
 
   ChatPage(
-      @required this.myUID, @required this.userUID, @required this.userName);
+      @required this.myUID, @required this.userUID, @required this.userName, @required this.myName);
 
   @override
-  _ChatPageState createState() => _ChatPageState(myUID, userUID, userName);
+  _ChatPageState createState() => _ChatPageState(myUID, userUID, userName, myName);
 }
 
 class _ChatPageState extends State<ChatPage> {
   String myUID;
+  String myName;
   String userUID;
   String userName;
 
@@ -47,7 +49,7 @@ class _ChatPageState extends State<ChatPage> {
   Timer timer;
 
   _ChatPageState(
-      @required this.myUID, @required this.userUID, @required this.userName) {
+      @required this.myUID, @required this.userUID, @required this.userName, @required this.myName) {
     this.chatForUserUID = myUID + "_" + userUID;
     this.chatForMeUID = userUID + "_" + myUID;
   }
@@ -61,7 +63,7 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     getWaves();
-    timer = Timer.periodic(Duration(seconds: 10), (Timer t) => checkForNewWaves());
+    timer = Timer.periodic(Duration(seconds: 2), (Timer t) => checkForNewWaves());
     // request for microphone permission
     Permission.microphone.request();
     uploadingToFirebase = false;
@@ -92,7 +94,7 @@ class _ChatPageState extends State<ChatPage> {
     DateTime current_time = DateTime.now();
 
     await DatabaseMethods()
-        .updateSentMessage(myUID, userUID, audio_uid, userName, current_time)
+        .updateSentMessage(myUID, userUID, audio_uid, myName, userName, current_time)
         .then((value) {
       audioUID = null;
       setState(() {
@@ -205,6 +207,7 @@ class _ChatPageState extends State<ChatPage> {
           }
         }
         for (String id in uids) {
+          // complexity ghatao
           if (!urlsToAudio.contains(id)) {
             urlsToAudio.add(id);
           }
@@ -282,65 +285,3 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 }
-
-// class PlaybackButton extends StatefulWidget {
-//   @override
-//   _PlaybackButtonState createState() => _PlaybackButtonState();
-// }
-//
-// class _PlaybackButtonState extends State<PlaybackButton> {
-//   bool _isPlaying = false;
-//   FlutterSoundPlayer _myPlayer;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _myPlayer = FlutterSoundPlayer();
-//     _myPlayer.openAudioSession().then((value) {
-//       setState(() {
-//         bool _mPlayerIsInited = true;
-//       });
-//     });
-//   }
-//
-//   @override
-//   void dispose() {
-//     _myPlayer.closeAudioSession();
-//     _myPlayer = null;
-//     super.dispose();
-//   }
-//
-//   void _play() async {
-//     String downloadURL = await firebase_storage.FirebaseStorage.instance
-//         .ref('audio/foo.aac')
-//         .getDownloadURL();
-//
-//     await _myPlayer.startPlayer(
-//         fromURI: downloadURL,
-//         codec: Codec.mp3,
-//         whenFinished: () {
-//           setState(() => _isPlaying = !_isPlaying);
-//         });
-//   }
-//
-//   Future<void> _stop() async {
-//     if (_myPlayer != null) {
-//       await _myPlayer.stopPlayer();
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return IconButton(
-//       icon: _isPlaying ? Icon(Icons.stop) : Icon(Icons.play_arrow),
-//       onPressed: () {
-//         if (_isPlaying) {
-//           _stop();
-//         } else {
-//           _play();
-//         }
-//         setState(() => _isPlaying = !_isPlaying);
-//       },
-//     );
-//   }
-// }

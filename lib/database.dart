@@ -30,9 +30,11 @@ class DatabaseMethods {
         .set(data);
   }
 
-  Future updateSentMessage(String myUID, String userUID, String messageUID, String user_name,
+  Future updateSentMessage(String myUID, String userUID, String messageUID, String myName, String user_name,
       DateTime current_time) async {
     try {
+      print(myName);
+      print(user_name);
       await FirebaseFirestore.instance
           .collection("users")
           .doc(myUID)
@@ -41,7 +43,7 @@ class DatabaseMethods {
           .collection("messages")
           .doc(messageUID)
           .set({
-            "sentAt": DateTime.now(),
+            "sentAt": current_time,
             "isRead": false,
           });
       await FirebaseFirestore.instance
@@ -50,7 +52,7 @@ class DatabaseMethods {
           .collection("chats")
           .doc(myUID)
           .set({
-        "userName": user_name,
+        "userName": myName,
         "lastModifiedAt": current_time,
       });
       return FirebaseFirestore.instance

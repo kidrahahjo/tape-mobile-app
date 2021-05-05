@@ -53,6 +53,7 @@ class _HomeState extends State<Home> {
 
   @override
   void initState() {
+    print(_user.displayName);
     getChats();
     timer = Timer.periodic(Duration(seconds: 5), (Timer t) => checkForNewWaves());
     super.initState();
@@ -98,7 +99,7 @@ class _HomeState extends State<Home> {
               return InkWell(
                 onTap: () {
                   Navigator.push(
-                      context, MaterialPageRoute(builder: (context) => ChatPage(_user.uid, user_uid, user_name)));
+                      context, MaterialPageRoute(builder: (context) => ChatPage(_user.uid, user_uid, user_name, _user.displayName)));
                 },
                 child: Container(
                   alignment: Alignment.centerLeft,

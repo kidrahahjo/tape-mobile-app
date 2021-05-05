@@ -107,6 +107,8 @@ class _AuthenticateState extends State<Authenticate> {
                 scaffoldMessenger.showSnackBar(
                   SnackBar(content: Text(verificationFailed.message))
                 );
+
+                // send back to authentication screen
               },
               codeSent: (verificationId, resendingToken) async {
                 setState(() {
