@@ -88,4 +88,10 @@ class DatabaseMethods {
         .doc(user_uid)
         .snapshots();
   }
+
+  Future<DocumentSnapshot> fetchUserDetailFromDatabase(String user_uid) {
+    return FirebaseFirestore.instance
+        .doc("users/$user_uid")
+        .get();
+  }
 }

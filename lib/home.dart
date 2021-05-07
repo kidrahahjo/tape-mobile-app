@@ -45,7 +45,7 @@ class _HomeState extends State<Home> {
       showLoading = false;
     });
     Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => Authenticate()));
+        context, MaterialPageRoute(builder: (context) => Authenticate(_auth)));
 
   }
 

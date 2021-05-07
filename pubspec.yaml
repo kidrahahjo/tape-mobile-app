@@ -39,6 +39,7 @@ dependencies:
   audioplayer: 0.8.1
   audioplayer_web: 0.7.1
   uuid: ^3.0.4
+  connectivity: ^3.0.3
 
 dev_dependencies:
   flutter_test:
