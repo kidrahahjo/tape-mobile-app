@@ -61,7 +61,8 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     getWaves();
-    timer = Timer.periodic(Duration(seconds: 10), (Timer t) => checkForNewWaves());
+    timer =
+        Timer.periodic(Duration(seconds: 10), (Timer t) => checkForNewWaves());
     // request for microphone permission
     Permission.microphone.request();
     uploadingToFirebase = false;
@@ -137,56 +138,55 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-
-    Future _startPlaying() async {
+  Future _startPlaying() async {
+    setState(() {
+      isWavePlaying = true;
+    });
+    if (urlsToAudio.length == 0) {
+      // do nothing
       setState(() {
-        isWavePlaying = true;
-      });
-      if (urlsToAudio.length == 0) {
-        // do nothing
-        setState(() {
-          urlsToAudio = new Queue();
-          isWavePlaying = false;
-        });
-      }
-      else {
-        String audio_stored = "audio/" + chatForMeUID + "/" + urlsToAudio.first + ".aac";
-        String downloadURL = await firebase_storage.FirebaseStorage.instance
-            .ref(audio_stored)
-            .getDownloadURL();
-        _myPlayer.openAudioSession();
-        try {
-          await _myPlayer.startPlayer(
-              fromURI: downloadURL,
-              codec: Codec.mp3,
-              whenFinished: () async {
-                String lastAudioPlayed = urlsToAudio.removeFirst();
-                await DatabaseMethods().updateChatMessageState(
-                    myUID, userUID, lastAudioPlayed);
-                setState(() {
-                  isWavePlaying = !isWavePlaying;
-                });
-              });
-        } catch (e) {
-          String lastAudioPlayed = urlsToAudio.removeFirst();
-          await DatabaseMethods().updateChatMessageState(
-              myUID, userUID, lastAudioPlayed);
-          setState(() {
-            isWavePlaying = !isWavePlaying;
-          });
-        }
-      }
-    }
-
-    Future _stopPlaying() async {
-      if (_myPlayer != null) {
-        await _myPlayer.stopPlayer();
-        await _myPlayer.closeAudioSession();
-      }
-      setState(() {
+        urlsToAudio = new Queue();
         isWavePlaying = false;
       });
+    } else {
+      String audio_stored =
+          "audio/" + chatForMeUID + "/" + urlsToAudio.first + ".aac";
+      String downloadURL = await firebase_storage.FirebaseStorage.instance
+          .ref(audio_stored)
+          .getDownloadURL();
+      _myPlayer.openAudioSession();
+      try {
+        await _myPlayer.startPlayer(
+            fromURI: downloadURL,
+            codec: Codec.mp3,
+            whenFinished: () async {
+              String lastAudioPlayed = urlsToAudio.removeFirst();
+              await DatabaseMethods()
+                  .updateChatMessageState(myUID, userUID, lastAudioPlayed);
+              setState(() {
+                isWavePlaying = !isWavePlaying;
+              });
+            });
+      } catch (e) {
+        String lastAudioPlayed = urlsToAudio.removeFirst();
+        await DatabaseMethods()
+            .updateChatMessageState(myUID, userUID, lastAudioPlayed);
+        setState(() {
+          isWavePlaying = !isWavePlaying;
+        });
+      }
     }
+  }
+
+  Future _stopPlaying() async {
+    if (_myPlayer != null) {
+      await _myPlayer.stopPlayer();
+      await _myPlayer.closeAudioSession();
+    }
+    setState(() {
+      isWavePlaying = false;
+    });
+  }
 
   checkForNewWaves() {
     if (!isRecording && !isWavePlaying) {
@@ -197,21 +197,20 @@ class _ChatPageState extends State<ChatPage> {
   Widget wavePlayerWidget() {
     List<String> uids = [];
     return StreamBuilder(
-      stream: waves,
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          for (QueryDocumentSnapshot doc in snapshot.data.docs) {
-            uids.add(doc.id);
+        stream: waves,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            for (QueryDocumentSnapshot doc in snapshot.data.docs) {
+              uids.add(doc.id);
+            }
           }
-        }
-        for (String id in uids) {
-          if (!urlsToAudio.contains(id)) {
-            urlsToAudio.add(id);
+          for (String id in uids) {
+            if (!urlsToAudio.contains(id)) {
+              urlsToAudio.add(id);
+            }
           }
-        }
-        return Text("No waves from $userName, yet!");
-      }
-    );
+          return Text("No waves from $userName, yet!");
+        });
   }
 
   @override

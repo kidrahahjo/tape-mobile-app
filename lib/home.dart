@@ -1,37 +1,28 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wavemobileapp/authenticate.dart';
-import 'package:wavemobileapp/chatpage.dart';
-import 'package:wavemobileapp/contacts.dart';
-import 'package:wavemobileapp/database.dart';
+import 'contact_tile.dart';
+import 'contact_list.dart';
+import 'authenticate.dart';
+import 'database.dart';
 
 class Home extends StatefulWidget {
-  User user;
-
-  Home(@required this.user);
+  final User user;
+  Home(this.user);
 
   @override
-  State<StatefulWidget> createState() {
-    return _HomeState(user);
-  }
+  _HomeState createState() => _HomeState();
 }
 
-
 class _HomeState extends State<Home> {
-  User _user;
-
   bool showLoading = false;
-
-  Stream chatsStream;
+  Stream<QuerySnapshot> chatsStream;
   String _now;
-
-  final _auth = FirebaseAuth.instance;
-
   Timer timer;
 
   Future<void> signOut(auth) async {
@@ -46,15 +37,11 @@ class _HomeState extends State<Home> {
     });
     Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (context) => Authenticate()));
-
   }
-
-  _HomeState(@required this._user);
 
   @override
   void initState() {
-    getChats();
-    timer = Timer.periodic(Duration(seconds: 5), (Timer t) => checkForNewWaves());
+    timer = Timer.periodic(Duration(seconds: 1), (Timer t) => getChats());
     super.initState();
   }
 
@@ -63,8 +50,15 @@ class _HomeState extends State<Home> {
       _now = DateTime.now().second.toString();
     });
   }
+
   getChats() async {
-    chatsStream = await DatabaseMethods().fetchTotalChats(_user.uid);
+    chatsStream = await DatabaseMethods()
+        .fetchTotalChats(widget.user.uid)
+        .timeout(Duration(seconds: 5))
+        .onError((error, stackTrace) {
+      return null;
+    });
+
     setState(() {});
   }
 
@@ -73,7 +67,6 @@ class _HomeState extends State<Home> {
     super.dispose();
   }
 
-  //Check contacts permission
   Future<PermissionStatus> _getPermission() async {
     PermissionStatus permission = await Permission.contacts.status;
     if (!permission.isGranted) {
@@ -83,85 +76,140 @@ class _HomeState extends State<Home> {
     return permission;
   }
 
-  Widget Chats() {
-    return StreamBuilder(
-      stream: chatsStream,
-      builder: (context, snapshot) {
-        return snapshot.hasData
-            ? ListView.builder(
-            itemCount: snapshot.data.docs.length,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              DocumentSnapshot ds = snapshot.data.docs[index];
-              String user_uid = ds.id;
-              String user_name = ds.data()['userName'].toString();
-              return InkWell(
-                onTap: () {
-                  Navigator.push(
-                      context, MaterialPageRoute(builder: (context) => ChatPage(_user.uid, user_uid, user_name)));
-                },
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.symmetric(horizontal: 10),
-                  padding: EdgeInsets.symmetric(horizontal: 25),
-                  decoration:
-                  BoxDecoration(border: Border(bottom: BorderSide(width: 1))),
-                  height: 64,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        user_name,
-                        textAlign: TextAlign.left,
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            })
-            : Center(child: Text("No waves yet!"));
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return showLoading ? Scaffold(body: Center(child: CircularProgressIndicator(),),) : Scaffold(
-      appBar: AppBar(
-        title: Text('Wave'),
-        centerTitle: true,
-        actions: <Widget>[
-          IconButton(
-            onPressed: () async {
-              await signOut(_auth);
-            },
-            icon: Icon(
-              Icons.logout,
-              color: Colors.white,
+    return Scaffold(
+        backgroundColor: Colors.white,
+        body: CustomScrollView(
+          slivers: <Widget>[
+            SliverAppBar(
+              expandedHeight: 120,
+              pinned: true,
+              stretch: true,
+              backgroundColor: Colors.white,
+              actions: <Widget>[
+                IconButton(
+                  icon: Icon(Icons.emoji_emotions_outlined),
+                  color: Colors.amber,
+                  onPressed: () {},
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                      primary: Colors.amber,
+                      textStyle: TextStyle(fontSize: 16),
+                      shape: ContinuousRectangleBorder(
+                          borderRadius: BorderRadius.circular(32))),
+                  child: Text(
+                    'New Shout',
+                  ),
+                  onPressed: () async {
+                    final PermissionStatus permissionStatus =
+                        await _getPermission();
+                    if (permissionStatus == PermissionStatus.granted) {
+                      createNewShout(context);
+                    } else {
+                      final ScaffoldMessengerState scaffoldMessenger =
+                          ScaffoldMessenger.of(context);
+                      scaffoldMessenger.showSnackBar(SnackBar(
+                          content: Text("Please grant contact permission.")));
+                    }
+                  },
+                ),
+                SizedBox(
+                  width: 8,
+                )
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  'Shouts',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                centerTitle: false,
+                titlePadding: EdgeInsets.all(16),
+              ),
             ),
-          )
-        ],
-      ),
-      body: Chats(),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.contacts),
-        onPressed: () async {
-          final PermissionStatus permissionStatus = await _getPermission();
-          if (permissionStatus == PermissionStatus.granted) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => ContactsPage())
-            );
-          }
-          else {
-            final ScaffoldMessengerState scaffoldMessenger =
-            ScaffoldMessenger.of(context);
-            scaffoldMessenger.showSnackBar(SnackBar(content: Text("Please grant contact permission")));
-          }
-        },
-      ),
-    );
+            SliverPadding(
+              padding: EdgeInsets.all(16),
+              sliver: StreamBuilder(
+                  stream: chatsStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      if (snapshot.data.docs.length == 0) {
+                        return SliverToBoxAdapter(
+                            child: Text("No shouts yet!"));
+                      }
+                      return SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 2 / 3,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (BuildContext context, int index) {
+                            DocumentSnapshot ds = snapshot.data.docs[index];
+                            String partnerId = ds.id;
+                            String userName = ds.data()['userName'].toString();
+                            return ContactTile(
+                              userName: userName,
+                              partnerId: partnerId,
+                              userId: widget.user.uid,
+                            );
+                          },
+                          childCount: snapshot.data.docs.length,
+                        ),
+                      );
+                    } else {
+                      return SliverFillRemaining(
+                        child: Expanded(
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              valueColor: new AlwaysStoppedAnimation<Color>(
+                                  Colors.amber),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  }),
+            )
+          ],
+        ));
+  }
+
+  createNewShout(context) {
+    showModalBottomSheet<void>(
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        context: context,
+        enableDrag: true,
+        builder: (BuildContext context) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              height: 640,
+              child: Scaffold(
+                backgroundColor: Colors.white,
+                appBar: AppBar(
+                  elevation: 1,
+                  automaticallyImplyLeading: false,
+                  backgroundColor: Colors.white,
+                  title: Text(
+                    'New Shout',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                body: ContactList(),
+              ),
+            ),
+          );
+        });
   }
 }
-

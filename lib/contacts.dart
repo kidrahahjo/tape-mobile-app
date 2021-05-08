@@ -25,37 +25,33 @@ class NoContactsFound extends StatelessWidget {
 class ContactsList extends StatefulWidget {
   List<String> mobile;
   List<String> name;
-  List<String> UIDs = [];
+  List<String> uIDs = [];
 
-  ContactsList(@required this.mobile, @required this.name, @required this.UIDs);
+  ContactsList(@required this.mobile, @required this.name, @required this.uIDs);
 
   @override
   State<StatefulWidget> createState() {
-    return _ContactsListState(mobile, name, UIDs);
+    return _ContactsListState();
   }
 }
 
 class _ContactsListState extends State<ContactsList> {
-  List<String> mobile;
-  List<String> name;
-  List<String> UIDs = [];
-
-  _ContactsListState(
-      @required this.mobile, @required this.name, @required this.UIDs);
-
   openUserChatScreen(userUID, userName, context) async {
     String myUID = await FirebaseAuth.instance.currentUser.uid;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ChatPage(myUID, userUID, userName)));
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => ChatPage(myUID, userUID, userName)));
   }
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      itemCount: mobile?.length ?? 0,
+      itemCount: widget.mobile?.length ?? 0,
       itemBuilder: (BuildContext context, int index) {
-        String phone = mobile?.elementAt(index);
-        String displayName = name?.elementAt(index);
-        String uid = UIDs?.elementAt(index);
+        String phone = widget.mobile?.elementAt(index);
+        String displayName = widget.name?.elementAt(index);
+        String uid = widget.uIDs?.elementAt(index);
         return InkWell(
           onTap: () {
             openUserChatScreen(uid, displayName, context);
@@ -118,7 +114,7 @@ class _ContactsState extends State<ContactsPage> {
         if (num.length == 13) {
           return num;
         }
-      } catch (e){
+      } catch (e) {
         return 'Null';
       }
     }

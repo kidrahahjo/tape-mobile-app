@@ -2,8 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:wavemobileapp/authenticate.dart';
-import 'package:wavemobileapp/chatpage.dart';
-import 'package:wavemobileapp/home.dart';
+import 'home.dart';
 import 'package:wavemobileapp/shared_preferences_helper.dart';
 
 void main() async {

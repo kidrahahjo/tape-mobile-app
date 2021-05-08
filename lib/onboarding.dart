@@ -45,17 +45,16 @@ class _OnboardingState extends State<Onboarding> {
         "phoneNumber": user.phoneNumber,
       };
 
-      DatabaseMethods().addUserInfoToDatabase(user.uid, data).then(
-          (value) async {
-            setState(() {
-              showLoading = false;
-            });
+      DatabaseMethods()
+          .addUserInfoToDatabase(user.uid, data)
+          .then((value) async {
+        setState(() {
+          showLoading = false;
+        });
 
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (context) => Home(user)));
-          }
-      );
-
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => Home(user)));
+      });
     } catch (e) {
       setState(() {
         showLoading = false;
