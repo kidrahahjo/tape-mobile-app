@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:wavemobileapp/app_bar.dart';
+import 'package:wavemobileapp/chatpage.dart';
 import 'package:wavemobileapp/database.dart';
 import 'package:wavemobileapp/home.dart';
 import 'package:wavemobileapp/onboarding.dart';
@@ -396,7 +397,7 @@ class _AuthenticateState extends State<Authenticate> {
             Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => Home(auth_credential.user)));
+                    builder: (context) => ChatPage("V3EqoIEf6ph0MC3OOnxgEYwdxyX2", "xBivwIcS8NdLqHie49vQ80v6cax1", "Gill")));//Home(auth_credential.user)));
           } else {
             Navigator.pushReplacement(
                 context,

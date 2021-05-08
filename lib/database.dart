@@ -1,19 +1,63 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 
 class DatabaseMethods {
-  Future<Stream<QuerySnapshot>> fetchChatFromDatabase (String myUID, userUID) async {
+  Future<Stream<QuerySnapshot>> fetchEndToEndShoutsFromDatabase(
+      String chat_uid) async {
     return FirebaseFirestore.instance
-        .collection("users")
-        .doc(userUID)
         .collection("chats")
-        .doc(myUID)
+        .doc(chat_uid)
         .collection("messages")
-        .where("isRead", isEqualTo: false)
-        .orderBy("sentAt", descending: true)
+        .where("isListened", isEqualTo: false)
+        .orderBy("sendAt", descending: false)
         .snapshots();
   }
 
-  Future<Stream<QuerySnapshot>> fetchTotalChats (String myUID) async {
+  Future sendShout(
+      String myUID, String yourUID, String chatForYou, String audio_uid, DateTime currentTime) async {
+    await FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatForYou)
+        .collection("messages")
+        .doc(audio_uid)
+        .set({
+      "isListened": false,
+      "sendAt": currentTime,
+      "listenedAt": null,
+    });
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(yourUID)
+        .collection("chats")
+        .doc(myUID)
+        .set({
+      "lastModifiedAt": currentTime,
+    });
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(myUID)
+        .collection("chats")
+        .doc(yourUID)
+        .set({
+      "lastModifiedAt": currentTime,
+    });
+  }
+
+  Future updateShoutState(
+      String chatUID, String messageUID) async {
+    return FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatUID)
+        .collection("messages")
+        .doc(messageUID)
+        .update({
+      "isListened": true,
+      "listenedAt": DateTime.now(),
+    });
+  }
+
+  Future<Stream<QuerySnapshot>> fetchTotalChats(String myUID) async {
     return FirebaseFirestore.instance
         .collection("users")
         .doc(myUID)
@@ -22,16 +66,16 @@ class DatabaseMethods {
         .snapshots();
   }
 
-  Future addUserInfoToDatabase(String userIdKey,
-      Map<String, String> data) async {
+  Future addUserInfoToDatabase(
+      String userIdKey, Map<String, String> data) async {
     return FirebaseFirestore.instance
         .collection("users")
         .doc(userIdKey)
         .set(data);
   }
 
-  Future updateSentMessage(String myUID, String userUID, String messageUID, String myName, String user_name,
-      DateTime current_time) async {
+  Future updateSentMessage(String myUID, String userUID, String messageUID,
+      String myName, String user_name, DateTime current_time) async {
     try {
       print(myName);
       print(user_name);
@@ -43,9 +87,9 @@ class DatabaseMethods {
           .collection("messages")
           .doc(messageUID)
           .set({
-            "sentAt": current_time,
-            "isRead": false,
-          });
+        "sentAt": current_time,
+        "isRead": false,
+      });
       await FirebaseFirestore.instance
           .collection("users")
           .doc(userUID)
@@ -69,19 +113,6 @@ class DatabaseMethods {
     }
   }
 
-  Future updateChatMessageState(String myUID, String userUID, String messageUID) async {
-    return FirebaseFirestore.instance
-        .collection("users")
-        .doc(userUID)
-        .collection("chats")
-        .doc(myUID)
-        .collection("messages")
-        .doc(messageUID)
-        .update({
-      "isRead": true,
-    });
-  }
-
   Future<Stream<DocumentSnapshot>> getUserName(String user_uid) async {
     return FirebaseFirestore.instance
         .collection("users")
@@ -90,8 +121,6 @@ class DatabaseMethods {
   }
 
   Future<DocumentSnapshot> fetchUserDetailFromDatabase(String user_uid) {
-    return FirebaseFirestore.instance
-        .doc("users/$user_uid")
-        .get();
+    return FirebaseFirestore.instance.doc("users/$user_uid").get();
   }
 }

@@ -99,7 +99,7 @@ class _HomeState extends State<Home> {
               return InkWell(
                 onTap: () {
                   Navigator.push(
-                      context, MaterialPageRoute(builder: (context) => ChatPage(_user.uid, user_uid, user_name, _user.displayName)));
+                      context, MaterialPageRoute(builder: (context) => ChatPage(_user.uid, user_uid, user_name)));
                 },
                 child: Container(
                   alignment: Alignment.centerLeft,
