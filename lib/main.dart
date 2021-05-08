@@ -31,7 +31,9 @@ class _InitialiserState extends State<Initialiser> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: CircularProgressIndicator(),);
+    return Center(
+      child: CircularProgressIndicator(),
+    );
   }
 
   Future getCurrentUser() async {
@@ -41,9 +43,14 @@ class _InitialiserState extends State<Initialiser> {
       // user == null means that no user is logged in currently
       SharedPreferenceHelper().saveUserId(await user.uid);
       SharedPreferenceHelper().saveUserPhoneNumber(await user.phoneNumber);
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ChatPage("V3EqoIEf6ph0MC3OOnxgEYwdxyX2", "xBivwIcS8NdLqHie49vQ80v6cax1", "Gill")));
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ChatPage("xBivwIcS8NdLqHie49vQ80v6cax1",
+                  "V3EqoIEf6ph0MC3OOnxgEYwdxyX2", "Hardik Ojha")));
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Authenticate(auth)));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => Authenticate(auth)));
     }
   }
 }
