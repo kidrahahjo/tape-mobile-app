@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'dart:io';
@@ -40,16 +41,21 @@ class _ChatPageState extends State<ChatPage> {
   bool showTemporaryRecordingHelper = false;
   bool isPlaying = false;
   bool isLoadingMusic = false;
+  bool youAreListening = false;
+  bool youAreRecording = false;
 
   // stream related variables
   Stream<QuerySnapshot> chatStream;
+  StreamSubscription<QuerySnapshot> chatStreamSubs;
+  Stream<DocumentSnapshot> chatStateStream;
+  StreamSubscription<DocumentSnapshot> chatStateStreamSubs;
 
   // helper variables
   String audioUID;
+  String audioPath;
   String chatForYou;
   String chatForMe;
   bool dontRecord = false;
-  Timer chatTimer;
   bool isFetchingChats;
 
   // sound related variables
@@ -69,8 +75,29 @@ class _ChatPageState extends State<ChatPage> {
     this.isFetchingChats = false;
     Permission.microphone.request();
     music_queue = new Queue();
-    chatTimer =
-        Timer.periodic(Duration(seconds: 1), (Timer t) => fetchChatData());
+    chatStream = DatabaseMethods().fetchEndToEndShoutsFromDatabase(chatForMe);
+    chatStreamSubs = chatStream.listen((event) {
+      event.docChanges.forEach((element) {
+        if (!music_queue.contains(element.doc.id)) {
+          music_queue.add(element.doc.id);
+          setState(() {});
+        }
+      });
+    });
+    chatStateStream = DatabaseMethods().getChatState(chatForMe);
+    chatStateStreamSubs = chatStateStream.listen((event) {
+      if (event.exists) {
+        this.youAreRecording = event.data().containsKey('isRecording')
+            ? event.data()['isRecording']
+            : false;
+        this.youAreListening = event.data().containsKey('isListening')
+            ? event.data()['isListening']
+            : false;
+      }
+      if (this.youAreListening || this.youAreListening) {
+        setState(() {});
+      }
+    });
     super.initState();
   }
 
@@ -80,7 +107,6 @@ class _ChatPageState extends State<ChatPage> {
     recorderSubscription?.cancel();
     flutterSoundPlayer?.closeAudioSession();
     playerSubscription?.cancel();
-    chatTimer?.cancel();
     super.deactivate();
   }
 
@@ -90,7 +116,8 @@ class _ChatPageState extends State<ChatPage> {
     recorderSubscription?.cancel();
     flutterSoundPlayer?.closeAudioSession();
     playerSubscription?.cancel();
-    chatTimer?.cancel();
+    chatStreamSubs?.cancel();
+    chatStateStreamSubs?.cancel();
     super.dispose();
   }
 
@@ -111,33 +138,6 @@ class _ChatPageState extends State<ChatPage> {
             ]))));
   }
 
-  fetchChatData() async {
-    if (!this.isFetchingChats) {
-      this.isFetchingChats = true;
-      await DatabaseMethods()
-          .fetchEndToEndShoutsFromDatabase(chatForMe)
-          .timeout(Duration(seconds: 5))
-          .onError((error, stackTrace) {
-        print('timeout');
-        this.isFetchingChats = false;
-        return null;
-      }).then((value) async {
-        value.forEach((element) {
-          element.docs.forEach((value) {
-            this.isFetchingChats = true;
-            if (!music_queue.contains(value.id)) {
-              music_queue.add(value.id);
-              setState(() {});
-            }
-          });
-        });
-        return null;
-      }).whenComplete(() {
-        this.isFetchingChats = false;
-      });
-    }
-  }
-
   Widget MainHeader(context) {
     return Padding(
       padding: EdgeInsets.only(top: 20, left: 10, right: 10),
@@ -151,7 +151,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
               alignment: Alignment.centerRight,
               onPressed: () {
-                print('Peeche Jaa Re');
+                Navigator.pop(context);
               }),
         ],
       ),
@@ -172,10 +172,10 @@ class _ChatPageState extends State<ChatPage> {
               style: TextStyle(fontSize: 32, color: Colors.black),
             ),
             Text(
-              "Vibing",
+              this.youAreRecording ? "Recording" : this.youAreListening ? "Listening" : "",
               style: TextStyle(
                 fontSize: 20,
-                color: Color(0xffaaaaaa),
+                color: Colors.amber,
               ),
             )
           ],
@@ -363,9 +363,13 @@ class _ChatPageState extends State<ChatPage> {
     flutterSoundRecorder = await FlutterSoundRecorder().openAudioSession();
     String id = Uuid().v4();
     this.audioUID = id.replaceAll("-", "");
+    var tempDir = await getTemporaryDirectory();
+    this.audioPath = '${tempDir.path}/${audioUID}.aac';
     flutterSoundPlayer?.stopPlayer();
-    flutterSoundPlayer.closeAudioSession();
+    flutterSoundPlayer?.closeAudioSession();
+
     if (!this.dontRecord) {
+      DatabaseMethods().setRecordingStateToDatabase(chatForYou, true);
       recorderSubscription =
           flutterSoundRecorder?.onProgress?.listen((e) async {
         Duration maxDuration = e.duration;
@@ -373,8 +377,10 @@ class _ChatPageState extends State<ChatPage> {
           this.timer = maxDuration.inSeconds.toString() + 's';
         });
       });
+      await flutterSoundRecorder
+          .setSubscriptionDuration(Duration(milliseconds: 100));
       await flutterSoundRecorder?.startRecorder(
-        toFile: audioUID + '.aac',
+        toFile: this.audioPath,
         codec: Codec.aacADTS,
       );
     }
@@ -400,6 +406,7 @@ class _ChatPageState extends State<ChatPage> {
         });
       });
     } else {
+      DatabaseMethods().setRecordingStateToDatabase(chatForYou, false);
       // Recording was done properly
       String _timer = this.timer;
       await flutterSoundRecorder.stopRecorder();
@@ -424,9 +431,7 @@ class _ChatPageState extends State<ChatPage> {
         });
       } else {
         try {
-          String fileName =
-              '/data/user/0/com.example.wavemobileapp/cache/$audioUID.aac';
-          _uploadAudio(fileName, audioUID);
+          _uploadAudio(this.audioPath, audioUID);
         } catch (e) {
           setState(() {
             this.sendingShout = false;
@@ -438,6 +443,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future playMusic(String downloadURL) async {
+    DatabaseMethods().setListeningStateToDatabase(chatForYou, true);
     flutterSoundPlayer = await FlutterSoundPlayer().openAudioSession();
     playerSubscription = flutterSoundPlayer.onProgress.listen((event) {
       // Duration maxDuration = e.duration;
@@ -452,7 +458,8 @@ class _ChatPageState extends State<ChatPage> {
         fromURI: downloadURL,
         codec: Codec.mp3,
         whenFinished: () async {
-          await DatabaseMethods()
+          DatabaseMethods().setListeningStateToDatabase(chatForYou, false);
+          DatabaseMethods()
               .updateShoutState(
                   chatForMe, music_queue.elementAt(currentAudioPlaying - 1))
               .onError((error, stackTrace) {
@@ -503,6 +510,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future stopPlaying() async {
+    DatabaseMethods().setListeningStateToDatabase(chatForYou, false);
     flutterSoundPlayer?.stopPlayer();
     playerSubscription?.cancel();
     flutterSoundPlayer?.closeAudioSession();

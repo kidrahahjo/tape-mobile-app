@@ -13,6 +13,7 @@ import 'database.dart';
 
 class Home extends StatefulWidget {
   final User user;
+
   Home(this.user);
 
   @override
@@ -27,14 +28,9 @@ class _HomeState extends State<Home> {
 
   @override
   void initState() {
+    print('timer chaalu');
     timer = Timer.periodic(Duration(seconds: 1), (Timer t) => getChats());
     super.initState();
-  }
-
-  checkForNewWaves() {
-    setState(() {
-      _now = DateTime.now().second.toString();
-    });
   }
 
   getChats() async {
@@ -49,9 +45,19 @@ class _HomeState extends State<Home> {
   }
 
   @override
+  void deactivate() {
+    timer?.cancel();
+    print('timer cancel kar diya');
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    timer?.cancel();
+    print('timer cancel kar diya');
     super.dispose();
   }
+
 
   Future<PermissionStatus> _getPermission() async {
     PermissionStatus permission = await Permission.contacts.status;
@@ -138,11 +144,21 @@ class _HomeState extends State<Home> {
                           (BuildContext context, int index) {
                             DocumentSnapshot ds = snapshot.data.docs[index];
                             String partnerId = ds.id;
-                            String userName = ds.data()['userName'].toString();
-                            return ContactTile(
-                              userName: userName,
-                              partnerId: partnerId,
-                              userId: widget.user.uid,
+                            return StreamBuilder(
+                              stream: DatabaseMethods().getUserNameFromDatabase(partnerId),
+                              builder: (context, docSnapshot) {
+                                if(docSnapshot.hasData) {
+                                  return ContactTile(
+                                    userName: docSnapshot.data.get('displayName'),
+                                    partnerId: partnerId,
+                                    userId: widget.user.uid,
+                                  );
+                                } else {
+                                  return Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+                              },
                             );
                           },
                           childCount: snapshot.data.docs.length,

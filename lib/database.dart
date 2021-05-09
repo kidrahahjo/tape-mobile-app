@@ -3,8 +3,39 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 class DatabaseMethods {
-  Future<Stream<QuerySnapshot>> fetchEndToEndShoutsFromDatabase(
-      String chat_uid) async {
+  Stream<DocumentSnapshot> getUserNameFromDatabase(String userUID) {
+    return FirebaseFirestore.instance
+        .collection("users")
+        .doc(userUID)
+        .snapshots();
+  }
+
+  Future<DocumentSnapshot> fetchUserDetailFromDatabase(String user_uid) {
+    return FirebaseFirestore.instance.doc("users/$user_uid").get();
+  }
+
+  setRecordingStateToDatabase(String chat_uid, bool state) {
+    FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chat_uid)
+        .set({"isRecording": state}, SetOptions(merge: true));
+  }
+
+  setListeningStateToDatabase(String chat_uid, bool state) {
+    FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chat_uid)
+        .set({"isListening": state}, SetOptions(merge: true));
+  }
+
+  Stream<DocumentSnapshot> getChatState(String chat_uid) {
+    return FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chat_uid)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> fetchEndToEndShoutsFromDatabase(String chat_uid) {
     return FirebaseFirestore.instance
         .collection("chats")
         .doc(chat_uid)
@@ -14,8 +45,8 @@ class DatabaseMethods {
         .snapshots();
   }
 
-  Future sendShout(
-      String myUID, String yourUID, String chatForYou, String audio_uid, DateTime currentTime) async {
+  Future sendShout(String myUID, String yourUID, String chatForYou,
+      String audio_uid, DateTime currentTime) async {
     await FirebaseFirestore.instance
         .collection("chats")
         .doc(chatForYou)
@@ -44,8 +75,7 @@ class DatabaseMethods {
     });
   }
 
-  Future updateShoutState(
-      String chatUID, String messageUID) async {
+  Future updateShoutState(String chatUID, String messageUID) async {
     return FirebaseFirestore.instance
         .collection("chats")
         .doc(chatUID)
@@ -72,55 +102,5 @@ class DatabaseMethods {
         .collection("users")
         .doc(userIdKey)
         .set(data);
-  }
-
-  Future updateSentMessage(String myUID, String userUID, String messageUID,
-      String myName, String user_name, DateTime current_time) async {
-    try {
-      print(myName);
-      print(user_name);
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(myUID)
-          .collection("chats")
-          .doc(userUID)
-          .collection("messages")
-          .doc(messageUID)
-          .set({
-        "sentAt": current_time,
-        "isRead": false,
-      });
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(userUID)
-          .collection("chats")
-          .doc(myUID)
-          .set({
-        "userName": myName,
-        "lastModifiedAt": current_time,
-      });
-      return FirebaseFirestore.instance
-          .collection("users")
-          .doc(myUID)
-          .collection("chats")
-          .doc(userUID)
-          .set({
-        "userName": user_name,
-        "lastModifiedAt": current_time,
-      });
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Future<Stream<DocumentSnapshot>> getUserName(String user_uid) async {
-    return FirebaseFirestore.instance
-        .collection("users")
-        .doc(user_uid)
-        .snapshots();
-  }
-
-  Future<DocumentSnapshot> fetchUserDetailFromDatabase(String user_uid) {
-    return FirebaseFirestore.instance.doc("users/$user_uid").get();
   }
 }
