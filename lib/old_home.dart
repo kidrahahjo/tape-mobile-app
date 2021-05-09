@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wavemobileapp/authenticate.dart';
 import 'package:wavemobileapp/chatpage.dart';
-import 'package:wavemobileapp/contacts.dart';
+import 'package:wavemobileapp/old_contacts.dart';
 import 'package:wavemobileapp/database.dart';
 
 class NotHome extends StatefulWidget {

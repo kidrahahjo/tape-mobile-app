@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'contact_tile.dart';
-import 'contact_list.dart';
+import 'contacts.dart';
 import 'authenticate.dart';
 import 'database.dart';
 
@@ -206,7 +206,7 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                 ),
-                body: ContactList(),
+                body: ContactListWrapper(),
               ),
             ),
           );
