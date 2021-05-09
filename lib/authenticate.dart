@@ -397,10 +397,7 @@ class _AuthenticateState extends State<Authenticate> {
             Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => ChatPage(
-                        "xBivwIcS8NdLqHie49vQ80v6cax1",
-                        "V3EqoIEf6ph0MC3OOnxgEYwdxyX2",
-                        "Hardik Ojha"))); //Home(auth_credential.user)));
+                    builder: (context) => Home(auth_credential.user)));
           } else {
             Navigator.pushReplacement(
                 context,

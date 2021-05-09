@@ -46,8 +46,7 @@ class _InitialiserState extends State<Initialiser> {
       Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (context) => ChatPage("xBivwIcS8NdLqHie49vQ80v6cax1",
-                  "V3EqoIEf6ph0MC3OOnxgEYwdxyX2", "Hardik Ojha")));
+              builder: (context) => Home(user)));
     } else {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => Authenticate(auth)));
