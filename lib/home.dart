@@ -25,20 +25,6 @@ class _HomeState extends State<Home> {
   String _now;
   Timer timer;
 
-  Future<void> signOut(auth) async {
-    setState(() {
-      showLoading = true;
-    });
-    await auth.signOut();
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.clear();
-    setState(() {
-      showLoading = false;
-    });
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => Authenticate()));
-  }
-
   @override
   void initState() {
     timer = Timer.periodic(Duration(seconds: 1), (Timer t) => getChats());
