@@ -46,7 +46,7 @@ class _ContactsListState extends State<ContactsList> {
   openUserChatScreen(userUID, userName, context) async {
     String myUID = await FirebaseAuth.instance.currentUser.uid;
     String myName = await FirebaseAuth.instance.currentUser.displayName;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ChatPage(myUID, userUID, userName, myName)));
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ChatPage(myUID, userUID, userName)));
   }
 
   @override

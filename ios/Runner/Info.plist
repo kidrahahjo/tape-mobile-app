@@ -2,44 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSExceptionDomains</key>
-        <dict>
-            <key>yourdomain.com</key>
-            <dict>
-                <!--Include to allow subdomains-->
-                <key>NSIncludesSubdomains</key>
-                <true/>
-                <!--Include to allow HTTP requests-->
-                <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
-                <true/>
-                <!--Include to specify minimum TLS version-->
-                <key>NSTemporaryExceptionMinimumTLSVersion</key>
-                <string>TLSv1.1</string>
-            </dict>
-        </dict>
-    </dict>
-    <key>NSAppleMusicUsageDescription</key>
-    <string>Music!</string>
-    <key>kTCCServiceMediaLibrary</key>
-    <string>media</string>
-    <key>NSCalendarsUsageDescription</key>
-    <string>Calendars</string>
-    <key>NSCameraUsageDescription</key>
-    <string>camera</string>
-    <key>NSContactsUsageDescription</key>
-    <string>contacts</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>microphone</string>
-    <key>NSSpeechRecognitionUsageDescription</key>
-    <string>speech</string>
-    <key>NSMotionUsageDescription</key>
-    <string>motion</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>photos</string>
-    <key>NSRemindersUsageDescription</key>
-    <string>reminders</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -56,10 +18,54 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1034857558300-r2co3mpd05css8egi211u8ahfbjpacp4</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>yourdomain.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSTemporaryExceptionMinimumTLSVersion</key>
+				<string>TLSv1.1</string>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Music!</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Calendars</string>
+	<key>NSCameraUsageDescription</key>
+	<string>camera</string>
+	<key>NSContactsUsageDescription</key>
+	<string>contacts</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>microphone</string>
+	<key>NSMotionUsageDescription</key>
+	<string>motion</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>photos</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>reminders</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>speech</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -79,5 +85,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>kTCCServiceMediaLibrary</key>
+	<string>media</string>
 </dict>
 </plist>
