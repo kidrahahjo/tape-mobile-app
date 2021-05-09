@@ -31,7 +31,6 @@ class _OnboardingState extends State<Onboarding> {
 
   _OnboardingState(this.auth_credential);
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,8 +151,7 @@ class _OnboardingState extends State<Onboarding> {
           showError = true;
           errorMessage = "Internet issues, try again.";
         });
-      }
-      else {
+      } else {
         await DatabaseMethods()
             .addUserInfoToDatabase(await auth_credential.user.uid, data)
             .then((value) async {
@@ -162,8 +160,9 @@ class _OnboardingState extends State<Onboarding> {
           });
 
           Navigator.pushReplacement(
-              context, MaterialPageRoute(
-              builder: (context) => Home(auth_credential.user)));
+              context,
+              MaterialPageRoute(
+                  builder: (context) => Home(auth_credential.user)));
         });
       }
     } catch (e) {

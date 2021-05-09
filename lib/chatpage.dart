@@ -67,6 +67,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     this.isFetchingChats = false;
+    Permission.microphone.request();
     music_queue = new Queue();
     chatTimer =
         Timer.periodic(Duration(seconds: 1), (Timer t) => fetchChatData());
@@ -527,14 +528,13 @@ class _ChatPageState extends State<ChatPage> {
 
     await DatabaseMethods()
         .sendShout(myUID, yourUID, chatForYou, audioUID, current_time)
-    .timeout(Duration(seconds: 5))
-    .onError((error, stackTrace) {
+        .timeout(Duration(seconds: 5))
+        .onError((error, stackTrace) {
       setState(() {
         this.sendingShout = false;
       });
       failedToSendSnackBar();
-    })
-        .then((value) {
+    }).then((value) {
       audioUID = null;
       setState(() {
         this.sendingShout = false;
