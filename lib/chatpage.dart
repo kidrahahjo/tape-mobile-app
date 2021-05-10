@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
@@ -41,6 +40,8 @@ class _ChatPageState extends State<ChatPage> {
   bool youAreListening = false;
   bool youAreRecording = false;
   bool autoplay = false;
+  bool showReplay = false;
+  bool changedWave = true;
 
   // stream related variables
   Stream<QuerySnapshot> chatStream;
@@ -76,7 +77,7 @@ class _ChatPageState extends State<ChatPage> {
       event.docChanges.forEach((element) {
         if (!music_queue.contains(element.doc.id)) {
           music_queue.add(element.doc.id);
-          if (autoplay) {
+          if (autoplay && !(isRecording || isLoadingMusic || isPlaying)) {
             startPlaying();
           } else {
             setState(() {});
@@ -215,11 +216,17 @@ class _ChatPageState extends State<ChatPage> {
                                 : IconButton(
                                     iconSize: 50,
                                     icon: Icon(
-                                      isPlaying ? Icons.stop : Icons.play_arrow,
+                                      showReplay ? Icons.replay : isPlaying ? Icons.stop : Icons.play_arrow,
                                       color: Colors.black,
                                     ),
                                     onPressed: () {
-                                      if (isPlaying) {
+                                      if (showReplay) {
+                                        currentAudioPlaying = 1;
+                                        this.showReplay = false;
+                                        this.autoplay = true;
+                                        startPlaying();
+                                      }
+                                      else if (isPlaying) {
                                         this.autoplay = false;
                                         stopPlaying();
                                       } else {
@@ -379,8 +386,8 @@ class _ChatPageState extends State<ChatPage> {
             if (!isRecording && currentAudioPlaying < music_queue.length) {
               currentAudioPlaying += 1;
               startPlaying();
+              DatabaseMethods().setListeningStateToDatabase(chatForYou, false);
             }
-
           },
         ),
       ),
@@ -498,7 +505,7 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future playMusic(String downloadURL) async {
+  Future playMusic(String downloadURL, int chatNumber) async {
     DatabaseMethods().setListeningStateToDatabase(chatForYou, true);
     flutterSoundPlayer = await FlutterSoundPlayer().openAudioSession();
     playerSubscription = flutterSoundPlayer.onProgress.listen((event) {
@@ -525,14 +532,18 @@ class _ChatPageState extends State<ChatPage> {
           }).then((value) {
             setState(() {
               if (currentAudioPlaying == music_queue.length) {
-                currentAudioPlaying = 1;
-                music_queue = new Queue();
+                this.showReplay = true;
               } else {
                 currentAudioPlaying += 1;
               }
               this.isPlaying = false;
             });
-            if (music_queue.length != 0) {
+            if (showReplay) {
+              setState(() {
+                this.isLoadingMusic = false;
+              });
+            }
+            else if (currentAudioPlaying <= music_queue.length) {
               startPlaying();
             } else {
               setState(() {
@@ -545,8 +556,15 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future startPlaying() async {
+    int current = currentAudioPlaying;
     setState(() {
       this.isLoadingMusic = true;
+      this.isPlaying = false;
+      if (this.showReplay) {
+        currentAudioPlaying += 1;
+        current = currentAudioPlaying;
+        this.showReplay = false;
+      }
     });
     flutterSoundPlayer?.stopPlayer();
     playerSubscription?.cancel();
@@ -559,8 +577,9 @@ class _ChatPageState extends State<ChatPage> {
     String downloadURL = await firebase_storage.FirebaseStorage.instance
         .ref(audio_stored)
         .getDownloadURL();
-
-    playMusic(downloadURL);
+    if (current == currentAudioPlaying) {
+      playMusic(downloadURL, currentAudioPlaying);
+    }
   }
 
   Future stopPlaying() async {
