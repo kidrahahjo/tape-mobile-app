@@ -31,7 +31,7 @@ class DatabaseMethods {
     FirebaseFirestore.instance
         .collection("chats")
         .doc(chatUID)
-        .set({"isRecording": state}, SetOptions(merge: true));
+        .set({"isRecording": state, "isListening": false}, SetOptions(merge: true));
   }
 
   setListeningStateToDatabase(String chatUID, bool state) {
@@ -39,7 +39,7 @@ class DatabaseMethods {
     FirebaseFirestore.instance
         .collection("chats")
         .doc(chatUID)
-        .set({"isListening": state}, SetOptions(merge: true));
+        .set({"isListening": state, "isRecording": false}, SetOptions(merge: true));
   }
 
   Stream<DocumentSnapshot> getChatState(String chatUID) {
