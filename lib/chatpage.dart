@@ -80,7 +80,9 @@ class _ChatPageState extends State<ChatPage> {
           if (autoplay && !(isRecording || isLoadingMusic || isPlaying)) {
             startPlaying();
           } else {
-            setState(() {});
+            setState(() {
+              this.showReplay = false;
+            });
           }
         }
       });
