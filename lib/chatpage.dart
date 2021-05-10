@@ -432,7 +432,9 @@ class _ChatPageState extends State<ChatPage> {
     this.audioPath = '${tempDir.path}/${audioUID}.aac';
     flutterSoundPlayer?.stopPlayer();
     flutterSoundPlayer?.closeAudioSession();
-
+    setState(() {
+      this.isPlaying = false;
+    });
     if (!this.dontRecord) {
       DatabaseMethods().setRecordingStateToDatabase(chatForYou, true);
       recorderSubscription =
