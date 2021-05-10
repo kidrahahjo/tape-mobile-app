@@ -1,167 +1,195 @@
 import 'dart:async';
+import 'dart:collection';
+import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wavemobileapp/authenticate.dart';
-import 'package:wavemobileapp/chatpage.dart';
-import 'package:wavemobileapp/contacts.dart';
-import 'package:wavemobileapp/database.dart';
+import 'package:wavemobileapp/permissions.dart';
+import 'contact_tile.dart';
+import 'contacts.dart';
+import 'authenticate.dart';
+import 'database.dart';
 
 class Home extends StatefulWidget {
-  User user;
+  final User user;
 
-  Home(@required this.user);
+  Home(this.user);
 
   @override
-  State<StatefulWidget> createState() {
-    return _HomeState(user);
-  }
+  _HomeState createState() => _HomeState();
 }
 
-
 class _HomeState extends State<Home> {
-  User _user;
-
   bool showLoading = false;
-
-  Stream chatsStream;
-  String _now;
-
-  final _auth = FirebaseAuth.instance;
-
+  Stream<QuerySnapshot> allChatsStream;
+  StreamSubscription<QuerySnapshot> allChatStreamSubscription;
+  Queue<Map<String, String>> chatQueue = new Queue();
+  Map<String, String> userUIDNameMapping = {};
   Timer timer;
-
-  Future<void> signOut(auth) async {
-    setState(() {
-      showLoading = true;
-    });
-    await auth.signOut();
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.clear();
-    setState(() {
-      showLoading = false;
-    });
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => Authenticate()));
-
-  }
-
-  _HomeState(@required this._user);
 
   @override
   void initState() {
-    getChats();
-    timer = Timer.periodic(Duration(seconds: 5), (Timer t) => checkForNewWaves());
+    print('init state');
+    allChatsStream = DatabaseMethods().getTotalChats(widget.user.uid);
+    allChatStreamSubscription = allChatsStream.listen((event) async {
+      Queue<Map<String, String>> listenChat = new Queue();
+      for (QueryDocumentSnapshot element in event.docs) {
+        listenChat.add({
+          'yourUID': element.id,
+          'yourName': userUIDNameMapping.containsKey(element.id)
+              ? userUIDNameMapping[element.id]
+              : await DatabaseMethods()
+                  .fetchUserDetailFromDatabase(element.id)
+                  .then((value) {
+                  return value.data()['displayName'];
+                }),
+        });
+      }
+      if (listenChat.length != 0) {
+        setState(() {
+          this.chatQueue = listenChat;
+        });
+      }
+    });
     super.initState();
   }
 
-  checkForNewWaves() {
-    setState(() {
-      _now = DateTime.now().second.toString();
-    });
-  }
-  getChats() async {
-    chatsStream = await DatabaseMethods().fetchTotalChats(_user.uid);
-    setState(() {});
+  @override
+  void deactivate() {
+    print('deactivate state');
+    allChatStreamSubscription?.cancel();
+    super.deactivate();
   }
 
   @override
   void dispose() {
+    allChatStreamSubscription?.cancel();
     super.dispose();
-  }
-
-  //Check contacts permission
-  Future<PermissionStatus> _getPermission() async {
-    PermissionStatus permission = await Permission.contacts.status;
-    if (!permission.isGranted) {
-      await Permission.contacts.request();
-    }
-    permission = await Permission.contacts.status;
-    return permission;
-  }
-
-  Widget Chats() {
-    return StreamBuilder(
-      stream: chatsStream,
-      builder: (context, snapshot) {
-        return snapshot.hasData
-            ? ListView.builder(
-            itemCount: snapshot.data.docs.length,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              DocumentSnapshot ds = snapshot.data.docs[index];
-              String user_uid = ds.id;
-              String user_name = ds.data()['userName'].toString();
-              return InkWell(
-                onTap: () {
-                  Navigator.push(
-                      context, MaterialPageRoute(builder: (context) => ChatPage(_user.uid, user_uid, user_name)));
-                },
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  margin: EdgeInsets.symmetric(horizontal: 10),
-                  padding: EdgeInsets.symmetric(horizontal: 25),
-                  decoration:
-                  BoxDecoration(border: Border(bottom: BorderSide(width: 1))),
-                  height: 64,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        user_name,
-                        textAlign: TextAlign.left,
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            })
-            : Center(child: Text("No waves yet!"));
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return showLoading ? Scaffold(body: Center(child: CircularProgressIndicator(),),) : Scaffold(
-      appBar: AppBar(
-        title: Text('Wave'),
-        centerTitle: true,
-        actions: <Widget>[
-          IconButton(
-            onPressed: () async {
-              await signOut(_auth);
-            },
-            icon: Icon(
-              Icons.logout,
-              color: Colors.white,
-            ),
-          )
-        ],
-      ),
-      body: Chats(),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.contacts),
-        onPressed: () async {
-          final PermissionStatus permissionStatus = await _getPermission();
-          if (permissionStatus == PermissionStatus.granted) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => ContactsPage())
-            );
-          }
-          else {
-            final ScaffoldMessengerState scaffoldMessenger =
-            ScaffoldMessenger.of(context);
-            scaffoldMessenger.showSnackBar(SnackBar(content: Text("Please grant contact permission")));
-          }
-        },
+    return Scaffold(
+        backgroundColor: Colors.white,
+        body: CustomScrollView(
+          slivers: <Widget>[
+            sliverAppBar(),
+            homeView(),
+          ],
+        ));
+  }
+
+  Widget sliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 120,
+      pinned: true,
+      stretch: true,
+      backgroundColor: Colors.white,
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(Icons.emoji_emotions_outlined),
+          color: Colors.amber,
+          onPressed: () {},
+        ),
+        newShoutButton(context),
+        SizedBox(
+          width: 8,
+        )
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          'Shouts',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: false,
+        titlePadding: EdgeInsets.all(16),
       ),
     );
   }
-}
 
+  Widget newShoutButton(context) {
+    return TextButton(
+      style: TextButton.styleFrom(
+          primary: Colors.amber,
+          textStyle: TextStyle(fontSize: 16),
+          shape: ContinuousRectangleBorder(
+              borderRadius: BorderRadius.circular(32))),
+      child: Text(
+        'New Shout',
+      ),
+      onPressed: () async {
+        bool contactPermissionGranted = await getContactPermission();
+        if (contactPermissionGranted) {
+          getUsersFromContacts(context);
+        } else {
+          final ScaffoldMessengerState scaffoldMessenger =
+              ScaffoldMessenger.of(context);
+          scaffoldMessenger.showSnackBar(
+              SnackBar(content: Text("Please grant contact permission.")));
+        }
+      },
+    );
+  }
+
+  Widget homeView() {
+    return SliverPadding(
+        padding: EdgeInsets.all(16),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            childAspectRatio: 2 / 3,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (BuildContext context, int index) {
+              var data = chatQueue.elementAt(index);
+              return ContactTile(
+                myUID: widget.user.uid,
+                yourUID: data['yourUID'],
+                yourName: data['yourName'],
+              );
+            },
+            childCount: chatQueue.length,
+          ),
+        ));
+  }
+
+  getUsersFromContacts(context) {
+    showModalBottomSheet<void>(
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        context: context,
+        enableDrag: true,
+        builder: (BuildContext context) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              height: 640,
+              child: Scaffold(
+                backgroundColor: Colors.white,
+                appBar: AppBar(
+                  elevation: 1,
+                  automaticallyImplyLeading: false,
+                  backgroundColor: Colors.white,
+                  title: Text(
+                    'New Shout',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                body: ContactListWrapper(widget.user.uid),
+              ),
+            ),
+          );
+        });
+  }
+}

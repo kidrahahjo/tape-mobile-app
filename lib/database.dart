@@ -1,19 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 
 class DatabaseMethods {
-  Future<Stream<QuerySnapshot>> fetchChatFromDatabase (String myUID, userUID) async {
+  Stream<DocumentSnapshot> getUserNameFromDatabase(String userUID) {
+    // remove this method
     return FirebaseFirestore.instance
         .collection("users")
         .doc(userUID)
-        .collection("chats")
-        .doc(myUID)
-        .collection("messages")
-        .where("isRead", isEqualTo: false)
-        .orderBy("sentAt", descending: true)
         .snapshots();
   }
 
-  Future<Stream<QuerySnapshot>> fetchTotalChats (String myUID) async {
+  Stream<QuerySnapshot> getTotalChats(String myUID) {
+    // fetch all the chats by the current user show it according to chronology
     return FirebaseFirestore.instance
         .collection("users")
         .doc(myUID)
@@ -22,68 +21,97 @@ class DatabaseMethods {
         .snapshots();
   }
 
-  Future addUserInfoToDatabase(String userIdKey,
-      Map<String, String> data) async {
+  Future<DocumentSnapshot> fetchUserDetailFromDatabase(String user_uid) {
+    // get users from the database
+    return FirebaseFirestore.instance.doc("users/$user_uid").get();
+  }
+
+  setRecordingStateToDatabase(String chatUID, bool state) {
+    // if current user is recording, update the database regarding that
+    FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatUID)
+        .set({"isRecording": state}, SetOptions(merge: true));
+  }
+
+  setListeningStateToDatabase(String chatUID, bool state) {
+    // if current user is listening, update the database regarding that
+    FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatUID)
+        .set({"isListening": state}, SetOptions(merge: true));
+  }
+
+  Stream<DocumentSnapshot> getChatState(String chatUID) {
+    // Get the current state of chat to see what the other
+    // person is doing
+    return FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatUID)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> fetchEndToEndShoutsFromDatabase(String chatUID) {
+    // Get the messages in the current chat
+    return FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatUID)
+        .collection("messages")
+        .where("isListened", isEqualTo: false)
+        .orderBy("sendAt", descending: false)
+        .snapshots();
+  }
+
+  Future sendShout(String myUID, String yourUID, String chatForYou,
+      String audio_uid, DateTime currentTime) async {
+    // update the shout in the database
+    await FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatForYou)
+        .collection("messages")
+        .doc(audio_uid)
+        .set({
+      "isListened": false,
+      "sendAt": currentTime,
+      "listenedAt": null,
+    });
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(yourUID)
+        .collection("chats")
+        .doc(myUID)
+        .set({
+      "lastModifiedAt": currentTime,
+    });
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(myUID)
+        .collection("chats")
+        .doc(yourUID)
+        .set({
+      "lastModifiedAt": currentTime,
+    });
+  }
+
+  Future updateShoutState(String chatUID, String messageUID) async {
+    // if a shout is listened, update it in the database.
+    return FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatUID)
+        .collection("messages")
+        .doc(messageUID)
+        .update({
+      "isListened": true,
+      "listenedAt": DateTime.now(),
+    });
+  }
+
+
+  Future addUserInfoToDatabase(
+      String userIdKey, Map<String, String> data) async {
     return FirebaseFirestore.instance
         .collection("users")
         .doc(userIdKey)
         .set(data);
-  }
-
-  Future updateSentMessage(String myUID, String userUID, String messageUID, String user_name,
-      DateTime current_time) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(myUID)
-          .collection("chats")
-          .doc(userUID)
-          .collection("messages")
-          .doc(messageUID)
-          .set({
-            "sentAt": DateTime.now(),
-            "isRead": false,
-          });
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(userUID)
-          .collection("chats")
-          .doc(myUID)
-          .set({
-        "userName": user_name,
-        "lastModifiedAt": current_time,
-      });
-      return FirebaseFirestore.instance
-          .collection("users")
-          .doc(myUID)
-          .collection("chats")
-          .doc(userUID)
-          .set({
-        "userName": user_name,
-        "lastModifiedAt": current_time,
-      });
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Future updateChatMessageState(String myUID, String userUID, String messageUID) async {
-    return FirebaseFirestore.instance
-        .collection("users")
-        .doc(userUID)
-        .collection("chats")
-        .doc(myUID)
-        .collection("messages")
-        .doc(messageUID)
-        .update({
-      "isRead": true,
-    });
-  }
-
-  Future<Stream<DocumentSnapshot>> getUserName(String user_uid) async {
-    return FirebaseFirestore.instance
-        .collection("users")
-        .doc(user_uid)
-        .snapshots();
   }
 }

@@ -1,18 +1,15 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceHelper {
+  // Helper class to store data for persistance.
+  // This helps in avoiding multiple calls to server.
+
   static String userIdKey = "USER_ID_KEY";
-  static String displayNameKey = "USER_DISPLAY_NAME";
   static String userPhoneNumber = "USER_PHONE_NUMBER";
 
   Future<bool> saveUserId(String getUserId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.setString(userIdKey, getUserId);
-  }
-
-  Future<bool> saveDisplayName(String getDisplayName) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.setString(displayNameKey, getDisplayName);
   }
 
   Future<bool> saveUserPhoneNumber(String getUserPhoneNumber) async {
@@ -23,11 +20,6 @@ class SharedPreferenceHelper {
   Future<String> getUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString(userIdKey);
-  }
-
-  Future<String> getDisplayName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString(displayNameKey);
   }
 
   Future<String> getUserPhoneNumber() async {
