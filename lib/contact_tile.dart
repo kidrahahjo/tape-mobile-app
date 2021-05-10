@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:wavemobileapp/permissions.dart';
 import 'chatpage.dart';
 
 class ContactTile extends StatefulWidget {
+  final String myUID, yourUID, yourName;
   ContactTile({
-    this.partnerId,
-    this.userId,
-    this.userName,
+    this.myUID,
+    this.yourUID,
+    this.yourName,
   });
-  final String userId, partnerId, userName;
   @override
   _ContactTileState createState() => _ContactTileState();
 }
@@ -16,12 +17,29 @@ class _ContactTileState extends State<ContactTile> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => ChatPage(
-                    widget.userId, widget.partnerId, widget.userName)));
+      onTap: () async {
+        bool micPermissionGranted = await getMicrophonePermission();
+        bool storagePermissionGranted = await getStoragePermission();
+        if (micPermissionGranted && storagePermissionGranted) {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => ChatPage(
+                      widget.myUID, widget.yourUID, widget.yourName)));
+        } else {
+          String message;
+          if (micPermissionGranted) {
+            message = "storage permission";
+          } else if (storagePermissionGranted) {
+            message = "microphone permission";
+          } else {
+            message = "microphone and storage permissions";
+          }
+          final ScaffoldMessengerState scaffoldMessenger =
+          ScaffoldMessenger.of(context);
+          scaffoldMessenger.showSnackBar(
+              SnackBar(content: Text("Please grant $message.")));
+        }
       },
       child: Column(children: [
         AspectRatio(
@@ -34,7 +52,7 @@ class _ContactTileState extends State<ContactTile> {
         ),
         SizedBox(height: 8),
         Text(
-          widget.userName,
+          widget.yourName,
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         SizedBox(height: 2),

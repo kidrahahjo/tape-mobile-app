@@ -73,7 +73,6 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     this.isFetchingChats = false;
-    Permission.microphone.request();
     music_queue = new Queue();
     chatStream = DatabaseMethods().fetchEndToEndShoutsFromDatabase(chatForMe);
     chatStreamSubs = chatStream.listen((event) {
@@ -107,6 +106,8 @@ class _ChatPageState extends State<ChatPage> {
     recorderSubscription?.cancel();
     flutterSoundPlayer?.closeAudioSession();
     playerSubscription?.cancel();
+    DatabaseMethods().setRecordingStateToDatabase(chatForYou, false);
+    DatabaseMethods().setListeningStateToDatabase(chatForYou, false);
     super.deactivate();
   }
 
@@ -118,6 +119,8 @@ class _ChatPageState extends State<ChatPage> {
     playerSubscription?.cancel();
     chatStreamSubs?.cancel();
     chatStateStreamSubs?.cancel();
+    DatabaseMethods().setRecordingStateToDatabase(chatForYou, false);
+    DatabaseMethods().setListeningStateToDatabase(chatForYou, false);
     super.dispose();
   }
 

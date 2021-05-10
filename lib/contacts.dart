@@ -7,6 +7,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'chatpage.dart';
 
 class ContactListWrapper extends StatefulWidget {
+  final String myUID;
+
+  ContactListWrapper(this.myUID);
+
   @override
   _ContactListWrapperState createState() => _ContactListWrapperState();
 }
@@ -18,10 +22,18 @@ class _ContactListWrapperState extends State<ContactListWrapper> {
   List<String> _presentNames = [];
   List<String> _presentUIDs = [];
 
+
+
   @override
   void initState() {
     super.initState();
     getContacts();
+  }
+
+
+  @override
+  void deactivate() {
+    super.deactivate();
   }
 
   String fetchCorrectPhone(String phone) {
@@ -91,16 +103,17 @@ class _ContactListWrapperState extends State<ContactListWrapper> {
             ? Center(
                 child: Text("No contacts on wave, yet!"),
               )
-            : ContactList(_presentNumbers, _presentNames, _presentUIDs);
+            : ContactList(widget.myUID, _presentNumbers, _presentNames, _presentUIDs);
   }
 }
 
 class ContactList extends StatefulWidget {
+  String myUID;
   List<String> mobile;
   List<String> name;
   List<String> uIDs = [];
 
-  ContactList(this.mobile, this.name, this.uIDs);
+  ContactList(this.myUID, this.mobile, this.name, this.uIDs);
 
   @override
   _ContactListState createState() => _ContactListState();
@@ -108,11 +121,10 @@ class ContactList extends StatefulWidget {
 
 class _ContactListState extends State<ContactList> {
   openUserChatScreen(userUID, userName, context) async {
-    String myUID = await FirebaseAuth.instance.currentUser.uid;
     Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (context) => ChatPage(myUID, userUID, userName)));
+            builder: (context) => ChatPage(widget.myUID, userUID, userName)));
   }
 
   @override

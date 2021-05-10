@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -6,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wavemobileapp/permissions.dart';
 import 'contact_tile.dart';
 import 'contacts.dart';
 import 'authenticate.dart';
@@ -22,50 +24,50 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   bool showLoading = false;
-  Stream<QuerySnapshot> chatsStream;
-  String _now;
+  Stream<QuerySnapshot> allChatsStream;
+  StreamSubscription<QuerySnapshot> allChatStreamSubscription;
+  Queue<Map<String, String>> chatQueue = new Queue();
+  Map<String, String> userUIDNameMapping = {};
   Timer timer;
 
   @override
   void initState() {
-    print('timer chaalu');
-    timer = Timer.periodic(Duration(seconds: 1), (Timer t) => getChats());
-    super.initState();
-  }
-
-  getChats() async {
-    chatsStream = await DatabaseMethods()
-        .fetchTotalChats(widget.user.uid)
-        .timeout(Duration(seconds: 5))
-        .onError((error, stackTrace) {
-      return null;
+    print('init state');
+    allChatsStream = DatabaseMethods().getTotalChats(widget.user.uid);
+    allChatStreamSubscription = allChatsStream.listen((event) async {
+      Queue<Map<String, String>> listenChat = new Queue();
+      for (QueryDocumentSnapshot element in event.docs) {
+        listenChat.add({
+          'yourUID': element.id,
+          'yourName': userUIDNameMapping.containsKey(element.id)
+              ? userUIDNameMapping[element.id]
+              : await DatabaseMethods()
+                  .fetchUserDetailFromDatabase(element.id)
+                  .then((value) {
+                  return value.data()['displayName'];
+                }),
+        });
+      }
+      if (listenChat.length != 0) {
+        setState(() {
+          this.chatQueue = listenChat;
+        });
+      }
     });
-
-    setState(() {});
+    super.initState();
   }
 
   @override
   void deactivate() {
-    timer?.cancel();
-    print('timer cancel kar diya');
+    print('deactivate state');
+    allChatStreamSubscription?.cancel();
     super.deactivate();
   }
 
   @override
   void dispose() {
-    timer?.cancel();
-    print('timer cancel kar diya');
+    allChatStreamSubscription?.cancel();
     super.dispose();
-  }
-
-
-  Future<PermissionStatus> _getPermission() async {
-    PermissionStatus permission = await Permission.contacts.status;
-    if (!permission.isGranted) {
-      await Permission.contacts.request();
-    }
-    permission = await Permission.contacts.status;
-    return permission;
   }
 
   @override
@@ -74,115 +76,91 @@ class _HomeState extends State<Home> {
         backgroundColor: Colors.white,
         body: CustomScrollView(
           slivers: <Widget>[
-            SliverAppBar(
-              expandedHeight: 120,
-              pinned: true,
-              stretch: true,
-              backgroundColor: Colors.white,
-              actions: <Widget>[
-                IconButton(
-                  icon: Icon(Icons.emoji_emotions_outlined),
-                  color: Colors.amber,
-                  onPressed: () {},
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                      primary: Colors.amber,
-                      textStyle: TextStyle(fontSize: 16),
-                      shape: ContinuousRectangleBorder(
-                          borderRadius: BorderRadius.circular(32))),
-                  child: Text(
-                    'New Shout',
-                  ),
-                  onPressed: () async {
-                    final PermissionStatus permissionStatus =
-                        await _getPermission();
-                    if (permissionStatus == PermissionStatus.granted) {
-                      createNewShout(context);
-                    } else {
-                      final ScaffoldMessengerState scaffoldMessenger =
-                          ScaffoldMessenger.of(context);
-                      scaffoldMessenger.showSnackBar(SnackBar(
-                          content: Text("Please grant contact permission.")));
-                    }
-                  },
-                ),
-                SizedBox(
-                  width: 8,
-                )
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  'Shouts',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                centerTitle: false,
-                titlePadding: EdgeInsets.all(16),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.all(16),
-              sliver: StreamBuilder(
-                  stream: chatsStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      if (snapshot.data.docs.length == 0) {
-                        return SliverToBoxAdapter(
-                            child: Text("No shouts yet!"));
-                      }
-                      return SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: 2 / 3,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (BuildContext context, int index) {
-                            DocumentSnapshot ds = snapshot.data.docs[index];
-                            String partnerId = ds.id;
-                            return StreamBuilder(
-                              stream: DatabaseMethods().getUserNameFromDatabase(partnerId),
-                              builder: (context, docSnapshot) {
-                                if(docSnapshot.hasData) {
-                                  return ContactTile(
-                                    userName: docSnapshot.data.get('displayName'),
-                                    partnerId: partnerId,
-                                    userId: widget.user.uid,
-                                  );
-                                } else {
-                                  return Center(
-                                    child: CircularProgressIndicator(),
-                                  );
-                                }
-                              },
-                            );
-                          },
-                          childCount: snapshot.data.docs.length,
-                        ),
-                      );
-                    } else {
-                      return SliverFillRemaining(
-                        child: Expanded(
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              valueColor: new AlwaysStoppedAnimation<Color>(
-                                  Colors.amber),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                  }),
-            )
+            sliverAppBar(),
+            homeView(),
           ],
         ));
   }
 
-  createNewShout(context) {
+  Widget sliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 120,
+      pinned: true,
+      stretch: true,
+      backgroundColor: Colors.white,
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(Icons.emoji_emotions_outlined),
+          color: Colors.amber,
+          onPressed: () {},
+        ),
+        newShoutButton(context),
+        SizedBox(
+          width: 8,
+        )
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          'Shouts',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: false,
+        titlePadding: EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Widget newShoutButton(context) {
+    return TextButton(
+      style: TextButton.styleFrom(
+          primary: Colors.amber,
+          textStyle: TextStyle(fontSize: 16),
+          shape: ContinuousRectangleBorder(
+              borderRadius: BorderRadius.circular(32))),
+      child: Text(
+        'New Shout',
+      ),
+      onPressed: () async {
+        bool contactPermissionGranted = await getContactPermission();
+        if (contactPermissionGranted) {
+          getUsersFromContacts(context);
+        } else {
+          final ScaffoldMessengerState scaffoldMessenger =
+              ScaffoldMessenger.of(context);
+          scaffoldMessenger.showSnackBar(
+              SnackBar(content: Text("Please grant contact permission.")));
+        }
+      },
+    );
+  }
+
+  Widget homeView() {
+    return SliverPadding(
+        padding: EdgeInsets.all(16),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            childAspectRatio: 2 / 3,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (BuildContext context, int index) {
+              var data = chatQueue.elementAt(index);
+              return ContactTile(
+                myUID: widget.user.uid,
+                yourUID: data['yourUID'],
+                yourName: data['yourName'],
+              );
+            },
+            childCount: chatQueue.length,
+          ),
+        ));
+  }
+
+  getUsersFromContacts(context) {
     showModalBottomSheet<void>(
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
@@ -208,7 +186,7 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                 ),
-                body: ContactListWrapper(),
+                body: ContactListWrapper(widget.user.uid),
               ),
             ),
           );
