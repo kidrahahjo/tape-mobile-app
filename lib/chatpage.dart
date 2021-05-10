@@ -138,7 +138,7 @@ class _ChatPageState extends State<ChatPage> {
               YourInfo(),
               isRecording ? RecordingDisplay() : ShoutsDisplay(),
               ShowTemporaryRecordingHelperWidget(),
-              sendingShout ? SendingShoutDisplay() : MainFooter(),
+              MainFooter(),
             ]))));
   }
 
@@ -285,11 +285,12 @@ class _ChatPageState extends State<ChatPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   SizedBox(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1,
-                    ),
-                    height: 80.0,
-                    width: 80.0,
+                    height: 80,
+                    width: 80,
+                  ),
+                  SizedBox(
+                    height: 80,
+                    width: 80,
                   ),
                 ])));
   }
@@ -327,44 +328,89 @@ class _ChatPageState extends State<ChatPage> {
   Widget MainFooter() {
     // Display Buttons which enables features like
     // recording, skipping
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-      Padding(
-          padding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
-          child: Container(
-            constraints: BoxConstraints.expand(
-              height: 82,
-              width: MediaQuery.of(context).size.width / 2,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                GestureDetector(
-                  onTapDown: (details) {
-                    startRecording();
-                  },
-                  onTapUp: (details) {
-                    stopRecording();
-                  },
-                  onHorizontalDragEnd: (value) {
-                    stopRecording();
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.amber,
-                    ),
-                    width: 80,
-                    height: 80,
-                    child: Icon(
-                      Icons.record_voice_over,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ))
-    ]);
+    return Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        child: Container(
+          constraints: BoxConstraints.expand(
+            height: 82,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: 80,
+                width: 80,
+              ),
+              sendingShout
+                  ? SizedBox(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1,
+                      ),
+                      height: 80.0,
+                      width: 80.0,
+                    )
+                  : recordButton(),
+              SizedBox(
+                  height: 80,
+                  width: 80,
+                  child: currentAudioPlaying < music_queue.length
+                      ? skipButton()
+                      : null),
+            ],
+          ),
+        ));
+  }
+
+  Widget skipButton() {
+    return Padding(
+      padding: EdgeInsets.only(top: 10, bottom: 10, left: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color(0xfff5f5f5),
+        ),
+        width: 60,
+        height: 60,
+        child: IconButton(
+          icon: Icon(Icons.fast_forward, color: Colors.black,),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          onPressed: () {
+            if (!isRecording && currentAudioPlaying < music_queue.length) {
+              currentAudioPlaying += 1;
+              startPlaying();
+            }
+
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget recordButton() {
+    return GestureDetector(
+      onTapDown: (details) {
+        startRecording();
+      },
+      onTapUp: (details) {
+        stopRecording();
+      },
+      onHorizontalDragEnd: (value) {
+        stopRecording();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.amber,
+        ),
+        width: 80,
+        height: 80,
+        child: Icon(
+          Icons.record_voice_over,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   Future startRecording() async {
@@ -510,12 +556,10 @@ class _ChatPageState extends State<ChatPage> {
         "/" +
         music_queue.elementAt(currentAudioPlaying - 1) +
         ".aac";
-    print("getting download url");
     String downloadURL = await firebase_storage.FirebaseStorage.instance
         .ref(audio_stored)
         .getDownloadURL();
 
-    print("playing music");
     playMusic(downloadURL);
   }
 
