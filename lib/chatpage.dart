@@ -7,11 +7,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wavemobileapp/database.dart';
 
@@ -21,8 +19,7 @@ class ChatPage extends StatefulWidget {
   String yourName;
   String myUID;
 
-  ChatPage(
-      @required this.myUID, @required this.yourUID, @required this.yourName);
+  ChatPage(this.myUID, this.yourUID, this.yourName);
 
   @override
   _ChatPageState createState() => _ChatPageState(myUID, yourUID, yourName);
@@ -43,6 +40,7 @@ class _ChatPageState extends State<ChatPage> {
   bool isLoadingMusic = false;
   bool youAreListening = false;
   bool youAreRecording = false;
+  bool autoplay = false;
 
   // stream related variables
   Stream<QuerySnapshot> chatStream;
@@ -64,8 +62,7 @@ class _ChatPageState extends State<ChatPage> {
   FlutterSoundPlayer flutterSoundPlayer = new FlutterSoundPlayer();
   var playerSubscription;
 
-  _ChatPageState(
-      @required this.myUID, @required this.yourUID, @required this.yourName) {
+  _ChatPageState(this.myUID, this.yourUID, this.yourName) {
     chatForYou = myUID + '_' + yourUID;
     chatForMe = yourUID + '_' + myUID;
   }
@@ -79,7 +76,11 @@ class _ChatPageState extends State<ChatPage> {
       event.docChanges.forEach((element) {
         if (!music_queue.contains(element.doc.id)) {
           music_queue.add(element.doc.id);
-          setState(() {});
+          if (autoplay) {
+            startPlaying();
+          } else {
+            setState(() {});
+          }
         }
       });
     });
@@ -175,7 +176,11 @@ class _ChatPageState extends State<ChatPage> {
               style: TextStyle(fontSize: 32, color: Colors.black),
             ),
             Text(
-              this.youAreRecording ? "Recording" : this.youAreListening ? "Listening" : "",
+              this.youAreRecording
+                  ? "Recording"
+                  : this.youAreListening
+                      ? "Listening"
+                      : "",
               style: TextStyle(
                 fontSize: 20,
                 color: Colors.amber,
@@ -215,8 +220,10 @@ class _ChatPageState extends State<ChatPage> {
                                     ),
                                     onPressed: () {
                                       if (isPlaying) {
+                                        this.autoplay = false;
                                         stopPlaying();
                                       } else {
+                                        this.autoplay = true;
                                         startPlaying();
                                       }
                                     },
