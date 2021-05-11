@@ -78,9 +78,6 @@ class _ChatPageState extends State<ChatPage> {
       event.docChanges.forEach((element) {
         if (!music_queue.contains(element.doc.id)) {
           music_queue.add(element.doc.id);
-          if (currentAudioPlaying >= music_queue.length) {
-            currentAudioPlaying = 1;
-          }
           if (autoplay && !(isRecording || isLoadingMusic || isPlaying)) {
             startPlaying();
           } else {
@@ -250,7 +247,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget centerStatusDisplay() {
-    // TODO: Add support for recording display
     return Container(
       height: 40,
       // color: Colors.blue,
@@ -454,6 +450,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future startRecording() async {
+    shoutsToDelete = this.music_queue;
     this.isRecording = true;
     this.dontRecord = false;
     flutterSoundRecorder = await FlutterSoundRecorder().openAudioSession();
@@ -467,7 +464,6 @@ class _ChatPageState extends State<ChatPage> {
       this.isPlaying = false;
     });
     if (!this.dontRecord) {
-      shoutsToDelete = this.music_queue;
       DatabaseMethods().setRecordingStateToDatabase(chatForYou, true);
       recorderSubscription =
           flutterSoundRecorder?.onProgress?.listen((e) async {
@@ -529,6 +525,7 @@ class _ChatPageState extends State<ChatPage> {
           });
         });
       } else {
+        currentAudioPlaying = 1;
         for (String val in shoutsToDelete) {
           DatabaseMethods()
               .updateShoutState(chatForMe, val)
@@ -609,16 +606,23 @@ class _ChatPageState extends State<ChatPage> {
     flutterSoundPlayer?.stopPlayer();
     playerSubscription?.cancel();
     flutterSoundPlayer?.closeAudioSession();
-    String audio_stored = "audio/" +
-        chatForMe +
-        "/" +
-        music_queue.elementAt(currentAudioPlaying - 1) +
-        ".aac";
-    String downloadURL = await firebase_storage.FirebaseStorage.instance
-        .ref(audio_stored)
-        .getDownloadURL();
-    if (current == currentAudioPlaying) {
-      playMusic(downloadURL, currentAudioPlaying);
+    try {
+      String audio_stored = "audio/" +
+          chatForMe +
+          "/" +
+          music_queue.elementAt(current - 1) +
+          ".aac";
+      String downloadURL = await firebase_storage.FirebaseStorage.instance
+          .ref(audio_stored)
+          .getDownloadURL();
+      if (current == currentAudioPlaying) {
+        playMusic(downloadURL, currentAudioPlaying);
+      }
+    } catch (e) {
+      setState(() {
+        this.autoplay = false;
+        currentAudioPlaying = music_queue.length;
+      });
     }
   }
 
