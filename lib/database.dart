@@ -106,6 +106,12 @@ class DatabaseMethods {
     });
   }
 
+  updateChatState(String chatUID, Map<String, dynamic> data) {
+    FirebaseFirestore.instance
+        .collection("chats")
+        .doc(chatUID)
+        .set(data, SetOptions(merge: true));
+  }
 
   Future addUserInfoToDatabase(
       String userIdKey, Map<String, String> data) async {

@@ -49,9 +49,11 @@ class _HomeState extends State<Home> {
         });
       }
       if (listenChat.length != 0) {
-        setState(() {
-          this.chatQueue = listenChat;
-        });
+        if (this.mounted) {
+          setState(() {
+            this.chatQueue = listenChat;
+          });
+        }
       }
     });
     super.initState();

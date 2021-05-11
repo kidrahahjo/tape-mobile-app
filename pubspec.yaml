@@ -26,7 +26,7 @@ dependencies:
   firebase_core: ^1.1.0
   firebase_database: ^6.1.2
   firebase_auth: ^1.1.4
-  cloud_firestore: ^2.0.0
+  cloud_firestore: ^2.1.0
   shared_preferences: ^2.0.5
   permission_handler: ^7.1.0
   contacts_service: ^0.6.1

@@ -83,12 +83,14 @@ class _ContactListWrapperState extends State<ContactListWrapper> {
             }
           })
         });
-    setState(() {
-      _presentNames = presentNames;
-      _presentNumbers = presentNumbers;
-      _presentUIDs = presentUIDs;
-      showLoading = false;
-    });
+    if (this.mounted) {
+      setState(() {
+        _presentNames = presentNames;
+        _presentNumbers = presentNumbers;
+        _presentUIDs = presentUIDs;
+        showLoading = false;
+      });
+    }
   }
 
   @override

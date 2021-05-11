@@ -43,12 +43,17 @@ class _ChatPageState extends State<ChatPage> {
   bool autoplay = false;
   bool showReplay = false;
   bool changedWave = true;
+  int numberOfShoutsSent = 0;
+  String yourFirstShoutReceived;
+  String myFirstShoutSent;
 
   // stream related variables
   Stream<QuerySnapshot> chatStream;
   StreamSubscription<QuerySnapshot> chatStreamSubs;
   Stream<DocumentSnapshot> chatStateStream;
   StreamSubscription<DocumentSnapshot> chatStateStreamSubs;
+  Stream<DocumentSnapshot> myChatStateStream;
+  StreamSubscription<DocumentSnapshot> myChatStateStreamSubs;
 
   // helper variables
   String audioUID;
@@ -56,7 +61,6 @@ class _ChatPageState extends State<ChatPage> {
   String chatForYou;
   String chatForMe;
   bool dontRecord = false;
-  bool isFetchingChats;
 
   // sound related variables
   FlutterSoundRecorder flutterSoundRecorder = new FlutterSoundRecorder();
@@ -71,7 +75,6 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void initState() {
-    this.isFetchingChats = false;
     music_queue = new Queue();
     chatStream = DatabaseMethods().fetchEndToEndShoutsFromDatabase(chatForMe);
     chatStreamSubs = chatStream.listen((event) {
@@ -81,9 +84,11 @@ class _ChatPageState extends State<ChatPage> {
           if (autoplay && !(isRecording || isLoadingMusic || isPlaying)) {
             startPlaying();
           } else {
-            setState(() {
-              this.showReplay = false;
-            });
+            if (this.mounted) {
+              setState(() {
+                this.showReplay = false;
+              });
+            }
           }
         }
       });
@@ -91,14 +96,27 @@ class _ChatPageState extends State<ChatPage> {
     chatStateStream = DatabaseMethods().getChatState(chatForMe);
     chatStateStreamSubs = chatStateStream.listen((event) {
       if (event.exists) {
-        setState(() {
-        this.youAreRecording = event.get('isRecording') != null
-            ? event.get('isRecording')
-            : false;
-        this.youAreListening = event.get('isListening') != null
-            ? event.get('isListening')
-            : false;
-        });
+        Map<String, dynamic> data = event.data();
+        if (this.mounted) {
+          setState(() {
+            this.youAreRecording =
+                data['isRecording'] != null ? data['isRecording'] : false;
+            this.youAreListening =
+                data['isListening'] != null ? data['isListening'] : false;
+          });
+        }
+        this.yourFirstShoutReceived = data['firstShoutSent'];
+      }
+    });
+    chatStateStream = DatabaseMethods().getChatState(chatForYou);
+    chatStateStreamSubs = chatStateStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        this.numberOfShoutsSent = data['numberOfLonelyShouts'];
+        myFirstShoutSent = data['firstShoutSent'];
+        if (this.mounted) {
+          setState(() {});
+        }
       }
     });
     super.initState();
@@ -123,6 +141,7 @@ class _ChatPageState extends State<ChatPage> {
     playerSubscription?.cancel();
     chatStreamSubs?.cancel();
     chatStateStreamSubs?.cancel();
+    myChatStateStreamSubs?.cancel();
     DatabaseMethods().setRecordingStateToDatabase(chatForYou, false);
     DatabaseMethods().setListeningStateToDatabase(chatForYou, false);
     super.dispose();
@@ -133,37 +152,37 @@ class _ChatPageState extends State<ChatPage> {
     return MaterialApp(
         title: "Wave",
         home: Scaffold(
-          resizeToAvoidBottomInset: false,
+            resizeToAvoidBottomInset: false,
             body: SafeArea(
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
-              Spacer(),
-              Container(
-                height: 32,
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: mainHeader(context),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              yourCurrentStatus(),
-              Spacer(
-                flex: 2,
-              ),
-              centerImageDisplay(),
-              SizedBox(
-                height: 20,
-              ),
-              centerStatusDisplay(),
-              Spacer(
-                flex: 2,
-              ),
-              mainFooter(),
-              Spacer(),
-              // ShowTemporaryRecordingHelperWidget(),
-              // MainFooter(),
-            ]))));
+                  Spacer(),
+                  Container(
+                    height: 32,
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: mainHeader(context),
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  yourCurrentStatus(),
+                  Spacer(
+                    flex: 2,
+                  ),
+                  centerImageDisplay(),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  centerStatusDisplay(),
+                  Spacer(
+                    flex: 2,
+                  ),
+                  mainFooter(),
+                  Spacer(),
+                  // ShowTemporaryRecordingHelperWidget(),
+                  // MainFooter(),
+                ]))));
   }
 
   Widget displayPlayer() {
@@ -171,54 +190,33 @@ class _ChatPageState extends State<ChatPage> {
       radius: 100,
       backgroundColor: Colors.black.withOpacity(0.1),
       child: Center(
-        child: isRecording
-            ? Text(
-                "Recording",
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xff333333)),
-              )
-            : isLoadingMusic
-                ? CircularProgressIndicator()
-                : IconButton(
-                    iconSize: 50,
-                    icon: Icon(
-                      showReplay
-                          ? Icons.replay
-                          : isPlaying
-                              ? Icons.stop
-                              : Icons.play_arrow,
-                      color: Colors.black,
-                    ),
-                    onPressed: () {
-                      if (showReplay) {
-                        currentAudioPlaying = 1;
-                        this.showReplay = false;
-                        this.autoplay = true;
-                        startPlaying();
-                      } else if (isPlaying) {
-                        this.autoplay = false;
-                        stopPlaying();
-                      } else {
-                        this.autoplay = true;
-                        startPlaying();
-                      }
-                    },
-                  ),
-      ),
-    );
-  }
-
-  Widget centerImageDisplay() {
-    return Container(
-      height: 200,
-      width: 200,
-      // color: Colors.blue,
-      child: CircleAvatar(
-        radius: 100,
-        backgroundColor: Colors.amber,
-        child: music_queue.length != 0 ? displayPlayer() : null,
+        child: isLoadingMusic
+            ? CircularProgressIndicator()
+            : IconButton(
+                iconSize: 50,
+                icon: Icon(
+                  showReplay
+                      ? Icons.replay
+                      : isPlaying
+                          ? Icons.stop
+                          : Icons.play_arrow,
+                  color: Colors.black,
+                ),
+                onPressed: () {
+                  if (showReplay) {
+                    currentAudioPlaying = 1;
+                    this.showReplay = false;
+                    this.autoplay = true;
+                    startPlaying();
+                  } else if (isPlaying) {
+                    this.autoplay = false;
+                    stopPlaying();
+                  } else {
+                    this.autoplay = true;
+                    startPlaying();
+                  }
+                },
+              ),
       ),
     );
   }
@@ -246,43 +244,77 @@ class _ChatPageState extends State<ChatPage> {
               ));
   }
 
-  Widget centerStatusDisplay() {
+  Widget centerImageDisplay() {
     return Container(
-      height: 40,
+      height: 200,
+      width: 200,
       // color: Colors.blue,
-      alignment: Alignment.center,
-      child: isRecording
-          ? Text(timer,
+      child: CircleAvatar(
+        radius: 100,
+        backgroundColor: Colors.amber,
+        child: isRecording
+            ? Text(
+                "Recording",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xff333333)),
+              )
+            : music_queue.length == 0
+                ? this.numberOfShoutsSent != null ||
+                        this.myFirstShoutSent != null
+                    ? this.myFirstShoutSent != null
+                        ? circularStatusAvatar("Shouts Sent")
+                        : circularStatusAvatar("Shouts Played")
+                    : circularStatusAvatar("Start Shouting")
+                : displayPlayer(),
+      ),
+    );
+  }
+
+  Widget circularStatusAvatar(image) {
+    return CircleAvatar(
+      radius: 100,
+      backgroundColor: Color(0xff333333),
+      child: CircleAvatar(
+        radius: 99,
+        backgroundColor: Colors.white,
+        child: Center(
+          child: Text(image,
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xff333333)))
-          : music_queue.length == 0
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text("No shouts yet.",
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff333333))),
-                    Text("Hold to record, release to send!",
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xff333333))),
-                  ],
-                )
-              : Text(
-                  music_queue.length == 1
-                      ? "1 shout received."
-                      : "${this.currentAudioPlaying.toString()} of ${this.music_queue.length.toString()}",
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff333333)),
-                ),
+                  color: Color(0xff333333))),
+        ),
+      ),
     );
+  }
+
+  Widget centerStatusDisplay() {
+    print(this.myFirstShoutSent);
+    print(this.numberOfShoutsSent);
+    return Container(
+        height: 40,
+        // color: Colors.blue,
+        alignment: Alignment.center,
+        child: Text(
+          isRecording
+              ? timer
+              : music_queue.length == 0
+                  ? !(this.numberOfShoutsSent == null &&
+                          this.myFirstShoutSent == null)
+                      ? this.myFirstShoutSent != null
+                          ? "You sent $numberOfShoutsSent shouts"
+                          : "$yourName played your shouts!"
+                      : "Send shout to $yourName!"
+                  : music_queue.length == 1
+                      ? "$yourName sent a shout!"
+                      : "${this.currentAudioPlaying.toString()} of ${this.music_queue.length.toString()}",
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: Color(0xff333333)),
+        ));
   }
 
   Widget backToHome(context) {
@@ -454,7 +486,6 @@ class _ChatPageState extends State<ChatPage> {
     for (var val in this.music_queue) {
       shoutsToDelete.add(val);
     }
-    print(shoutsToDelete);
     this.isRecording = true;
     this.dontRecord = false;
     flutterSoundRecorder = await FlutterSoundRecorder().openAudioSession();
@@ -464,17 +495,21 @@ class _ChatPageState extends State<ChatPage> {
     this.audioPath = '${tempDir.path}/$audioUID.aac';
     flutterSoundPlayer?.stopPlayer();
     flutterSoundPlayer?.closeAudioSession();
-    setState(() {
-      this.isPlaying = false;
-    });
+    if (this.mounted) {
+      setState(() {
+        this.isPlaying = false;
+      });
+    }
     if (!this.dontRecord) {
       DatabaseMethods().setRecordingStateToDatabase(chatForYou, true);
       recorderSubscription =
           flutterSoundRecorder?.onProgress?.listen((e) async {
         Duration maxDuration = e.duration;
-        setState(() {
-          this.timer = maxDuration.inSeconds.toString() + 's';
-        });
+        if (this.mounted) {
+          setState(() {
+            this.timer = maxDuration.inSeconds.toString() + 's';
+          });
+        }
       });
       await flutterSoundRecorder
           .setSubscriptionDuration(Duration(milliseconds: 100));
@@ -493,17 +528,21 @@ class _ChatPageState extends State<ChatPage> {
       flutterSoundRecorder?.stopRecorder();
       flutterSoundRecorder?.closeAudioSession();
       flutterSoundRecorder = null;
-      setState(() {
-        this.timer = "";
-        this.isRecording = false;
-        this.sendingShout = false;
-        this.showTemporaryRecordingHelper = true;
-        Future.delayed(Duration(seconds: 1), () {
-          setState(() {
-            this.showTemporaryRecordingHelper = false;
+      if (this.mounted) {
+        setState(() {
+          this.timer = "";
+          this.isRecording = false;
+          this.sendingShout = false;
+          this.showTemporaryRecordingHelper = true;
+          Future.delayed(Duration(seconds: 1), () {
+            if (this.mounted) {
+              setState(() {
+                this.showTemporaryRecordingHelper = false;
+              });
+            }
           });
         });
-      });
+      }
     } else {
       DatabaseMethods().setRecordingStateToDatabase(chatForYou, false);
       // Recording was done properly
@@ -513,40 +552,56 @@ class _ChatPageState extends State<ChatPage> {
       recorderSubscription.cancel();
       recorderSubscription = null;
       flutterSoundRecorder = null;
-      setState(() {
-        this.isRecording = false;
-        this.sendingShout = true;
-        this.timer = "";
-      });
-      if (_timer == "0s" || _timer == "") {
+      if (this.mounted) {
         setState(() {
-          this.sendingShout = false;
-          this.showTemporaryRecordingHelper = true;
-          Future.delayed(Duration(seconds: 1), () {
-            setState(() {
-              this.showTemporaryRecordingHelper = false;
+          this.isRecording = false;
+          this.sendingShout = true;
+          this.timer = "";
+        });
+      }
+      if (_timer == "0s" || _timer == "") {
+        if (this.mounted) {
+          setState(() {
+            this.sendingShout = false;
+            this.showTemporaryRecordingHelper = true;
+            Future.delayed(Duration(seconds: 1), () {
+              if (this.mounted) {
+                setState(() {
+                  this.showTemporaryRecordingHelper = false;
+                });
+              }
             });
           });
-        });
+        }
       } else {
         currentAudioPlaying = 1;
-        print(shoutsToDelete);
-        print(music_queue);
         for (String val in shoutsToDelete) {
           DatabaseMethods()
               .updateShoutState(chatForMe, val)
               .onError((error, stackTrace) => null)
               .then((value) {
             music_queue.remove(val);
-            setState(() {});
+            if (this.mounted) {
+              setState(() {});
+            }
           });
         }
         try {
+          Map<String, dynamic> data = {};
+          if (numberOfShoutsSent == 0 || numberOfShoutsSent == null) {
+            data['firstShoutSent'] = audioUID;
+            numberOfShoutsSent = 0;
+          }
+          data['numberOfLonelyShouts'] = numberOfShoutsSent + 1;
+          DatabaseMethods().updateChatState(chatForYou, data);
           _uploadAudio(this.audioPath, audioUID);
         } catch (e) {
-          setState(() {
-            this.sendingShout = false;
-          });
+          print(e);
+          if (this.mounted) {
+            setState(() {
+              this.sendingShout = false;
+            });
+          }
           failedToSendSnackBar();
         }
       }
@@ -561,74 +616,87 @@ class _ChatPageState extends State<ChatPage> {
       // Duration position = e.position;
       // TODO: use the above to display a circular progress indicator
     });
-    setState(() {
-      this.isLoadingMusic = false;
-      this.isPlaying = true;
-    });
+    if (this.mounted) {
+      setState(() {
+        this.isLoadingMusic = false;
+        this.isPlaying = true;
+      });
+    }
     flutterSoundPlayer.startPlayer(
         fromURI: downloadURL,
         codec: Codec.mp3,
         whenFinished: () async {
           DatabaseMethods().setListeningStateToDatabase(chatForYou, false);
-          setState(() {
-            this.isPlaying = false;
-          });
-          setState(() {
-            if (currentAudioPlaying == music_queue.length) {
-              this.showReplay = true;
-            } else {
-              currentAudioPlaying += 1;
-            }
-            this.isPlaying = false;
-          });
-          if (showReplay) {
+          if (this.mounted) {
             setState(() {
-              this.isLoadingMusic = false;
+              this.isPlaying = false;
+              if (currentAudioPlaying == music_queue.length) {
+                this.showReplay = true;
+              } else {
+                currentAudioPlaying += 1;
+              }
+              this.isPlaying = false;
             });
+          }
+          if (showReplay) {
+            if (this.mounted) {
+              setState(() {
+                this.isLoadingMusic = false;
+              });
+            }
           } else if (currentAudioPlaying <= music_queue.length) {
             startPlaying();
           } else {
-            setState(() {
-              this.isPlaying = false;
-              this.isLoadingMusic = false;
-            });
+            if (this.mounted) {
+              setState(() {
+                this.isPlaying = false;
+                this.isLoadingMusic = false;
+              });
+            }
           }
         });
   }
 
   Future startPlaying() async {
     int current = currentAudioPlaying;
-    setState(() {
-      this.isLoadingMusic = true;
-      this.isPlaying = false;
-      if (this.showReplay) {
-        if (this.currentAudioPlaying != music_queue.length) {
-          currentAudioPlaying += 1;
-          current = currentAudioPlaying;
+    if (this.mounted) {
+      setState(() {
+        this.isLoadingMusic = true;
+        this.isPlaying = false;
+        if (this.showReplay) {
+          if (this.currentAudioPlaying != music_queue.length) {
+            currentAudioPlaying += 1;
+            current = currentAudioPlaying;
+          }
+          this.showReplay = false;
         }
-        this.showReplay = false;
-      }
-    });
+      });
+    }
     flutterSoundPlayer?.stopPlayer();
     playerSubscription?.cancel();
     flutterSoundPlayer?.closeAudioSession();
     try {
-      String audio_stored = "audio/" +
-          chatForMe +
-          "/" +
-          music_queue.elementAt(current - 1) +
-          ".aac";
+      String thisAudioUID = music_queue.elementAt(current - 1);
+      String audio_stored = "audio/" + chatForMe + "/" + thisAudioUID + ".aac";
       String downloadURL = await firebase_storage.FirebaseStorage.instance
           .ref(audio_stored)
           .getDownloadURL();
       if (current == currentAudioPlaying) {
+        print(yourFirstShoutReceived);
+        if (thisAudioUID == yourFirstShoutReceived) {
+          DatabaseMethods().updateChatState(chatForMe, {
+            "firstShoutSent": null,
+          });
+        }
         playMusic(downloadURL);
       }
     } catch (e) {
-      setState(() {
-        this.autoplay = false;
-        currentAudioPlaying = music_queue.length;
-      });
+      if (this.mounted) {
+        setState(() {
+          this.autoplay = false;
+          currentAudioPlaying = music_queue.length;
+        });
+      }
     }
   }
 
@@ -637,9 +705,11 @@ class _ChatPageState extends State<ChatPage> {
     flutterSoundPlayer?.stopPlayer();
     playerSubscription?.cancel();
     flutterSoundPlayer?.closeAudioSession();
-    setState(() {
-      this.isPlaying = false;
-    });
+    if (this.mounted) {
+      setState(() {
+        this.isPlaying = false;
+      });
+    }
   }
 
   failedToSendSnackBar() {
@@ -657,19 +727,23 @@ class _ChatPageState extends State<ChatPage> {
 
     DateTime current_time = DateTime.now();
 
-    await DatabaseMethods()
+    DatabaseMethods()
         .sendShout(myUID, yourUID, chatForYou, audioUID, current_time)
         .timeout(Duration(seconds: 5))
         .onError((error, stackTrace) {
-      setState(() {
-        this.sendingShout = false;
-      });
+      if (this.mounted) {
+        setState(() {
+          this.sendingShout = false;
+        });
+      }
       failedToSendSnackBar();
     }).then((value) {
       audioUID = null;
-      setState(() {
-        this.sendingShout = false;
-      });
+      if (this.mounted) {
+        setState(() {
+          this.sendingShout = false;
+        });
+      }
     });
   }
 }
