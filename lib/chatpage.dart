@@ -547,7 +547,7 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future playMusic(String downloadURL, int chatNumber) async {
+  Future playMusic(String downloadURL) async {
     DatabaseMethods().setListeningStateToDatabase(chatForYou, true);
     flutterSoundPlayer = await FlutterSoundPlayer().openAudioSession();
     playerSubscription = flutterSoundPlayer.onProgress.listen((event) {
@@ -616,7 +616,7 @@ class _ChatPageState extends State<ChatPage> {
           .ref(audio_stored)
           .getDownloadURL();
       if (current == currentAudioPlaying) {
-        playMusic(downloadURL, currentAudioPlaying);
+        playMusic(downloadURL);
       }
     } catch (e) {
       setState(() {
