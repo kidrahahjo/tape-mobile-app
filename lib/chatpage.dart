@@ -91,15 +91,14 @@ class _ChatPageState extends State<ChatPage> {
     chatStateStream = DatabaseMethods().getChatState(chatForMe);
     chatStateStreamSubs = chatStateStream.listen((event) {
       if (event.exists) {
+        setState(() {
         this.youAreRecording = event.data().containsKey('isRecording')
             ? event.data()['isRecording']
             : false;
         this.youAreListening = event.data().containsKey('isListening')
             ? event.data()['isListening']
             : false;
-      }
-      if (this.youAreListening || this.youAreListening) {
-        setState(() {});
+        });
       }
     });
     super.initState();
@@ -134,6 +133,7 @@ class _ChatPageState extends State<ChatPage> {
     return MaterialApp(
         title: "Wave",
         home: Scaffold(
+          resizeToAvoidBottomInset: false,
             body: SafeArea(
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -450,7 +450,11 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future startRecording() async {
-    shoutsToDelete = this.music_queue;
+    shoutsToDelete = new Queue();
+    for (var val in this.music_queue) {
+      shoutsToDelete.add(val);
+    }
+    print(shoutsToDelete);
     this.isRecording = true;
     this.dontRecord = false;
     flutterSoundRecorder = await FlutterSoundRecorder().openAudioSession();
@@ -526,6 +530,8 @@ class _ChatPageState extends State<ChatPage> {
         });
       } else {
         currentAudioPlaying = 1;
+        print(shoutsToDelete);
+        print(music_queue);
         for (String val in shoutsToDelete) {
           DatabaseMethods()
               .updateShoutState(chatForMe, val)
