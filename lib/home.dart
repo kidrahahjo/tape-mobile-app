@@ -44,7 +44,7 @@ class _HomeState extends State<Home> {
               : await DatabaseMethods()
                   .fetchUserDetailFromDatabase(element.id)
                   .then((value) {
-                  return value.data()['displayName'];
+                  return value.get('displayName');
                 }),
         });
       }

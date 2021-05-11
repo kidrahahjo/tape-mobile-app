@@ -92,11 +92,11 @@ class _ChatPageState extends State<ChatPage> {
     chatStateStreamSubs = chatStateStream.listen((event) {
       if (event.exists) {
         setState(() {
-        this.youAreRecording = event.data().containsKey('isRecording')
-            ? event.data()['isRecording']
+        this.youAreRecording = event.get('isRecording') != null
+            ? event.get('isRecording')
             : false;
-        this.youAreListening = event.data().containsKey('isListening')
-            ? event.data()['isListening']
+        this.youAreListening = event.get('isListening') != null
+            ? event.get('isListening')
             : false;
         });
       }
