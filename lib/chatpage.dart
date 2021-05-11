@@ -30,6 +30,7 @@ class _ChatPageState extends State<ChatPage> {
 
   // state controller variables
   Queue music_queue;
+  Queue shoutsToDelete;
   int currentAudioPlaying = 1;
   bool isRecording = false;
   bool sendingShout = false;
@@ -77,6 +78,9 @@ class _ChatPageState extends State<ChatPage> {
       event.docChanges.forEach((element) {
         if (!music_queue.contains(element.doc.id)) {
           music_queue.add(element.doc.id);
+          if (currentAudioPlaying >= music_queue.length) {
+            currentAudioPlaying = 1;
+          }
           if (autoplay && !(isRecording || isLoadingMusic || isPlaying)) {
             startPlaying();
           } else {
@@ -463,6 +467,7 @@ class _ChatPageState extends State<ChatPage> {
       this.isPlaying = false;
     });
     if (!this.dontRecord) {
+      shoutsToDelete = this.music_queue;
       DatabaseMethods().setRecordingStateToDatabase(chatForYou, true);
       recorderSubscription =
           flutterSoundRecorder?.onProgress?.listen((e) async {
@@ -524,6 +529,15 @@ class _ChatPageState extends State<ChatPage> {
           });
         });
       } else {
+        for (String val in shoutsToDelete) {
+          DatabaseMethods()
+              .updateShoutState(chatForMe, val)
+              .onError((error, stackTrace) => null)
+              .then((value) {
+            music_queue.remove(val);
+            setState(() {});
+          });
+        }
         try {
           _uploadAudio(this.audioPath, audioUID);
         } catch (e) {
@@ -553,35 +567,29 @@ class _ChatPageState extends State<ChatPage> {
         codec: Codec.mp3,
         whenFinished: () async {
           DatabaseMethods().setListeningStateToDatabase(chatForYou, false);
-          DatabaseMethods()
-              .updateShoutState(
-                  chatForMe, music_queue.elementAt(currentAudioPlaying - 1))
-              .onError((error, stackTrace) {
-            setState(() {
-              this.isPlaying = false;
-            });
-          }).then((value) {
-            setState(() {
-              if (currentAudioPlaying == music_queue.length) {
-                this.showReplay = true;
-              } else {
-                currentAudioPlaying += 1;
-              }
-              this.isPlaying = false;
-            });
-            if (showReplay) {
-              setState(() {
-                this.isLoadingMusic = false;
-              });
-            } else if (currentAudioPlaying <= music_queue.length) {
-              startPlaying();
-            } else {
-              setState(() {
-                this.isPlaying = false;
-                this.isLoadingMusic = false;
-              });
-            }
+          setState(() {
+            this.isPlaying = false;
           });
+          setState(() {
+            if (currentAudioPlaying == music_queue.length) {
+              this.showReplay = true;
+            } else {
+              currentAudioPlaying += 1;
+            }
+            this.isPlaying = false;
+          });
+          if (showReplay) {
+            setState(() {
+              this.isLoadingMusic = false;
+            });
+          } else if (currentAudioPlaying <= music_queue.length) {
+            startPlaying();
+          } else {
+            setState(() {
+              this.isPlaying = false;
+              this.isLoadingMusic = false;
+            });
+          }
         });
   }
 
@@ -591,8 +599,10 @@ class _ChatPageState extends State<ChatPage> {
       this.isLoadingMusic = true;
       this.isPlaying = false;
       if (this.showReplay) {
-        currentAudioPlaying += 1;
-        current = currentAudioPlaying;
+        if (this.currentAudioPlaying != music_queue.length) {
+          currentAudioPlaying += 1;
+          current = currentAudioPlaying;
+        }
         this.showReplay = false;
       }
     });
