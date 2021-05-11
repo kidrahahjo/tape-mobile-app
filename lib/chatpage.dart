@@ -135,176 +135,193 @@ class _ChatPageState extends State<ChatPage> {
         home: Scaffold(
             body: SafeArea(
                 child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
-              MainHeader(context),
-              YourInfo(),
-              isRecording ? RecordingDisplay() : ShoutsDisplay(),
-              ShowTemporaryRecordingHelperWidget(),
-              MainFooter(),
-            ]))));
-  }
-
-  Widget MainHeader(context) {
-    return Padding(
-      padding: EdgeInsets.only(top: 20, left: 10, right: 10),
-      child: Row(
-        children: <Widget>[
-          IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios,
-                size: 20,
-                color: Colors.amber,
+              Spacer(),
+              Container(
+                height: 32,
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: mainHeader(context),
               ),
-              alignment: Alignment.centerRight,
-              onPressed: () {
-                Navigator.pop(context);
-              }),
-        ],
-      ),
-    );
-  }
-
-  Widget YourInfo() {
-    return Padding(
-      padding: EdgeInsets.all(20),
-      child: Container(
-        constraints: BoxConstraints.expand(
-          height: 108,
-        ),
-        child: Column(
-          children: <Widget>[
-            Text(
-              yourName,
-              style: TextStyle(fontSize: 32, color: Colors.black),
-            ),
-            Text(
-              this.youAreRecording
-                  ? "Recording"
-                  : this.youAreListening
-                      ? "Listening"
-                      : "",
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.amber,
+              SizedBox(
+                height: 20,
               ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget ShoutsDisplay() {
-    return Padding(
-        padding: EdgeInsets.all(20),
-        child: Container(
-          constraints: BoxConstraints.expand(
-            height: 250,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                  radius: 100,
-                  backgroundColor: Color(0xfff5f5f5),
-                  child: music_queue.length == 0
-                      ? null
-                      : Material(
-                          color: Colors.transparent,
-                          child: Center(
-                            child: isLoadingMusic
-                                ? CircularProgressIndicator()
-                                : IconButton(
-                                    iconSize: 50,
-                                    icon: Icon(
-                                      showReplay ? Icons.replay : isPlaying ? Icons.stop : Icons.play_arrow,
-                                      color: Colors.black,
-                                    ),
-                                    onPressed: () {
-                                      if (showReplay) {
-                                        currentAudioPlaying = 1;
-                                        this.showReplay = false;
-                                        this.autoplay = true;
-                                        startPlaying();
-                                      }
-                                      else if (isPlaying) {
-                                        this.autoplay = false;
-                                        stopPlaying();
-                                      } else {
-                                        this.autoplay = true;
-                                        startPlaying();
-                                      }
-                                    },
-                                  ),
-                          ))),
+              yourCurrentStatus(),
               Spacer(
                 flex: 2,
               ),
-              Text(
-                music_queue.length == 0
-                    ? "No shouts, yet!"
-                    : "${this.currentAudioPlaying.toString()} of ${this.music_queue.length.toString()}",
-                style: TextStyle(fontSize: 16, color: Color(0xffaaaaaa)),
+              centerImageDisplay(),
+              SizedBox(
+                height: 20,
               ),
+              centerStatusDisplay(),
+              Spacer(
+                flex: 2,
+              ),
+              mainFooter(),
               Spacer(),
-            ],
-          ),
-        ));
+              // ShowTemporaryRecordingHelperWidget(),
+              // MainFooter(),
+            ]))));
   }
 
-  Widget RecordingDisplay() {
-    return Padding(
-        padding: EdgeInsets.all(20),
-        child: Material(
-            color: Colors.white,
-            shape: ContinuousRectangleBorder(
-              borderRadius: BorderRadius.circular(15.0),
-            ),
-            child: Container(
-                constraints: BoxConstraints.expand(
-                  height: 250,
-                ),
-                child: Column(children: [
-                  Spacer(),
-                  Text(
-                    "Recording your shout!",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xffaaaaaa),
+  Widget displayPlayer() {
+    return CircleAvatar(
+      radius: 100,
+      backgroundColor: Colors.black.withOpacity(0.1),
+      child: Center(
+        child: isRecording
+            ? Text(
+                "Recording",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xff333333)),
+              )
+            : isLoadingMusic
+                ? CircularProgressIndicator()
+                : IconButton(
+                    iconSize: 50,
+                    icon: Icon(
+                      showReplay
+                          ? Icons.replay
+                          : isPlaying
+                              ? Icons.stop
+                              : Icons.play_arrow,
+                      color: Colors.black,
                     ),
+                    onPressed: () {
+                      if (showReplay) {
+                        currentAudioPlaying = 1;
+                        this.showReplay = false;
+                        this.autoplay = true;
+                        startPlaying();
+                      } else if (isPlaying) {
+                        this.autoplay = false;
+                        stopPlaying();
+                      } else {
+                        this.autoplay = true;
+                        startPlaying();
+                      }
+                    },
                   ),
-                  Text(timer,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xffaaaaaa),
-                      )),
-                  Spacer(),
-                ]))));
+      ),
+    );
   }
 
-  Widget SendingShoutDisplay() {
-    return Padding(
-        padding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
-        child: Container(
-            constraints: BoxConstraints.expand(
-              height: 82,
-            ),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  SizedBox(
-                    height: 80,
-                    width: 80,
-                  ),
-                  SizedBox(
-                    height: 80,
-                    width: 80,
-                  ),
-                ])));
+  Widget centerImageDisplay() {
+    return Container(
+      height: 200,
+      width: 200,
+      // color: Colors.blue,
+      child: CircleAvatar(
+        radius: 100,
+        backgroundColor: Colors.amber,
+        child: music_queue.length != 0 ? displayPlayer() : null,
+      ),
+    );
   }
 
-  Widget ShowTemporaryRecordingHelperWidget() {
+  Widget listeningRecordingStatus() {
+    return Text(
+      youAreRecording ? "Recording..." : "Listening...",
+      style: TextStyle(
+          fontSize: 16, fontWeight: FontWeight.w400, color: Colors.amber),
+    );
+  }
+
+  Widget yourCurrentStatus() {
+    return Container(
+        height: 20,
+        alignment: Alignment.center,
+        child: (youAreListening || youAreRecording)
+            ? listeningRecordingStatus()
+            : Text(
+                "Vibing",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff333333)),
+              ));
+  }
+
+  Widget centerStatusDisplay() {
+    // TODO: Add support for recording display
+    return Container(
+      height: 40,
+      // color: Colors.blue,
+      alignment: Alignment.center,
+      child: isRecording
+          ? Text(timer,
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff333333)))
+          : music_queue.length == 0
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text("No shouts yet.",
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff333333))),
+                    Text("Hold to record, release to send!",
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xff333333))),
+                  ],
+                )
+              : Text(
+                  music_queue.length == 1
+                      ? "1 shout received."
+                      : "${this.currentAudioPlaying.toString()} of ${this.music_queue.length.toString()}",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xff333333)),
+                ),
+    );
+  }
+
+  Widget backToHome(context) {
+    return Container(
+      width: 32,
+      height: 32,
+      child: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios,
+            size: 20,
+            color: Colors.black,
+          ),
+          // alignment: Alignment.centerRight,
+          onPressed: () {
+            Navigator.pop(context);
+          }),
+    );
+  }
+
+  Widget mainHeader(context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        backToHome(context),
+        Text(
+          yourName,
+          style: TextStyle(
+              fontSize: 20, color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(
+          height: 32,
+          width: 32,
+        ),
+      ],
+    );
+  }
+
+  Widget showTemporaryRecordingHelperWidget() {
     return AnimatedOpacity(
         // If the widget is visible, animate to 0.0 (invisible).
         // If the widget is hidden, animate to 1.0 (fully visible).
@@ -312,7 +329,7 @@ class _ChatPageState extends State<ChatPage> {
         duration: Duration(milliseconds: 200),
         // The green box must be a child of the AnimatedOpacity widget.
         child: Padding(
-          padding: EdgeInsets.only(left: 20, right: 20, bottom: 5),
+          padding: EdgeInsets.symmetric(horizontal: 20),
           child: Container(
               constraints: BoxConstraints.expand(
                 height: 50.0,
@@ -334,40 +351,47 @@ class _ChatPageState extends State<ChatPage> {
         ));
   }
 
-  Widget MainFooter() {
+  Widget mainFooter() {
+    return Container(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          showTemporaryRecordingHelperWidget(),
+          footerButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget footerButtons() {
     // Display Buttons which enables features like
     // recording, skipping
-    return Padding(
-        padding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
-        child: Container(
-          constraints: BoxConstraints.expand(
-            height: 82,
+    return Container(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: 80,
+            width: 80,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                height: 80,
-                width: 80,
-              ),
-              sendingShout
-                  ? SizedBox(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1,
-                      ),
-                      height: 80.0,
-                      width: 80.0,
-                    )
-                  : recordButton(),
-              SizedBox(
-                  height: 80,
-                  width: 80,
-                  child: currentAudioPlaying < music_queue.length
-                      ? skipButton()
-                      : null),
-            ],
-          ),
-        ));
+          sendingShout
+              ? SizedBox(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1,
+                  ),
+                  height: 80.0,
+                  width: 80.0,
+                )
+              : recordButton(),
+          SizedBox(
+              height: 80,
+              width: 80,
+              child: currentAudioPlaying < music_queue.length
+                  ? skipButton()
+                  : null),
+        ],
+      ),
+    );
   }
 
   Widget skipButton() {
@@ -381,7 +405,10 @@ class _ChatPageState extends State<ChatPage> {
         width: 60,
         height: 60,
         child: IconButton(
-          icon: Icon(Icons.fast_forward, color: Colors.black,),
+          icon: Icon(
+            Icons.fast_forward,
+            color: Colors.black,
+          ),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           onPressed: () {
@@ -429,7 +456,7 @@ class _ChatPageState extends State<ChatPage> {
     String id = Uuid().v4();
     this.audioUID = id.replaceAll("-", "");
     var tempDir = await getTemporaryDirectory();
-    this.audioPath = '${tempDir.path}/${audioUID}.aac';
+    this.audioPath = '${tempDir.path}/$audioUID.aac';
     flutterSoundPlayer?.stopPlayer();
     flutterSoundPlayer?.closeAudioSession();
     setState(() {
@@ -546,8 +573,7 @@ class _ChatPageState extends State<ChatPage> {
               setState(() {
                 this.isLoadingMusic = false;
               });
-            }
-            else if (currentAudioPlaying <= music_queue.length) {
+            } else if (currentAudioPlaying <= music_queue.length) {
               startPlaying();
             } else {
               setState(() {
