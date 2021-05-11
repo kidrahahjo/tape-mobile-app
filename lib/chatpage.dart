@@ -43,7 +43,7 @@ class _ChatPageState extends State<ChatPage> {
   bool autoplay = false;
   bool showReplay = false;
   bool changedWave = true;
-  int numberOfShoutsSent = 0;
+  int numberOfShoutsSent;
   String yourFirstShoutReceived;
   String myFirstShoutSent;
 
@@ -114,6 +114,9 @@ class _ChatPageState extends State<ChatPage> {
         Map<String, dynamic> data = event.data();
         this.numberOfShoutsSent = data['numberOfLonelyShouts'];
         myFirstShoutSent = data['firstShoutSent'];
+        if (myFirstShoutSent == null && this.numberOfShoutsSent != null) {
+          numberOfShoutsSent = 0;
+        }
         if (this.mounted) {
           setState(() {});
         }
@@ -261,8 +264,8 @@ class _ChatPageState extends State<ChatPage> {
                     color: Color(0xff333333)),
               )
             : music_queue.length == 0
-                ? this.numberOfShoutsSent != null ||
-                        this.myFirstShoutSent != null
+                ? !(this.numberOfShoutsSent == null &&
+                        this.myFirstShoutSent == null)
                     ? this.myFirstShoutSent != null
                         ? circularStatusAvatar("Shouts Sent")
                         : circularStatusAvatar("Shouts Played")
@@ -291,8 +294,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget centerStatusDisplay() {
-    print(this.myFirstShoutSent);
-    print(this.numberOfShoutsSent);
     return Container(
         height: 40,
         // color: Colors.blue,
@@ -596,7 +597,6 @@ class _ChatPageState extends State<ChatPage> {
           DatabaseMethods().updateChatState(chatForYou, data);
           _uploadAudio(this.audioPath, audioUID);
         } catch (e) {
-          print(e);
           if (this.mounted) {
             setState(() {
               this.sendingShout = false;
@@ -682,7 +682,6 @@ class _ChatPageState extends State<ChatPage> {
           .ref(audio_stored)
           .getDownloadURL();
       if (current == currentAudioPlaying) {
-        print(yourFirstShoutReceived);
         if (thisAudioUID == yourFirstShoutReceived) {
           DatabaseMethods().updateChatState(chatForMe, {
             "firstShoutSent": null,
