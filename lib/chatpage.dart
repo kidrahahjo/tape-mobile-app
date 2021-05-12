@@ -160,7 +160,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).primaryColor,
         resizeToAvoidBottomInset: false,
         body: SafeArea(
             child: Padding(
@@ -183,12 +183,11 @@ class _ChatPageState extends State<ChatPage> {
   Widget displayPlayer() {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        borderRadius: BorderRadius.circular(200),
-        border: Border.all(width: 2, color: Theme.of(context).primaryColor),
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(160),
       ),
-      width: 200,
-      height: 200,
+      width: 160,
+      height: 160,
       child: Center(
         child: isLoadingMusic
             ? CircularProgressIndicator()
@@ -239,28 +238,24 @@ class _ChatPageState extends State<ChatPage> {
             ? listeningRecordingStatus()
             : Text(
                 "Vibing",
-                style: TextStyle(
-                    fontSize: 16, color: Theme.of(context).primaryColor),
+                style: TextStyle(fontSize: 16, color: Colors.white70),
               ));
   }
 
   Widget centerImageDisplay() {
     return Column(children: [
-      SizedBox(height: 32),
       isRecording
           ? Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(200),
-                border:
-                    Border.all(width: 2, color: Theme.of(context).primaryColor),
+                borderRadius: BorderRadius.circular(160),
               ),
-              width: 200,
-              height: 200,
+              width: 160,
+              height: 160,
               child: Center(
                 child: Text(
                   "Recording...",
                   style: TextStyle(
-                      fontSize: 16, color: Theme.of(context).primaryColor),
+                      fontSize: 16, color: Theme.of(context).accentColor),
                 ),
               ),
             )
@@ -280,13 +275,17 @@ class _ChatPageState extends State<ChatPage> {
   Widget circularStatusAvatar(image) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(200),
-        border: Border.all(width: 2, color: Theme.of(context).primaryColor),
+        borderRadius: BorderRadius.circular(160),
+        color: Colors.white10,
       ),
-      width: 200,
-      height: 200,
+      width: 160,
+      height: 160,
       child: Center(
-        child: Icon(image, size: 72),
+        child: Icon(
+          image,
+          size: 48,
+          color: Theme.of(context).accentColor,
+        ),
       ),
     );
   }
@@ -306,9 +305,7 @@ class _ChatPageState extends State<ChatPage> {
                   ? "$yourName sent a shout!"
                   : "${this.currentAudioPlaying.toString()} of ${this.music_queue.length.toString()}",
       style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-          color: Theme.of(context).primaryColor),
+          fontSize: 16, fontWeight: FontWeight.w400, color: Colors.white70),
     );
   }
 
@@ -316,7 +313,7 @@ class _ChatPageState extends State<ChatPage> {
     return IconButton(
         icon: Icon(
           PhosphorIcons.caretLeft,
-          color: Theme.of(context).primaryColor,
+          color: Colors.white,
           size: 32,
         ),
         // alignment: Alignment.centerRight,
@@ -338,9 +335,7 @@ class _ChatPageState extends State<ChatPage> {
           Text(
             yourName,
             style: TextStyle(
-                fontSize: 24,
-                color: Theme.of(context).primaryColor,
-                fontWeight: FontWeight.bold),
+                fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold),
           ),
           SizedBox(
             height: 8,
@@ -390,7 +385,6 @@ class _ChatPageState extends State<ChatPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
-          showTemporaryRecordingHelperWidget(),
           footerButtons(),
         ],
       ),
@@ -440,8 +434,8 @@ class _ChatPageState extends State<ChatPage> {
         height: 60,
         child: IconButton(
           icon: Icon(
-            Icons.fast_forward,
-            color: Theme.of(context).primaryColor,
+            PhosphorIcons.skipForward,
+            color: Colors.white,
           ),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
@@ -471,7 +465,6 @@ class _ChatPageState extends State<ChatPage> {
       child: Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(width: 2, color: Theme.of(context).primaryColor),
           color: Theme.of(context).accentColor,
         ),
         width: 80,

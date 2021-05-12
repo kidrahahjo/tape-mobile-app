@@ -3,6 +3,7 @@ import 'package:contacts_service/contacts_service.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:wavemobileapp/permissions.dart';
 
 import 'chatpage.dart';
@@ -153,25 +154,27 @@ class _ContactListState extends State<ContactList> {
         String phone = widget.mobile?.elementAt(index);
         String displayName = widget.name?.elementAt(index);
         String uid = widget.uIDs?.elementAt(index);
-        return ListTile(
-          onTap: () {
-            openUserChatScreen(uid, displayName, context);
-          },
-          leading: Container(
-            height: 48,
-            width: 48,
-            decoration: BoxDecoration(
-                color: Colors.amber, borderRadius: BorderRadius.circular(100)),
-            child: Center(
+        return Column(children: [
+          ListTile(
+            onTap: () {
+              openUserChatScreen(uid, displayName, context);
+            },
+            leading: CircleAvatar(
+              backgroundColor: Colors.white12,
               child: Icon(
-                Icons.person,
+                PhosphorIcons.user,
                 color: Colors.white,
               ),
             ),
+            title: Text(displayName),
+            subtitle: Text(phone),
           ),
-          title: Text(displayName),
-          subtitle: Text(phone),
-        );
+          Divider(
+            height: 1,
+            indent: 72,
+            endIndent: 16,
+          ),
+        ]);
       },
     );
   }
