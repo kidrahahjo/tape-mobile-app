@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:contacts_service/contacts_service.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:wavemobileapp/permissions.dart';
@@ -61,8 +60,7 @@ class _ContactListWrapperState extends State<ContactListWrapper> {
     List<String> presentNames = [];
     List<String> presentUIDs = [];
 
-    CollectionReference collection =
-        await FirebaseFirestore.instance.collection('users');
+    CollectionReference collection = FirebaseFirestore.instance.collection('users');
     for (Contact contact in contacts) {
       for (Item phone in contact.phones) {
         String mobile = fetchCorrectPhone(phone.value);
