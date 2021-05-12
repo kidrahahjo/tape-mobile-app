@@ -121,6 +121,12 @@ class _ChatPageState extends State<ChatPage> {
         if (this.mounted) {
           setState(() {});
         }
+      } else {
+        myFirstShoutSent = null;
+        numberOfShoutsSent = null;
+        if (this.mounted) {
+          setState(() {});
+        }
       }
     });
     super.initState();
@@ -292,7 +298,7 @@ class _ChatPageState extends State<ChatPage> {
           : music_queue.length == 0
               ? (this.numberOfShoutsSent == null &&
                       this.myFirstShoutSent == null)
-                  ? "Send shout to $yourName!"
+                  ? "Hold to record, and release to send!"
                   : this.myFirstShoutSent != null
                       ? "You sent $numberOfShoutsSent shouts!"
                       : "$yourName played your shouts!"
@@ -503,6 +509,7 @@ class _ChatPageState extends State<ChatPage> {
       recorderSubscription =
           flutterSoundRecorder?.onProgress?.listen((e) async {
         Duration maxDuration = e.duration;
+        print(this.mounted);
         if (this.mounted) {
           setState(() {
             this.timer = maxDuration.inSeconds.toString() + 's';
@@ -573,10 +580,9 @@ class _ChatPageState extends State<ChatPage> {
         }
       } else {
         currentAudioPlaying = 1;
+        bool updateData = false;
         if (shoutsToDelete.contains(yourFirstShoutReceived)) {
-          DatabaseMethods().updateChatState(chatForMe, {
-            "firstShoutSent": null,
-          });
+          updateData = true;
         }
         for (String val in shoutsToDelete) {
           DatabaseMethods()
@@ -597,6 +603,11 @@ class _ChatPageState extends State<ChatPage> {
           }
           data['numberOfLonelyShouts'] = numberOfShoutsSent + 1;
           _uploadAudio(this.audioPath, audioUID, data);
+          if (updateData) {
+            DatabaseMethods().updateChatState(chatForMe, {
+              "firstShoutSent": null,
+            });
+          }
         } catch (e) {
           print('Error occured');
           print(e);

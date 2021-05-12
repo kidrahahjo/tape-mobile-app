@@ -3,6 +3,7 @@ import 'package:contacts_service/contacts_service.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wavemobileapp/permissions.dart';
 
 import 'chatpage.dart';
 
@@ -22,14 +23,11 @@ class _ContactListWrapperState extends State<ContactListWrapper> {
   List<String> _presentNames = [];
   List<String> _presentUIDs = [];
 
-
-
   @override
   void initState() {
     super.initState();
     getContacts();
   }
-
 
   @override
   void deactivate() {
@@ -105,7 +103,8 @@ class _ContactListWrapperState extends State<ContactListWrapper> {
             ? Center(
                 child: Text("No contacts on wave, yet!"),
               )
-            : ContactList(widget.myUID, _presentNumbers, _presentNames, _presentUIDs);
+            : ContactList(
+                widget.myUID, _presentNumbers, _presentNames, _presentUIDs);
   }
 }
 
@@ -123,10 +122,27 @@ class ContactList extends StatefulWidget {
 
 class _ContactListState extends State<ContactList> {
   openUserChatScreen(userUID, userName, context) async {
-    Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (context) => ChatPage(widget.myUID, userUID, userName)));
+    bool micPermissionGranted = await getMicrophonePermission();
+    bool storagePermissionGranted = await getStoragePermission();
+    if (micPermissionGranted && storagePermissionGranted) {
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ChatPage(widget.myUID, userUID, userName)));
+    } else {
+      String message;
+      if (micPermissionGranted) {
+        message = "storage permission";
+      } else if (storagePermissionGranted) {
+        message = "microphone permission";
+      } else {
+        message = "microphone and storage permissions";
+      }
+      final ScaffoldMessengerState scaffoldMessenger =
+          ScaffoldMessenger.of(context);
+      scaffoldMessenger
+          .showSnackBar(SnackBar(content: Text("Please grant $message.")));
+    }
   }
 
   @override
