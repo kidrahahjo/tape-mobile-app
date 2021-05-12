@@ -259,12 +259,12 @@ class _ChatPageState extends State<ChatPage> {
               ),
             )
           : music_queue.length == 0
-              ? !(this.numberOfShoutsSent == null &&
+              ? (this.numberOfShoutsSent == null &&
                       this.myFirstShoutSent == null)
-                  ? this.myFirstShoutSent != null
+                  ? circularStatusAvatar(PhosphorIcons.microphoneThin)
+                  : this.myFirstShoutSent != null
                       ? circularStatusAvatar(PhosphorIcons.paperPlaneTiltThin)
                       : circularStatusAvatar(PhosphorIcons.megaphoneThin)
-                  : circularStatusAvatar("Start Shouting")
               : displayPlayer(),
       SizedBox(height: 16),
       centerStatusDisplay(),
@@ -290,12 +290,12 @@ class _ChatPageState extends State<ChatPage> {
       isRecording
           ? timer
           : music_queue.length == 0
-              ? !(this.numberOfShoutsSent == null &&
+              ? (this.numberOfShoutsSent == null &&
                       this.myFirstShoutSent == null)
-                  ? this.myFirstShoutSent != null
+                  ? "Send shout to $yourName!"
+                  : this.myFirstShoutSent != null
                       ? "You sent $numberOfShoutsSent shouts!"
                       : "$yourName played your shouts!"
-                  : "Send shout to $yourName!"
               : music_queue.length == 1
                   ? "$yourName sent a shout!"
                   : "${this.currentAudioPlaying.toString()} of ${this.music_queue.length.toString()}",
@@ -573,6 +573,11 @@ class _ChatPageState extends State<ChatPage> {
         }
       } else {
         currentAudioPlaying = 1;
+        if (shoutsToDelete.contains(yourFirstShoutReceived)) {
+          DatabaseMethods().updateChatState(chatForMe, {
+            "firstShoutSent": null,
+          });
+        }
         for (String val in shoutsToDelete) {
           DatabaseMethods()
               .updateShoutState(chatForMe, val)
@@ -591,8 +596,7 @@ class _ChatPageState extends State<ChatPage> {
             numberOfShoutsSent = 0;
           }
           data['numberOfLonelyShouts'] = numberOfShoutsSent + 1;
-          DatabaseMethods().updateChatState(chatForYou, data);
-          _uploadAudio(this.audioPath, audioUID);
+          _uploadAudio(this.audioPath, audioUID, data);
         } catch (e) {
           if (this.mounted) {
             setState(() {
@@ -715,16 +719,15 @@ class _ChatPageState extends State<ChatPage> {
         SnackBar(content: Text("Failed to send shout to $yourName")));
   }
 
-  _uploadAudio(String filePath, String audio_uid) async {
+  _uploadAudio(String filePath, String currentAudioUID,
+      Map<String, dynamic> data) async {
     File file = File(filePath);
     await firebase_storage.FirebaseStorage.instance
-        .ref('audio/$chatForYou/$audio_uid.aac')
+        .ref('audio/$chatForYou/$currentAudioUID.aac')
         .putFile(file);
 
-    DateTime current_time = DateTime.now();
-
     DatabaseMethods()
-        .sendShout(myUID, yourUID, chatForYou, audioUID, current_time)
+        .sendShout(myUID, yourUID, chatForYou, currentAudioUID, DateTime.now())
         .timeout(Duration(seconds: 5))
         .onError((error, stackTrace) {
       if (this.mounted) {
@@ -734,6 +737,7 @@ class _ChatPageState extends State<ChatPage> {
       }
       failedToSendSnackBar();
     }).then((value) {
+      DatabaseMethods().updateChatState(chatForYou, data);
       audioUID = null;
       if (this.mounted) {
         setState(() {
