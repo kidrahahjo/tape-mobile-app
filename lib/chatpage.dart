@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wavemobileapp/database.dart';
 
@@ -120,6 +121,12 @@ class _ChatPageState extends State<ChatPage> {
         if (this.mounted) {
           setState(() {});
         }
+      } else {
+        myFirstShoutSent = null;
+        numberOfShoutsSent = null;
+        if (this.mounted) {
+          setState(() {});
+        }
       }
     });
     super.initState();
@@ -152,58 +159,48 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        title: "Wave",
-        home: Scaffold(
-            resizeToAvoidBottomInset: false,
-            body: SafeArea(
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                  Spacer(),
-                  Container(
-                    height: 32,
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: mainHeader(context),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  yourCurrentStatus(),
-                  Spacer(
-                    flex: 2,
-                  ),
-                  centerImageDisplay(),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  centerStatusDisplay(),
-                  Spacer(
-                    flex: 2,
-                  ),
-                  mainFooter(),
-                  Spacer(),
-                  // ShowTemporaryRecordingHelperWidget(),
-                  // MainFooter(),
-                ]))));
+    return Scaffold(
+        backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: false,
+        body: SafeArea(
+            child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 24, 0, 24),
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: mainHeader(context),
+                ),
+                centerImageDisplay(),
+                mainFooter(),
+                // ShowTemporaryRecordingHelperWidget(),
+                // MainFooter(),
+              ]),
+        )));
   }
 
   Widget displayPlayer() {
-    return CircleAvatar(
-      radius: 100,
-      backgroundColor: Colors.black.withOpacity(0.1),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor,
+        borderRadius: BorderRadius.circular(200),
+        border: Border.all(width: 2, color: Theme.of(context).primaryColor),
+      ),
+      width: 200,
+      height: 200,
       child: Center(
         child: isLoadingMusic
             ? CircularProgressIndicator()
             : IconButton(
-                iconSize: 50,
                 icon: Icon(
                   showReplay
-                      ? Icons.replay
+                      ? PhosphorIcons.arrowCounterClockwise
                       : isPlaying
-                          ? Icons.stop
-                          : Icons.play_arrow,
-                  color: Colors.black,
+                          ? PhosphorIcons.stop
+                          : PhosphorIcons.play,
+                  color: Colors.white,
+                  size: 36,
                 ),
                 onPressed: () {
                   if (showReplay) {
@@ -228,7 +225,9 @@ class _ChatPageState extends State<ChatPage> {
     return Text(
       youAreRecording ? "Recording..." : "Listening...",
       style: TextStyle(
-          fontSize: 16, fontWeight: FontWeight.w400, color: Colors.amber),
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).accentColor),
     );
   }
 
@@ -241,114 +240,116 @@ class _ChatPageState extends State<ChatPage> {
             : Text(
                 "Vibing",
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff333333)),
+                    fontSize: 16, color: Theme.of(context).primaryColor),
               ));
   }
 
   Widget centerImageDisplay() {
-    return Container(
-      height: 200,
-      width: 200,
-      // color: Colors.blue,
-      child: CircleAvatar(
-        radius: 100,
-        backgroundColor: Colors.amber,
-        child: isRecording
-            ? Text(
-                "Recording",
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xff333333)),
-              )
-            : music_queue.length == 0
-                ? !(this.numberOfShoutsSent == null &&
-                        this.myFirstShoutSent == null)
-                    ? this.myFirstShoutSent != null
-                        ? circularStatusAvatar("Shouts Sent")
-                        : circularStatusAvatar("Shouts Played")
-                    : circularStatusAvatar("Start Shouting")
-                : displayPlayer(),
-      ),
-    );
+    return Column(children: [
+      SizedBox(height: 32),
+      isRecording
+          ? Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(200),
+                border:
+                    Border.all(width: 2, color: Theme.of(context).primaryColor),
+              ),
+              width: 200,
+              height: 200,
+              child: Center(
+                child: Text(
+                  "Recording...",
+                  style: TextStyle(
+                      fontSize: 16, color: Theme.of(context).primaryColor),
+                ),
+              ),
+            )
+          : music_queue.length == 0
+              ? (this.numberOfShoutsSent == null &&
+                      this.myFirstShoutSent == null)
+                  ? circularStatusAvatar(PhosphorIcons.microphoneThin)
+                  : this.myFirstShoutSent != null
+                      ? circularStatusAvatar(PhosphorIcons.paperPlaneTiltThin)
+                      : circularStatusAvatar(PhosphorIcons.megaphoneThin)
+              : displayPlayer(),
+      SizedBox(height: 16),
+      centerStatusDisplay(),
+    ]);
   }
 
   Widget circularStatusAvatar(image) {
-    return CircleAvatar(
-      radius: 100,
-      backgroundColor: Color(0xff333333),
-      child: CircleAvatar(
-        radius: 99,
-        backgroundColor: Colors.white,
-        child: Center(
-          child: Text(image,
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff333333))),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(200),
+        border: Border.all(width: 2, color: Theme.of(context).primaryColor),
+      ),
+      width: 200,
+      height: 200,
+      child: Center(
+        child: Icon(image, size: 72),
       ),
     );
   }
 
   Widget centerStatusDisplay() {
-    return Container(
-        height: 40,
-        // color: Colors.blue,
-        alignment: Alignment.center,
-        child: Text(
-          isRecording
-              ? timer
-              : music_queue.length == 0
-                  ? !(this.numberOfShoutsSent == null &&
-                          this.myFirstShoutSent == null)
-                      ? this.myFirstShoutSent != null
-                          ? "You sent $numberOfShoutsSent shouts"
-                          : "$yourName played your shouts!"
-                      : "Send shout to $yourName!"
-                  : music_queue.length == 1
-                      ? "$yourName sent a shout!"
-                      : "${this.currentAudioPlaying.toString()} of ${this.music_queue.length.toString()}",
-          style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: Color(0xff333333)),
-        ));
+    return Text(
+      isRecording
+          ? timer
+          : music_queue.length == 0
+              ? (this.numberOfShoutsSent == null &&
+                      this.myFirstShoutSent == null)
+                  ? "Hold to record, and release to send!"
+                  : this.myFirstShoutSent != null
+                      ? "You sent $numberOfShoutsSent shouts!"
+                      : "$yourName played your shouts!"
+              : music_queue.length == 1
+                  ? "$yourName sent a shout!"
+                  : "${this.currentAudioPlaying.toString()} of ${this.music_queue.length.toString()}",
+      style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          color: Theme.of(context).primaryColor),
+    );
   }
 
   Widget backToHome(context) {
-    return Container(
-      width: 32,
-      height: 32,
-      child: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            size: 20,
-            color: Colors.black,
-          ),
-          // alignment: Alignment.centerRight,
-          onPressed: () {
-            Navigator.pop(context);
-          }),
-    );
+    return IconButton(
+        icon: Icon(
+          PhosphorIcons.caretLeft,
+          color: Theme.of(context).primaryColor,
+          size: 32,
+        ),
+        // alignment: Alignment.centerRight,
+        onPressed: () {
+          Navigator.pop(context);
+        });
   }
 
   Widget mainHeader(context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         backToHome(context),
-        Text(
-          yourName,
-          style: TextStyle(
-              fontSize: 20, color: Colors.black, fontWeight: FontWeight.bold),
-        ),
+        Column(children: [
+          SizedBox(
+            height: 8,
+          ),
+          Text(
+            yourName,
+            style: TextStyle(
+                fontSize: 24,
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.bold),
+          ),
+          SizedBox(
+            height: 8,
+          ),
+          yourCurrentStatus(),
+        ]),
         SizedBox(
-          height: 32,
-          width: 32,
+          height: 48,
+          width: 48,
         ),
       ],
     );
@@ -410,7 +411,7 @@ class _ChatPageState extends State<ChatPage> {
           sendingShout
               ? SizedBox(
                   child: CircularProgressIndicator(
-                    strokeWidth: 1,
+                    strokeWidth: 2,
                   ),
                   height: 80.0,
                   width: 80.0,
@@ -440,7 +441,7 @@ class _ChatPageState extends State<ChatPage> {
         child: IconButton(
           icon: Icon(
             Icons.fast_forward,
-            color: Colors.black,
+            color: Theme.of(context).primaryColor,
           ),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
@@ -470,13 +471,15 @@ class _ChatPageState extends State<ChatPage> {
       child: Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.amber,
+          border: Border.all(width: 2, color: Theme.of(context).primaryColor),
+          color: Theme.of(context).accentColor,
         ),
         width: 80,
         height: 80,
         child: Icon(
-          Icons.record_voice_over,
-          color: Colors.white,
+          PhosphorIcons.broadcast,
+          size: 36,
+          color: Theme.of(context).primaryColor,
         ),
       ),
     );
@@ -576,6 +579,10 @@ class _ChatPageState extends State<ChatPage> {
         }
       } else {
         currentAudioPlaying = 1;
+        bool updateData = false;
+        if (shoutsToDelete.contains(yourFirstShoutReceived)) {
+          updateData = true;
+        }
         for (String val in shoutsToDelete) {
           DatabaseMethods()
               .updateShoutState(chatForMe, val)
@@ -594,9 +601,15 @@ class _ChatPageState extends State<ChatPage> {
             numberOfShoutsSent = 0;
           }
           data['numberOfLonelyShouts'] = numberOfShoutsSent + 1;
-          DatabaseMethods().updateChatState(chatForYou, data);
-          _uploadAudio(this.audioPath, audioUID);
+          _uploadAudio(this.audioPath, audioUID, data);
+          if (updateData) {
+            DatabaseMethods().updateChatState(chatForMe, {
+              "firstShoutSent": null,
+            });
+          }
         } catch (e) {
+          print('Error occured');
+          print(e);
           if (this.mounted) {
             setState(() {
               this.sendingShout = false;
@@ -690,6 +703,8 @@ class _ChatPageState extends State<ChatPage> {
         playMusic(downloadURL);
       }
     } catch (e) {
+      print('Error occured');
+      print(e);
       if (this.mounted) {
         setState(() {
           this.autoplay = false;
@@ -718,16 +733,15 @@ class _ChatPageState extends State<ChatPage> {
         SnackBar(content: Text("Failed to send shout to $yourName")));
   }
 
-  _uploadAudio(String filePath, String audio_uid) async {
+  _uploadAudio(String filePath, String currentAudioUID,
+      Map<String, dynamic> data) async {
     File file = File(filePath);
     await firebase_storage.FirebaseStorage.instance
-        .ref('audio/$chatForYou/$audio_uid.aac')
+        .ref('audio/$chatForYou/$currentAudioUID.aac')
         .putFile(file);
 
-    DateTime current_time = DateTime.now();
-
     DatabaseMethods()
-        .sendShout(myUID, yourUID, chatForYou, audioUID, current_time)
+        .sendShout(myUID, yourUID, chatForYou, currentAudioUID, DateTime.now())
         .timeout(Duration(seconds: 5))
         .onError((error, stackTrace) {
       if (this.mounted) {
@@ -737,6 +751,7 @@ class _ChatPageState extends State<ChatPage> {
       }
       failedToSendSnackBar();
     }).then((value) {
+      DatabaseMethods().updateChatState(chatForYou, data);
       audioUID = null;
       if (this.mounted) {
         setState(() {

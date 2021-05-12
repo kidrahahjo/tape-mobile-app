@@ -32,7 +32,6 @@ class _HomeState extends State<Home> {
 
   @override
   void initState() {
-    print('init state');
     allChatsStream = DatabaseMethods().getTotalChats(widget.user.uid);
     allChatStreamSubscription = allChatsStream.listen((event) async {
       Queue<Map<String, String>> listenChat = new Queue();
@@ -61,7 +60,6 @@ class _HomeState extends State<Home> {
 
   @override
   void deactivate() {
-    print('deactivate state');
     allChatStreamSubscription?.cancel();
     super.deactivate();
   }
