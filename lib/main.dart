@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:wavemobileapp/authenticate.dart';
 import 'home.dart';
 import 'package:wavemobileapp/shared_preferences_helper.dart';
@@ -8,7 +9,17 @@ import 'package:wavemobileapp/shared_preferences_helper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(MaterialApp(title: "Wave", home: Scaffold(body: Initialiser())));
+  runApp(
+    MaterialApp(
+      title: "Wave",
+      theme: ThemeData(
+        fontFamily: GoogleFonts.dmSans().fontFamily,
+        primaryColor: Color(0xff333333),
+        accentColor: Color(0xffffa000),
+      ),
+      home: Scaffold(body: Initialiser()),
+    ),
+  );
 }
 
 class Initialiser extends StatefulWidget {
@@ -43,9 +54,7 @@ class _InitialiserState extends State<Initialiser> {
       SharedPreferenceHelper().saveUserId(await user.uid);
       SharedPreferenceHelper().saveUserPhoneNumber(await user.phoneNumber);
       Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => Home(user)));
+          context, MaterialPageRoute(builder: (context) => Home(user)));
     } else {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => Authenticate(auth)));
