@@ -509,7 +509,6 @@ class _ChatPageState extends State<ChatPage> {
       recorderSubscription =
           flutterSoundRecorder?.onProgress?.listen((e) async {
         Duration maxDuration = e.duration;
-        print(this.mounted);
         if (this.mounted) {
           setState(() {
             this.timer = maxDuration.inSeconds.toString() + 's';
