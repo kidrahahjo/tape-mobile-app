@@ -598,6 +598,8 @@ class _ChatPageState extends State<ChatPage> {
           data['numberOfLonelyShouts'] = numberOfShoutsSent + 1;
           _uploadAudio(this.audioPath, audioUID, data);
         } catch (e) {
+          print('Error occured');
+          print(e);
           if (this.mounted) {
             setState(() {
               this.sendingShout = false;
@@ -691,6 +693,8 @@ class _ChatPageState extends State<ChatPage> {
         playMusic(downloadURL);
       }
     } catch (e) {
+      print('Error occured');
+      print(e);
       if (this.mounted) {
         setState(() {
           this.autoplay = false;
