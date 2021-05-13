@@ -86,7 +86,9 @@ class _StatusChipState extends State<StatusChip> {
                                 trailing: IconButton(
                                   icon: Icon(PhosphorIcons.minus),
                                   onPressed: () {
-                                    statusList.remove(i);
+                                    setState(() {
+                                      statusList.remove(i);
+                                    });
                                   },
                                 ),
                                 selected: i == statusTextController.text,

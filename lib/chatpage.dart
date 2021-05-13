@@ -169,7 +169,6 @@ class _ChatPageState extends State<ChatPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
                   child: mainHeader(context),
                 ),
                 centerImageDisplay(),
