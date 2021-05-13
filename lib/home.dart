@@ -1,18 +1,15 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/material.dart';
-import 'package:flutter_sound/flutter_sound.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wavemobileapp/permissions.dart';
+import 'package:wavemobileapp/status.dart';
 import 'contact_tile.dart';
 import 'contacts.dart';
-import 'authenticate.dart';
 import 'database.dart';
 
 class Home extends StatefulWidget {
@@ -111,77 +108,7 @@ class _HomeState extends State<Home> {
       stretch: true,
       backgroundColor: Theme.of(context).primaryColor,
       actions: <Widget>[
-        GestureDetector(
-          onTap: () {
-            showDialog(
-                context: context,
-                builder: (_) => SimpleDialog(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: TextField(
-                            decoration:
-                                InputDecoration(hintText: 'What\'s happening?'),
-                          ),
-                        ),
-                        ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.white10,
-                            child: Icon(PhosphorIcons.fireFill,
-                                color: Theme.of(context).accentColor),
-                          ),
-                          title: Text('Watching Game of Thrones'),
-                        ),
-                        ListTile(
-                          selected: true,
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.white10,
-                            child: Icon(PhosphorIcons.fireFill,
-                                color: Theme.of(context).accentColor),
-                          ),
-                          title: Text('I made Coffee :3'),
-                        ),
-                        ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.white10,
-                            child: Icon(PhosphorIcons.fireFill,
-                                color: Theme.of(context).accentColor),
-                          ),
-                          title: Text('Snacc Time'),
-                        ),
-                        ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.white10,
-                            child: Icon(PhosphorIcons.fireFill,
-                                color: Theme.of(context).accentColor),
-                          ),
-                          title: Text('Comfortably Numb - Gilmour OP'),
-                        ),
-                        ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.white10,
-                            child: Icon(PhosphorIcons.fireFill,
-                                color: Theme.of(context).accentColor),
-                          ),
-                          title: Text('Ded in Bed.'),
-                        ),
-                      ],
-                    ),
-                barrierDismissible: true);
-          },
-          child: Chip(
-            avatar: CircleAvatar(
-              backgroundColor: Colors.transparent,
-              child: Icon(PhosphorIcons.fireFill,
-                  color: Theme.of(context).accentColor),
-            ),
-            label: Text('What\'s happening?'),
-            elevation: 0,
-            labelStyle: TextStyle(),
-          ),
-        ),
+        StatusChip(),
         SizedBox(width: 16),
       ],
       flexibleSpace: FlexibleSpaceBar(
