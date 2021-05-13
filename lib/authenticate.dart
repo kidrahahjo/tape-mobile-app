@@ -2,182 +2,64 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:wavemobileapp/app_bar.dart';
-import 'package:wavemobileapp/chatpage.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:wavemobileapp/database.dart';
 import 'package:wavemobileapp/home.dart';
 import 'package:wavemobileapp/onboarding.dart';
 import 'package:wavemobileapp/shared_preferences_helper.dart';
 
 class Authenticate extends StatefulWidget {
-  FirebaseAuth auth;
-
-  Authenticate(@required this.auth);
-
+  final FirebaseAuth auth;
+  Authenticate(
+    this.auth,
+  );
   @override
-  State<StatefulWidget> createState() {
-    return _AuthenticateState(auth);
-  }
+  _AuthenticateState createState() => _AuthenticateState();
 }
 
 class _AuthenticateState extends State<Authenticate> {
-  // initialising variables
-  FirebaseAuth auth;
-
-  // state control variables
-  bool mobileFormState = true;
-  bool showLoading = false;
-  bool showMobileErrorMessage = false;
-  bool showOTPErrorMessage = false;
-
-  // helper variables
-  final phoneController = TextEditingController();
-  final otpController = TextEditingController();
-  String verificationId;
-  String mobileNumber;
-  int resendingToken;
-
-  _AuthenticateState(@required this.auth);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
-        body: showLoading
-            ? Center(
-                child: CircularProgressIndicator(),
-              )
-            : SafeArea(
-                child: mobileFormState
-                    ? getMobileNumberFormWidget(context)
-                    : getOTPFormWidget(context)));
-  }
-
-  Widget getMobileNumberFormWidget(context) {
-    return Column(
-      children: <Widget>[
-        SizedBox(height: 40),
-        Container(
-          constraints: BoxConstraints.expand(
-            height: 150,
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Center(
+            child: Text("welcome mf"),
           ),
-          alignment: Alignment.bottomLeft,
-          padding: EdgeInsets.all(20),
-          child: RichText(
-              text: TextSpan(
-                  text: "Hi, tell us your contact number to start ",
-                  style:
-                      TextStyle(fontSize: 28, height: 1.5, color: Colors.black),
-                  children: <TextSpan>[
-                TextSpan(
-                    text: 'shouting!',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ])),
-        ),
-        Padding(
-            padding: EdgeInsets.only(left: 20, right: 20, top: 20),
-            child: Material(
-              color: Color(0xFFF5F5F5),
-              shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.circular(15.0),
-              ),
-              child: Container(
-                constraints: BoxConstraints.expand(
-                  height: 50,
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      "+91",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    Expanded(
-                        child: Container(
-                            alignment: Alignment.bottomCenter,
-                            child: TextFormField(
-                              controller: phoneController,
-                              autofocus: true,
-                              style: TextStyle(fontSize: 16),
-                              onChanged: (value) {
-                                setState(() {
-                                  this.showMobileErrorMessage = false;
-                                });
-                              },
-                              decoration: InputDecoration(
-                                contentPadding: EdgeInsets.only(left: 15),
-                                border: InputBorder.none,
-                                counterText: "",
-                              ),
-                              keyboardType: TextInputType.number,
-                              maxLength: 10,
-                              inputFormatters: <TextInputFormatter>[
-                                FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9]')),
-                              ],
-                            ))),
-                  ],
-                ),
-              ),
-            )),
-        Padding(
-          padding: EdgeInsets.only(left: 20, right: 20),
-          child: Container(
-              constraints: BoxConstraints.expand(
-                height: 50,
-              ),
-              alignment: Alignment.topLeft,
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: Text(
-                showMobileErrorMessage ? "Error occurred, try again." : "",
-                style: TextStyle(fontSize: 14, color: Colors.red),
-              )),
-        ),
-        Spacer(),
-        Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Material(
-                color: Colors.black,
-                shape: ContinuousRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                child: Container(
-                    constraints: BoxConstraints.expand(
-                      height: 50,
-                    ),
-                    // padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: TextButton(
-                      child: Text(
-                        "Verify using security code",
-                        style: TextStyle(fontSize: 20, color: Colors.white),
-                      ),
-                      onPressed: () async {
-                        try {
-                          await verifyMobileNumber(phoneController.text);
-                        } catch (e) {
-                          setState(() {
-                            this.showMobileErrorMessage = true;
-                            this.showLoading = false;
-                          });
-                        }
-                      },
-                    )))),
-      ],
+          ElevatedButton(
+            child: Text('Login'),
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => MobileForm(widget.auth))),
+          )
+        ],
+      ),
     );
   }
+}
 
-  String refactorMobileNumber(String mobileNumber) {
-    String result = int.parse(mobileNumber).toString();
-    if (result.length == 10) {
-      return "+91" + result;
-    } else {
-      return null;
-    }
-  }
+class MobileForm extends StatefulWidget {
+  final FirebaseAuth auth;
+  MobileForm(
+    this.auth,
+  );
+  @override
+  _MobileFormState createState() => _MobileFormState();
+}
+
+class _MobileFormState extends State<MobileForm> {
+  bool showLoading;
+  bool showMobileErrorMessage = false;
+  String mobileNumber;
+  bool mobileFormState = true;
+  String verificationId;
+  int resendingToken;
+  final phoneController = TextEditingController();
 
   Future verificationThroughServer(String mobileNumber, int resendingToken) {
-    return auth.verifyPhoneNumber(
+    return widget.auth.verifyPhoneNumber(
         phoneNumber: mobileNumber,
         timeout: Duration(seconds: 30),
         forceResendingToken: resendingToken,
@@ -200,11 +82,29 @@ class _AuthenticateState extends State<Authenticate> {
             this.verificationId = verificationId;
             this.resendingToken = resendingToken;
           });
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => OtpForm(
+                      widget.auth,
+                      this.mobileNumber,
+                      this.verificationId,
+                      this.resendingToken,
+                      verificationThroughServer)));
         },
         codeAutoRetrievalTimeout: (verificationId) async {
           // Auto OTP Resolution timeout.
           // TODO: Automatic OTP Handling goes here
         });
+  }
+
+  String refactorMobileNumber(String mobileNumber) {
+    String result = int.parse(mobileNumber).toString();
+    if (result.length == 10) {
+      return "+91" + result;
+    } else {
+      return null;
+    }
   }
 
   verifyMobileNumber(String mobileNumber) async {
@@ -222,152 +122,102 @@ class _AuthenticateState extends State<Authenticate> {
     }
   }
 
-  Widget getOTPFormWidget(context) {
-    // TODO: Add re-enter number screen
-    // TODO: Add option to automatically read OTP
-    return Column(
-      children: <Widget>[
-        SizedBox(height: 40),
-        Container(
-          constraints: BoxConstraints.expand(
-            height: 220,
-          ),
-          alignment: Alignment.bottomLeft,
-          padding: EdgeInsets.all(20),
-          child: RichText(
-              text: TextSpan(
-                  text: "A secret code was sent to ",
-                  style:
-                      TextStyle(fontSize: 28, height: 1.5, color: Colors.black),
-                  children: <TextSpan>[
-                TextSpan(
-                    text: this.mobileNumber.substring(0, 3) +
-                        '-' +
-                        this.mobileNumber.substring(3) +
-                        ".\n",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                TextSpan(text: "Please enter the code below to login."),
-              ])),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(PhosphorIcons.arrowLeft),
+          onPressed: () => Navigator.of(context).pop(context),
         ),
-        Padding(
-          padding: EdgeInsets.only(left: 20, right: 20, top: 10),
-          child: Material(
-              color: Color(0xFFF5F5F5),
-              shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.circular(15.0),
-              ),
-              child: Container(
-                constraints: BoxConstraints.expand(
-                  height: 50,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "enter your phone number to start shouting!",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    height: 1.4,
+                  ),
                 ),
-                // padding: EdgeInsets.symmetric(horizontal: 20),
-                child: TextFormField(
-                  controller: otpController,
+                TextField(
+                  controller: phoneController,
                   autofocus: true,
-                  style: TextStyle(fontSize: 16),
                   onChanged: (value) {
                     setState(() {
-                      this.showOTPErrorMessage = false;
+                      this.showMobileErrorMessage = false;
                     });
                   },
-                  decoration: InputDecoration(
-                    contentPadding: EdgeInsets.only(left: 15),
-                    border: InputBorder.none,
-                    counterText: "",
-                  ),
                   keyboardType: TextInputType.number,
-                  maxLength: 6,
+                  maxLength: 10,
                   inputFormatters: <TextInputFormatter>[
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
                   ],
                 ),
-              )),
-        ),
-        Padding(
-          padding: EdgeInsets.only(left: 20, right: 20),
-          child: Container(
-              constraints: BoxConstraints.expand(
-                height: 50,
+                Text(
+                  showMobileErrorMessage ? "Error occurred, try again." : "",
+                  style: TextStyle(fontSize: 14, color: Colors.red),
+                ),
+              ],
+            ),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                child: Text(
+                  "get secret code",
+                ),
+                style: ElevatedButton.styleFrom(
+                    elevation: 0,
+                    textStyle: TextStyle(),
+                    primary: Colors.white10,
+                    onPrimary: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8))),
+                onPressed: () async {
+                  try {
+                    await verifyMobileNumber(phoneController.text);
+                  } catch (e) {
+                    setState(() {
+                      this.showMobileErrorMessage = true;
+                      this.showLoading = false;
+                    });
+                  }
+                },
               ),
-              alignment: Alignment.topLeft,
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: Text(
-                showOTPErrorMessage ? "Invalid OTP, try again." : "",
-                style: TextStyle(fontSize: 14, color: Colors.red),
-              )),
+            ),
+          ],
         ),
-        Spacer(),
-        Padding(
-            padding: EdgeInsets.only(left: 20, right: 20, bottom: 10),
-            child: Container(
-                constraints: BoxConstraints.expand(
-                  height: 50,
-                ),
-                child: Material(
-                  color: Colors.white,
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(15.0),
-                    side: BorderSide(color: Colors.black, width: 2),
-                  ),
-                  child: MaterialButton(
-                    child: Text(
-                      "Didn't receive? Resend code",
-                      style: TextStyle(fontSize: 20, color: Colors.black),
-                    ),
-                    onPressed: () async {
-                      setState(() {
-                        this.showLoading = true;
-                      });
-                      await verificationThroughServer(
-                          this.mobileNumber, this.resendingToken);
-                    },
-                  ),
-                ))),
-        Padding(
-            padding: EdgeInsets.only(left: 20, right: 20, bottom: 10),
-            child: Container(
-                constraints: BoxConstraints.expand(
-                  height: 50,
-                ),
-                child: Material(
-                  color: Colors.black,
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(15.0),
-                  ),
-                  child: MaterialButton(
-                    child: Text(
-                      "Login",
-                      style: TextStyle(fontSize: 20, color: Colors.white),
-                    ),
-                    onPressed: () async {
-                      await verifyOTP(otpController.text);
-                    },
-                  ),
-                ))),
-      ],
+      ),
     );
   }
+}
 
-  String refactorOTP(String otp) {
-    if (otp == null || otp.length != 6) {
-      return null;
-    } else {
-      return otp;
-    }
-  }
+class OtpForm extends StatefulWidget {
+  final FirebaseAuth auth;
+  final String mobileNumber;
+  final String verificationId;
+  final int resendingToken;
+  final verificationThroughServer;
+  OtpForm(this.auth, this.mobileNumber, this.verificationId,
+      this.resendingToken, this.verificationThroughServer);
+  @override
+  _OtpFormState createState() => _OtpFormState();
+}
 
-  verifyOTP(String otp) async {
-    if (refactorOTP(otp) != null) {
-      setState(() {
-        this.showLoading = true;
-      });
-      await signInWithPhoneAuthCredential(verificationId, otp, context);
-    } else {
-      setState(() {
-        this.showOTPErrorMessage = true;
-      });
-    }
-  }
+class _OtpFormState extends State<OtpForm> {
+  bool showOTPErrorMessage = false;
+  bool showLoading = false;
+  final otpController = TextEditingController();
 
   Future saveToSharedPreferences(uid, phoneNumber) {
     SharedPreferenceHelper().saveUserId(uid);
@@ -375,34 +225,36 @@ class _AuthenticateState extends State<Authenticate> {
   }
 
   signInWithPhoneAuthCredential(
-      String verification_id, String otp, context) async {
+      String verificationId, String otp, context) async {
     try {
       PhoneAuthCredential phoneAuthCredential =
           await PhoneAuthProvider.credential(
-              verificationId: verification_id, smsCode: otp);
-      UserCredential auth_credential =
-          await auth.signInWithCredential(phoneAuthCredential);
+              verificationId: verificationId, smsCode: otp);
+      UserCredential authCredential =
+          await widget.auth.signInWithCredential(phoneAuthCredential);
 
-      if (auth_credential?.user != null) {
-        String user_uid = await auth_credential.user.uid;
-        String phone_number = await auth_credential.user.phoneNumber;
-        saveToSharedPreferences(user_uid, phone_number);
+      if (authCredential?.user != null) {
+        String userUid = await authCredential.user.uid;
+        String phoneNumber = await authCredential.user.phoneNumber;
+        saveToSharedPreferences(userUid, phoneNumber);
         await DatabaseMethods()
-            .fetchUserDetailFromDatabase(user_uid)
+            .fetchUserDetailFromDatabase(userUid)
             .then((value) async {
           setState(() {
             showLoading = false;
           });
           if (value.exists) {
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => Home(auth_credential.user)));
+                    builder: (context) => Home(authCredential.user)),
+                (route) => false);
           } else {
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => Onboarding(auth_credential)));
+                    builder: (context) => Onboarding(authCredential)),
+                (route) => false);
           }
         });
       } else {
@@ -418,5 +270,128 @@ class _AuthenticateState extends State<Authenticate> {
       });
       print(e);
     }
+  }
+
+  String refactorOTP(String otp) {
+    if (otp == null || otp.length != 6) {
+      return null;
+    } else {
+      return otp;
+    }
+  }
+
+  verifyOTP(String otp) async {
+    if (refactorOTP(otp) != null) {
+      setState(() {
+        this.showLoading = true;
+      });
+      await signInWithPhoneAuthCredential(widget.verificationId, otp, context);
+    } else {
+      setState(() {
+        this.showOTPErrorMessage = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(PhosphorIcons.arrowLeft),
+          onPressed: () => Navigator.of(context).pop(context),
+        ),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "shh.. we sent a secret code to ${widget.mobileNumber.substring(0, 3)}-${widget.mobileNumber.substring(3)}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      height: 1.4,
+                    ),
+                  ),
+                  TextField(
+                    controller: otpController,
+                    autofocus: true,
+                    onChanged: (value) {
+                      setState(() {
+                        this.showOTPErrorMessage = false;
+                      });
+                    },
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                    ],
+                  ),
+                  Text(
+                    showOTPErrorMessage ? "Invalid OTP, try again." : "",
+                    style: TextStyle(fontSize: 14, color: Colors.red),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      child: Text(
+                        "didn't receive? resend code",
+                      ),
+                      style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          textStyle: TextStyle(),
+                          primary: Colors.white10,
+                          onPrimary: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8))),
+                      onPressed: () async {
+                        setState(() {
+                          this.showLoading = true;
+                        });
+                        await widget.verificationThroughServer(
+                            widget.mobileNumber, widget.resendingToken);
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      child: Text(
+                        "login",
+                      ),
+                      style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          textStyle: TextStyle(),
+                          primary: Colors.white10,
+                          onPrimary: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8))),
+                      onPressed: () async {
+                        await verifyOTP(otpController.text);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

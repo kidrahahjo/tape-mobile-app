@@ -11,8 +11,10 @@ void main() async {
   await Firebase.initializeApp();
   runApp(
     MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: "Wave",
       theme: ThemeData(
+        brightness: Brightness.dark,
         fontFamily: GoogleFonts.dmSans().fontFamily,
         primaryColor: Color(0xff333333),
         accentColor: Color(0xffffa000),
@@ -30,8 +32,8 @@ class Initialiser extends StatefulWidget {
 }
 
 class _InitialiserState extends State<Initialiser> {
-  FirebaseAuth auth = null;
-  User user = null;
+  FirebaseAuth auth;
+  User user;
 
   @override
   void initState() {
@@ -47,12 +49,12 @@ class _InitialiserState extends State<Initialiser> {
   }
 
   Future getCurrentUser() async {
-    auth = await FirebaseAuth.instance;
-    user = await auth.currentUser;
+    auth = FirebaseAuth.instance;
+    user = auth.currentUser;
     if (user != null) {
       // user == null means that no user is logged in currently
-      SharedPreferenceHelper().saveUserId(await user.uid);
-      SharedPreferenceHelper().saveUserPhoneNumber(await user.phoneNumber);
+      SharedPreferenceHelper().saveUserId(user.uid);
+      SharedPreferenceHelper().saveUserPhoneNumber(user.phoneNumber);
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => Home(user)));
     } else {

@@ -28,18 +28,14 @@ class DatabaseMethods {
 
   setRecordingStateToDatabase(String chatUID, bool state) {
     // if current user is recording, update the database regarding that
-    FirebaseFirestore.instance
-        .collection("chats")
-        .doc(chatUID)
-        .set({"isRecording": state, "isListening": false}, SetOptions(merge: true));
+    FirebaseFirestore.instance.collection("chats").doc(chatUID).set(
+        {"isRecording": state, "isListening": false}, SetOptions(merge: true));
   }
 
   setListeningStateToDatabase(String chatUID, bool state) {
     // if current user is listening, update the database regarding that
-    FirebaseFirestore.instance
-        .collection("chats")
-        .doc(chatUID)
-        .set({"isListening": state, "isRecording": false}, SetOptions(merge: true));
+    FirebaseFirestore.instance.collection("chats").doc(chatUID).set(
+        {"isListening": state, "isRecording": false}, SetOptions(merge: true));
   }
 
   Stream<DocumentSnapshot> getChatState(String chatUID) {

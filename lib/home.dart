@@ -1,20 +1,21 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:wavemobileapp/authenticate.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wavemobileapp/permissions.dart';
+import 'package:wavemobileapp/status.dart';
 import 'contact_tile.dart';
 import 'contacts.dart';
-import 'authenticate.dart';
 import 'database.dart';
 
 class Home extends StatefulWidget {
   final User user;
+  final FirebaseAuth auth = FirebaseAuth.instance;
 
   Home(this.user);
 
@@ -73,10 +74,29 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
+        floatingActionButton: FloatingActionButton(
+          elevation: 0,
+          child: Icon(PhosphorIcons.plusBold),
+          onPressed: () async {
+            bool contactPermissionGranted = await getContactPermission();
+            if (contactPermissionGranted) {
+              getUsersFromContacts(context);
+            } else {
+              final ScaffoldMessengerState scaffoldMessenger =
+                  ScaffoldMessenger.of(context);
+              scaffoldMessenger.showSnackBar(
+                  SnackBar(content: Text("Please grant contact permission.")));
+            }
+          },
+        ),
+        backgroundColor: Theme.of(context).primaryColor,
         body: CustomScrollView(
           slivers: <Widget>[
             sliverAppBar(),
+            SliverToBoxAdapter(
+                child: Divider(
+              height: 1,
+            )),
             homeView(),
           ],
         ));
@@ -84,26 +104,37 @@ class _HomeState extends State<Home> {
 
   Widget sliverAppBar() {
     return SliverAppBar(
+      leading: GestureDetector(
+        onLongPressStart: (details) async {
+          //SECRET LOGOUT BUTTON FOR TESTING!!!
+          await widget.auth.signOut();
+          Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => Authenticate(widget.auth)),
+              (route) => false);
+        },
+        child: IconButton(
+          onPressed: null,
+          icon: Icon(
+            PhosphorIcons.eject,
+            color: Colors.transparent,
+          ),
+        ),
+      ),
+      elevation: 1,
       expandedHeight: 120,
       pinned: true,
       stretch: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).primaryColor,
       actions: <Widget>[
-        IconButton(
-          icon: Icon(Icons.emoji_emotions_outlined),
-          color: Colors.amber,
-          onPressed: () {},
-        ),
-        newShoutButton(context),
-        SizedBox(
-          width: 8,
-        )
+        StatusChip(),
+        SizedBox(width: 16),
       ],
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
-          'Shouts',
+          'shouts',
           style: TextStyle(
-            color: Colors.black87,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -138,26 +169,26 @@ class _HomeState extends State<Home> {
   }
 
   Widget homeView() {
-    return SliverPadding(
-        padding: EdgeInsets.all(16),
-        sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            childAspectRatio: 2 / 3,
-          ),
-          delegate: SliverChildBuilderDelegate(
-            (BuildContext context, int index) {
-              var data = chatQueue.elementAt(index);
-              return ContactTile(
-                myUID: widget.user.uid,
-                yourUID: data['yourUID'],
-                yourName: data['yourName'],
-              );
-            },
-            childCount: chatQueue.length,
-          ),
-        ));
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (BuildContext context, int index) {
+          var data = chatQueue.elementAt(index);
+          return Column(children: [
+            ContactTile(
+              myUID: widget.user.uid,
+              yourUID: data['yourUID'],
+              yourName: data['yourName'],
+            ),
+            Divider(
+              height: 1,
+              indent: 72,
+              endIndent: 16,
+            ),
+          ]);
+        },
+        childCount: chatQueue.length,
+      ),
+    );
   }
 
   getUsersFromContacts(context) {
@@ -172,15 +203,12 @@ class _HomeState extends State<Home> {
             child: Container(
               height: 640,
               child: Scaffold(
-                backgroundColor: Colors.white,
                 appBar: AppBar(
                   elevation: 1,
                   automaticallyImplyLeading: false,
-                  backgroundColor: Colors.white,
                   title: Text(
                     'New Shout',
                     style: TextStyle(
-                      color: Colors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
