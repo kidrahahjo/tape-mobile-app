@@ -9,31 +9,34 @@ import 'package:wavemobileapp/onboarding.dart';
 import 'package:wavemobileapp/shared_preferences_helper.dart';
 
 class Authenticate extends StatefulWidget {
-  FirebaseAuth auth;
-
-  Authenticate(this.auth);
-
+  final FirebaseAuth auth;
+  Authenticate(
+    this.auth,
+  );
   @override
-  State<StatefulWidget> createState() {
-    return _AuthenticateState();
-  }
+  _AuthenticateState createState() => _AuthenticateState();
 }
 
 class _AuthenticateState extends State<Authenticate> {
-  // initialising variables
-
-  // state control variables
-  bool showLoading = false;
-
-  // helper variables
-
   @override
   Widget build(BuildContext context) {
-    return showLoading
-        ? Center(
-            child: CircularProgressIndicator(),
+    return Scaffold(
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Center(
+            child: Text("welcome mf"),
+          ),
+          ElevatedButton(
+            child: Text('Login'),
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => MobileForm(widget.auth))),
           )
-        : MobileForm(widget.auth);
+        ],
+      ),
+    );
   }
 }
 
@@ -200,11 +203,11 @@ class _MobileFormState extends State<MobileForm> {
 }
 
 class OtpForm extends StatefulWidget {
-  FirebaseAuth auth;
-  String mobileNumber;
-  String verificationId;
-  int resendingToken;
-  var verificationThroughServer;
+  final FirebaseAuth auth;
+  final String mobileNumber;
+  final String verificationId;
+  final int resendingToken;
+  final verificationThroughServer;
   OtpForm(this.auth, this.mobileNumber, this.verificationId,
       this.resendingToken, this.verificationThroughServer);
   @override
@@ -241,15 +244,17 @@ class _OtpFormState extends State<OtpForm> {
             showLoading = false;
           });
           if (value.exists) {
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => Home(authCredential.user)));
+                    builder: (context) => Home(authCredential.user)),
+                (route) => false);
           } else {
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => Onboarding(authCredential)));
+                    builder: (context) => Onboarding(authCredential)),
+                (route) => false);
           }
         });
       } else {

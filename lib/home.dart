@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:wavemobileapp/authenticate.dart';
 
 import 'package:wavemobileapp/permissions.dart';
 import 'package:wavemobileapp/status.dart';
@@ -14,6 +15,7 @@ import 'database.dart';
 
 class Home extends StatefulWidget {
   final User user;
+  final FirebaseAuth auth = FirebaseAuth.instance;
 
   Home(this.user);
 
@@ -102,6 +104,24 @@ class _HomeState extends State<Home> {
 
   Widget sliverAppBar() {
     return SliverAppBar(
+      leading: GestureDetector(
+        onLongPressStart: (details) async {
+          //SECRET LOGOUT BUTTON FOR TESTING!!!
+          await widget.auth.signOut();
+          Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => Authenticate(widget.auth)),
+              (route) => false);
+        },
+        child: IconButton(
+          onPressed: null,
+          icon: Icon(
+            PhosphorIcons.eject,
+            color: Colors.transparent,
+          ),
+        ),
+      ),
       elevation: 1,
       expandedHeight: 120,
       pinned: true,

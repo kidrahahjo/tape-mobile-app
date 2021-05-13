@@ -19,7 +19,7 @@ void main() async {
         primaryColor: Color(0xff333333),
         accentColor: Color(0xffffa000),
       ),
-      home: Initialiser(),
+      home: Scaffold(body: Initialiser()),
     ),
   );
 }
@@ -38,23 +38,13 @@ class _InitialiserState extends State<Initialiser> {
   @override
   void initState() {
     super.initState();
+    getCurrentUser();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Center(
-            child: Text("welcome mf"),
-          ),
-          ElevatedButton(
-            child: Text('Begin'),
-            onPressed: () => getCurrentUser(),
-          ),
-        ],
-      ),
+    return Center(
+      child: CircularProgressIndicator(),
     );
   }
 
@@ -66,9 +56,9 @@ class _InitialiserState extends State<Initialiser> {
       SharedPreferenceHelper().saveUserId(await user.uid);
       SharedPreferenceHelper().saveUserPhoneNumber(await user.phoneNumber);
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => Authenticate(auth)));
+          context, MaterialPageRoute(builder: (context) => Home(user)));
     } else {
-      Navigator.push(
+      Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => Authenticate(auth)));
     }
   }
