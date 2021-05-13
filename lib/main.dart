@@ -56,7 +56,7 @@ class _InitialiserState extends State<Initialiser> {
       SharedPreferenceHelper().saveUserId(await user.uid);
       SharedPreferenceHelper().saveUserPhoneNumber(await user.phoneNumber);
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => Home(user)));
+          context, MaterialPageRoute(builder: (context) => Authenticate(auth)));
     } else {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => Authenticate(auth)));

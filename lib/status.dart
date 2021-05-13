@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter/services.dart';
 
 class StatusChip extends StatefulWidget {
   @override
@@ -37,6 +38,7 @@ class _StatusChipState extends State<StatusChip> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        HapticFeedback.lightImpact();
         showStatusOptions();
       },
       child: Chip(
@@ -81,12 +83,18 @@ class _StatusChipState extends State<StatusChip> {
                       mainAxisSize: MainAxisSize.min,
                       children: statusList.reversed
                           .map((i) => ListTile(
-                                selected: false,
+                                trailing: IconButton(
+                                  icon: Icon(PhosphorIcons.minus),
+                                  onPressed: () {
+                                    statusList.remove(i);
+                                  },
+                                ),
+                                selected: i == statusTextController.text,
                                 onTap: () {
                                   setState(() {
                                     statusTextController.text = i;
-                                    statusList.remove(i);
-                                    statusList.add(i);
+                                    // statusList.remove(i);
+                                    // statusList.add(i);
                                   });
                                   Navigator.pop(context);
                                 },
@@ -110,6 +118,7 @@ class _StatusChipState extends State<StatusChip> {
         statusTextController.text.trim() != "") {
       setState(() {
         statusList.add(statusTextController.text.trim());
+        statusTextController.text = statusTextController.text.trim();
       });
     }
   }

@@ -2,8 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:wavemobileapp/app_bar.dart';
-import 'package:wavemobileapp/chatpage.dart';
 import 'package:wavemobileapp/database.dart';
 import 'package:wavemobileapp/home.dart';
 import 'package:wavemobileapp/onboarding.dart';
@@ -42,7 +40,7 @@ class _AuthenticateState extends State<Authenticate> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).primaryColor,
         body: showLoading
             ? Center(
                 child: CircularProgressIndicator(),
@@ -54,116 +52,57 @@ class _AuthenticateState extends State<Authenticate> {
   }
 
   Widget getMobileNumberFormWidget(context) {
-    return Column(
-      children: <Widget>[
-        SizedBox(height: 40),
-        Container(
-          constraints: BoxConstraints.expand(
-            height: 150,
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: <Widget>[
+          Text(
+            "enter your phone number to start shouting!",
+            style: TextStyle(
+              fontSize: 24,
+              height: 1.4,
+            ),
           ),
-          alignment: Alignment.bottomLeft,
-          padding: EdgeInsets.all(20),
-          child: RichText(
-              text: TextSpan(
-                  text: "Hi, tell us your contact number to start ",
-                  style:
-                      TextStyle(fontSize: 28, height: 1.5, color: Colors.black),
-                  children: <TextSpan>[
-                TextSpan(
-                    text: 'shouting!',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ])),
-        ),
-        Padding(
-            padding: EdgeInsets.only(left: 20, right: 20, top: 20),
-            child: Material(
-              color: Color(0xFFF5F5F5),
-              shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.circular(15.0),
+          Column(
+            children: [
+              TextField(
+                controller: phoneController,
+                autofocus: true,
+                onChanged: (value) {
+                  setState(() {
+                    this.showMobileErrorMessage = false;
+                  });
+                },
+                keyboardType: TextInputType.number,
+                maxLength: 10,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                ],
               ),
-              child: Container(
-                constraints: BoxConstraints.expand(
-                  height: 50,
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      "+91",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    Expanded(
-                        child: Container(
-                            alignment: Alignment.bottomCenter,
-                            child: TextFormField(
-                              controller: phoneController,
-                              autofocus: true,
-                              style: TextStyle(fontSize: 16),
-                              onChanged: (value) {
-                                setState(() {
-                                  this.showMobileErrorMessage = false;
-                                });
-                              },
-                              decoration: InputDecoration(
-                                contentPadding: EdgeInsets.only(left: 15),
-                                border: InputBorder.none,
-                                counterText: "",
-                              ),
-                              keyboardType: TextInputType.number,
-                              maxLength: 10,
-                              inputFormatters: <TextInputFormatter>[
-                                FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9]')),
-                              ],
-                            ))),
-                  ],
-                ),
-              ),
-            )),
-        Padding(
-          padding: EdgeInsets.only(left: 20, right: 20),
-          child: Container(
-              constraints: BoxConstraints.expand(
-                height: 50,
-              ),
-              alignment: Alignment.topLeft,
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: Text(
+              Text(
                 showMobileErrorMessage ? "Error occurred, try again." : "",
                 style: TextStyle(fontSize: 14, color: Colors.red),
-              )),
-        ),
-        Spacer(),
-        Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Material(
-                color: Colors.black,
-                shape: ContinuousRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                child: Container(
-                    constraints: BoxConstraints.expand(
-                      height: 50,
-                    ),
-                    // padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: TextButton(
-                      child: Text(
-                        "Verify using security code",
-                        style: TextStyle(fontSize: 20, color: Colors.white),
-                      ),
-                      onPressed: () async {
-                        try {
-                          await verifyMobileNumber(phoneController.text);
-                        } catch (e) {
-                          setState(() {
-                            this.showMobileErrorMessage = true;
-                            this.showLoading = false;
-                          });
-                        }
-                      },
-                    )))),
-      ],
+              ),
+            ],
+          ),
+          ElevatedButton(
+            child: Text(
+              "get secret code",
+            ),
+            style: ButtonStyle(),
+            onPressed: () async {
+              try {
+                await verifyMobileNumber(phoneController.text);
+              } catch (e) {
+                setState(() {
+                  this.showMobileErrorMessage = true;
+                  this.showLoading = false;
+                });
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 

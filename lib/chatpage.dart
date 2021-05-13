@@ -248,6 +248,7 @@ class _ChatPageState extends State<ChatPage> {
           ? Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(160),
+                color: Colors.white10,
               ),
               width: 160,
               height: 160,
