@@ -38,7 +38,7 @@ class HomeViewModel extends BaseModel {
     chatsStream = _firestoreService.getUserChats(myUID);
     chatStreamSubscription = chatsStream.listen((event) async {
       // handle chat stream logic here
-      if (event.docs.length != 0) {
+      if (event.docChanges.length != 0) {
         List<Map<String, String>> chatListChanged = [];
         for (QueryDocumentSnapshot element in event.docs) {
           String uid = element.id;

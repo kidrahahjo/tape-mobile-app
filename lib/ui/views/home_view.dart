@@ -83,10 +83,12 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
+
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (BuildContext context, int index) {
           var data = viewModel.chatsList.elementAt(index);
+          print(data);
           return Column(children: [
             ContactTile(
               data['yourUID'],
@@ -107,7 +109,7 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
 class ContactTile extends ViewModelWidget<HomeViewModel> {
   final String yourUID;
 
-  ContactTile(this.yourUID) : super(reactive: false);
+  ContactTile(this.yourUID) : super(reactive: true);
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
