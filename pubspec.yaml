@@ -40,6 +40,9 @@ dependencies:
   path_provider: ^2.0.1
   uuid: ^3.0.4
   connectivity: ^3.0.3
+  stacked: ^2.1.4
+  provider: ^5.0.0
+  observable_ish: ^3.0.0
 
 dev_dependencies:
   flutter_test:
