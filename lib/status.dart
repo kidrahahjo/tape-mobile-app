@@ -12,6 +12,7 @@ class _StatusChipState extends State<StatusChip> {
   String currentStatus = 'What\'s happening?';
 
   final statusTextController = TextEditingController();
+  @override
   void initState() {
     statusTextController.addListener(() {
       statusTextController.text.trim() != ""
@@ -26,6 +27,7 @@ class _StatusChipState extends State<StatusChip> {
                   currentStatus = "What\'s happening?";
                 });
     });
+    super.initState();
   }
 
   @override

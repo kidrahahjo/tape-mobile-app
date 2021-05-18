@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wavemobileapp/locator.dart';
 import 'package:wavemobileapp/routing_constants.dart';
 import 'package:wavemobileapp/services/navigation_service.dart';
-import 'package:wavemobileapp/ui/views/startup_view.dart';
 import 'router.dart' as router;
 
 void main() async {

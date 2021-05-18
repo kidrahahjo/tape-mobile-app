@@ -22,7 +22,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       Map<String, String> arguments = settings.arguments as Map<String, String>;
       return MaterialPageRoute(
           builder: (context) =>
-              OnboardingView(arguments['userUID'], arguments['phoneNUmber']));
+              OnboardingView(arguments['userUID'], arguments['phoneNumber']));
     case ChatViewRoute:
       Map<String, String> arguments = settings.arguments as Map<String, String>;
       return MaterialPageRoute(

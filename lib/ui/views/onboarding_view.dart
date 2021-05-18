@@ -4,8 +4,8 @@ import 'package:stacked/stacked.dart';
 import 'package:wavemobileapp/viewmodel/onboarding_view_model.dart';
 
 class OnboardingView extends StatelessWidget {
-  String userUID;
-  String phoneNumber;
+  final String userUID;
+  final String phoneNumber;
 
   OnboardingView(this.userUID, this.phoneNumber);
 

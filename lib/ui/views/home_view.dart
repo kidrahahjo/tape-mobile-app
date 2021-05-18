@@ -88,7 +88,6 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
       delegate: SliverChildBuilderDelegate(
         (BuildContext context, int index) {
           var data = viewModel.chatsList.elementAt(index);
-          print(data);
           return Column(children: [
             ContactTile(
               data['yourUID'],

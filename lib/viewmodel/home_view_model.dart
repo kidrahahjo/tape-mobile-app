@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
-import 'package:flutter/animation.dart';
 import 'package:wavemobileapp/permissions.dart';
 import 'package:wavemobileapp/routing_constants.dart' as routes;
 import 'package:wavemobileapp/locator.dart';
@@ -56,7 +55,6 @@ class HomeViewModel extends BaseModel {
         }
         chatsList.clear();
         chatsList.addAll(chatListChanged);
-        print(chatsList);
         notifyListeners();
       }
     });
@@ -64,7 +62,7 @@ class HomeViewModel extends BaseModel {
 
   @override
   void dispose() {
-    // chatStreamSubscription?.cancel();
+    chatStreamSubscription?.cancel();
     super.dispose();
   }
 
@@ -108,21 +106,32 @@ class HomeViewModel extends BaseModel {
         }
       }
       List<Map<String, dynamic>> contactsData = [];
-      for (String number in userNumberContactNameMapping.keys) {
-        await _firestoreService.getUserFromPhone(number).then((querySnapshot) {
+      List<String> userContactsList =
+          userNumberContactNameMapping.keys.toList(growable: false);
+      for (int i = 0; i < userContactsList.length; i += 10) {
+        List<String> phoneNumbers = userContactsList.sublist(
+            i,
+            i + 10 <= userContactsList.length
+                ? i + 10
+                : userContactsList.length);
+        await _firestoreService
+            .getUserFromPhone(phoneNumbers)
+            .then((querySnapshot) {
           querySnapshot.docs.forEach((element) {
             String userUID = element.id;
             Map<String, dynamic> metadata = element.data();
+            String phone = metadata['phoneNumber'];
             String displayName = metadata['displayName'];
             contactsData.add({
               'yourUID': userUID,
               'yourName': displayName,
-              'yourPhoneNumber': number,
+              'yourPhoneNumber': phone,
             });
             userUIDNameMapping[userUID] = displayName;
           });
         });
       }
+
       contactsMap.clear();
       contactsMap.addAll(contactsData);
       isFetchingContacts = false;

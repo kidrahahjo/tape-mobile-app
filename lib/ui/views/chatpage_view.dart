@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:wavemobileapp/viewmodel/chat_view_model.dart';
@@ -28,10 +27,6 @@ class ChatPageView extends StatelessWidget {
                           MainHeader(),
                           CenterImageDisplay(),
                           MainFooter(),
-                          // centerImageDisplay(),
-                          // mainFooter(),
-                          // ShowTemporaryRecordingHelperWidget(),
-                          // MainFooter(),
                         ]))));
       },
     );
@@ -115,14 +110,28 @@ class MainFooter extends ViewModelWidget<ChatViewModel> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            height: 80,
-            width: 80,
-          ),
+          SendingShoutIndicator(),
           RecordButton(),
           SkipButton(),
         ],
       ),
+    );
+  }
+}
+
+class SendingShoutIndicator extends ViewModelWidget<ChatViewModel> {
+  SendingShoutIndicator() : super(reactive: true);
+
+  @override
+  Widget build(BuildContext context, ChatViewModel viewModel) {
+    return SizedBox(
+      height: 80,
+      width: 80,
+      child: viewModel.sendingShout
+          ? Center(
+              child: CircularProgressIndicator(),
+            )
+          : null,
     );
   }
 }
@@ -195,6 +204,8 @@ class SkipButton extends ViewModelWidget<ChatViewModel> {
 }
 
 class CenterImageDisplay extends ViewModelWidget<ChatViewModel> {
+  CenterImageDisplay() : super(reactive: true);
+
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return Column(children: <Widget>[
@@ -230,6 +241,8 @@ class RecordingDisplay extends ViewModelWidget<ChatViewModel> {
 }
 
 class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
+  CenterStatusDisplay() : super(reactive: true);
+
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return Text(
@@ -239,9 +252,11 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
               ? (viewModel.numberOfLonelyShouts == null &&
                       viewModel.myFirstShoutSent == null)
                   ? "Hold to record, and release to send!"
-                  : viewModel.myFirstShoutSent == null
+                  : viewModel.hasPlayed
                       ? "${viewModel.yourName} played your shouts!"
-                      : "You sent ${viewModel.numberOfLonelyShouts} shouts!"
+                      : viewModel.numberOfLonelyShouts == 0
+                          ? ""
+                          : "You sent ${viewModel.numberOfLonelyShouts} shouts!"
               : viewModel.shoutQueue.length == 1
                   ? "${viewModel.yourName} sent a shout!"
                   : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.shoutQueue.length.toString()}",
@@ -304,9 +319,11 @@ class CircularStatusAvatar extends ViewModelWidget<ChatViewModel> {
           (viewModel.numberOfLonelyShouts == null &&
                   viewModel.myFirstShoutSent == null)
               ? PhosphorIcons.microphoneThin
-              : viewModel.myFirstShoutSent == null
-                  ? PhosphorIcons.megaphoneThin
-                  : PhosphorIcons.paperPlaneTiltThin,
+              : viewModel.hasPlayed
+                  ? PhosphorIcons.paperPlaneTiltThin
+                  : viewModel.numberOfLonelyShouts == 0
+                      ? PhosphorIcons.microphoneThin
+                      : PhosphorIcons.paperPlaneTiltThin,
           size: 48,
           color: Theme.of(context).accentColor,
         ),

@@ -12,8 +12,6 @@ import 'package:wavemobileapp/services/chat_service.dart';
 import 'package:wavemobileapp/services/firebase_storage_service.dart';
 import 'package:wavemobileapp/services/firstore_service.dart';
 import 'package:wavemobileapp/services/navigation_service.dart';
-import 'package:wavemobileapp/viewmodel/base_model.dart';
-import 'package:wavemobileapp/routing_constants.dart' as routes;
 
 class ChatViewModel extends ReactiveViewModel {
   final String yourUID;
@@ -32,8 +30,6 @@ class ChatViewModel extends ReactiveViewModel {
   Queue<String> shoutQueue = new Queue<String>();
   Queue<String> shoutsToDelete = new Queue<String>();
   int currentShoutPlaying = 1;
-  String audioUID;
-  String audioPath;
 
   // current state related variables
   bool youAreRecording = false;
@@ -41,9 +37,11 @@ class ChatViewModel extends ReactiveViewModel {
   String yourFirstShoutReceived;
   String myFirstShoutSent;
   int numberOfLonelyShouts;
+  bool hasPlayed = false;
 
   // recording related variables
-  bool iAmRecording = false;
+  bool _record = false;
+  bool _sendingShout = false;
 
   // player related variables
   bool autoplay = false;
@@ -78,6 +76,10 @@ class ChatViewModel extends ReactiveViewModel {
 
   bool get iAmListening => _chatService.isPlayingShout;
 
+  bool get iAmRecording => _chatService.isRecordingShout;
+
+  bool get sendingShout => _sendingShout;
+
   enableShoutsStream() {
     shoutsStream =
         _firestoreService.fetchEndToEndShoutsFromDatabase(chatForMeUID);
@@ -89,7 +91,8 @@ class ChatViewModel extends ReactiveViewModel {
           if (autoplay && !(iAmRecording || iAmListening)) {
             currentShoutPlaying = shoutQueue.length;
             startPlaying();
-          } else if (showReplay == true && currentShoutPlaying == shoutQueue.length - 1) {
+          } else if (showReplay == true &&
+              currentShoutPlaying == shoutQueue.length - 1) {
             currentShoutPlaying = shoutQueue.length;
             startPlaying();
           }
@@ -122,10 +125,7 @@ class ChatViewModel extends ReactiveViewModel {
         Map<String, dynamic> data = event.data();
         numberOfLonelyShouts = data['numberOfLonelyShouts'];
         myFirstShoutSent = data['firstShoutSent'];
-        if (myFirstShoutSent == null && this.numberOfLonelyShouts != null) {
-          // firstShoutSent variable changed in database by other user
-          numberOfLonelyShouts = 0;
-        }
+        hasPlayed = data['hasPlayed'];
       } else {
         myFirstShoutSent = null;
         numberOfLonelyShouts = null;
@@ -143,9 +143,9 @@ class ChatViewModel extends ReactiveViewModel {
   @override
   void dispose() {
     _chatService.cancelSubscriptions();
-    // shoutsStreamSubscription?.cancel();
-    // chatStateStreamSubscription?.cancel();
-    // myShoutsSentStateStreamSubscription?.cancel();
+    shoutsStreamSubscription?.cancel();
+    chatStateStreamSubscription?.cancel();
+    myShoutsSentStateStreamSubscription?.cancel();
     super.dispose();
   }
 
@@ -162,68 +162,67 @@ class ChatViewModel extends ReactiveViewModel {
   }
 
   void startRecording() async {
+    _record = true;
+    bool continueRecording = true;
     shoutsToDelete = new Queue<String>();
     for (String val in shoutQueue) {
       shoutsToDelete.add(val);
     }
-    iAmRecording = true;
-    bool continueRecording = true;
-    audioUID = Uuid().v4().replaceAll("-", "");
+    String audioUID = Uuid().v4().replaceAll("-", "");
     var tempDir = await getTemporaryDirectory();
-    audioPath = '${tempDir.path}/$audioUID.aac';
-    if (continueRecording == iAmRecording) {
+    String audioPath = '${tempDir.path}/$audioUID.aac';
+    if (continueRecording == _record) {
+      _chatService.startRecording(audioUID, audioPath);
       _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
-      _chatService.startRecording(audioPath);
-    } else {
-      // show snackbar
     }
   }
 
   void stopRecording() async {
-    iAmRecording = false;
-    notifyListeners();
-    _firestoreService.setRecordingStateToDatabase(chatForYouUID, false);
+    _record = false;
     if (_chatService.recordingTime == "" ||
         _chatService.recordingTime == "0s") {
-      _chatService.stopRecording();
-      // show snackbar
-    } else {
       await _chatService.stopRecording();
-      currentShoutPlaying = 1;
-      bool updateData = false;
-      if (shoutsToDelete.contains(yourFirstShoutReceived)) {
-        updateData = true;
-      }
-      for (String val in shoutsToDelete) {
-        _firestoreService
-            .updateYourShoutState(chatForYouUID, val)
-            .onError((error, stackTrace) => null)
-            .then((value) {
-          shoutQueue.remove(val);
-        });
-      }
-      notifyListeners();
+      // show snackbar
+      print('recording too short');
+    } else {
       try {
+        _sendingShout = true;
+        notifyListeners();
+        List<String> audioVariables = await _chatService.stopRecording();
+        currentShoutPlaying = 1;
+        if (shoutsToDelete.contains(yourFirstShoutReceived)) {
+          _firestoreService.updateChatState(chatForMeUID, {
+            "firstShoutSent": null,
+            "numberOfLonelyShouts": 0,
+          });
+        }
+
+        for (String val in shoutsToDelete) {
+          await _firestoreService
+              .updateYourShoutState(chatForMeUID, val)
+              .onError((error, stackTrace) => null);
+          shoutQueue.remove(val);
+        }
         Map<String, dynamic> data = {};
         if (numberOfLonelyShouts == 0 || numberOfLonelyShouts == null) {
-          data['firstShoutSent'] = audioUID;
+          data['firstShoutSent'] = audioVariables[1];
+          data['hasPlayed'] = false;
         }
         data['numberOfLonelyShouts'] =
             numberOfLonelyShouts == null ? 1 : numberOfLonelyShouts + 1;
-        _uploadAudio(audioPath, audioUID, data);
-        if (updateData) {
-          _firestoreService.updateChatState(chatForMeUID, {
-            "firstShoutSent": null,
-          });
-        }
+        _firestoreService.updateChatState(chatForYouUID, data);
+        _uploadAudio(audioVariables[0], audioVariables[1]);
       } catch (e) {
+        _sendingShout = false;
+        notifyListeners();
         // show failed to send snackbar
+        print('failed to send audio 1');
       }
     }
+    _firestoreService.setRecordingStateToDatabase(chatForYouUID, false);
   }
 
-  _uploadAudio(String filePath, String currentAudioUID,
-      Map<String, dynamic> data) async {
+  _uploadAudio(String filePath, String currentAudioUID) async {
     File file = File(filePath);
     await _firebaseStorageService
         .getLocationReference(chatForYouUID, currentAudioUID)
@@ -233,10 +232,9 @@ class ChatViewModel extends ReactiveViewModel {
             myUID, yourUID, chatForYouUID, currentAudioUID, DateTime.now())
         .onError((error, stackTrace) {
       // show failed to send snackbar
+      print('failed to send audio 2');
     }).whenComplete(() {
-      _firestoreService.updateChatState(chatForYouUID, data);
-      audioUID = null;
-      audioPath = null;
+      _sendingShout = false;
       notifyListeners();
     });
   }
@@ -265,7 +263,7 @@ class ChatViewModel extends ReactiveViewModel {
             .getDownloadURL();
         if (thisAudioUID == yourFirstShoutReceived) {
           _firestoreService.updateChatState(chatForMeUID, {
-            "firstShoutSent": null,
+            "hasPlayed": true,
           });
         }
         if (current == currentShoutPlaying) {

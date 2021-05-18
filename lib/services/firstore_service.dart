@@ -24,9 +24,9 @@ class FirestoreService {
         .snapshots();
   }
 
-  Future<QuerySnapshot> getUserFromPhone(String phoneNumber) {
+  Future<QuerySnapshot> getUserFromPhone(List<String> phoneNumbers) {
     return _userCollectionReference
-        .where("phoneNumber", isEqualTo: phoneNumber)
+        .where("phoneNumber", whereIn: phoneNumbers)
         .get();
   }
 

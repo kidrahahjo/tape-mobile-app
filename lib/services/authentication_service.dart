@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
 import 'package:wavemobileapp/locator.dart';
 import 'package:wavemobileapp/services/firstore_service.dart';
 
