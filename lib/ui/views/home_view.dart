@@ -83,14 +83,13 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
-
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (BuildContext context, int index) {
-          var data = viewModel.chatsList.elementAt(index);
+          String uid = viewModel.chatsList.elementAt(index);
           return Column(children: [
             ContactTile(
-              data['yourUID'],
+              uid,
             ),
             Divider(
               height: 1,
@@ -126,10 +125,10 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
             backgroundColor: Colors.white12,
           ),
           title: Text(
-            viewModel.userUIDNameMapping[yourUID],
+            viewModel.getUserName(yourUID),
             style: TextStyle(),
           ),
-          subtitle: Text('Vibing'),
+          subtitle: Text(viewModel.getUserStatus(yourUID)),
         ));
   }
 }
@@ -152,7 +151,10 @@ class ContactsButton extends ViewModelWidget<HomeViewModel> {
               context: context,
               enableDrag: true,
               builder: (BuildContext context) {
-                return ListenableProvider.value(value: myModel, child: ContactModalSheet(),);
+                return ListenableProvider.value(
+                  value: myModel,
+                  child: ContactModalSheet(),
+                );
               });
         } else {
           final ScaffoldMessengerState scaffoldMessenger =
@@ -166,7 +168,6 @@ class ContactsButton extends ViewModelWidget<HomeViewModel> {
 }
 
 class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
-
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
     return ClipRRect(
@@ -214,10 +215,7 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
     return ListView.builder(
       itemCount: viewModel.contactsMap.length,
       itemBuilder: (BuildContext context, int index) {
-        var data = viewModel.contactsMap.elementAt(index);
-        String phone = data['yourPhoneNumber'];
-        String displayName = data['yourName'];
-        String uid = data['yourUID'];
+        String uid = viewModel.contactsMap.elementAt(index);
         return Column(children: [
           ListTile(
             onTap: () {
@@ -230,8 +228,8 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
                 color: Colors.white,
               ),
             ),
-            title: Text(displayName),
-            subtitle: Text(phone),
+            title: Text(viewModel.getUserName(uid)),
+            subtitle: Text(viewModel.getPhoneNumber(uid)),
           ),
           Divider(
             height: 1,

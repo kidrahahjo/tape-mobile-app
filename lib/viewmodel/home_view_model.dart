@@ -8,6 +8,7 @@ import 'package:wavemobileapp/services/authentication_service.dart';
 import 'package:wavemobileapp/services/firstore_service.dart';
 import 'package:wavemobileapp/services/navigation_service.dart';
 import 'package:wavemobileapp/viewmodel/base_model.dart';
+import 'package:flutter_cache/flutter_cache.dart' as cache;
 
 class HomeViewModel extends BaseModel {
   final String myUID;
@@ -18,19 +19,58 @@ class HomeViewModel extends BaseModel {
   final NavigationService _navigationService = locator<NavigationService>();
 
   // chat related variables
-  List<Map<String, dynamic>> chatsList = [];
+  List<String> chatsList = [];
   Stream<QuerySnapshot> chatsStream;
   StreamSubscription<QuerySnapshot> chatStreamSubscription;
-  Map<String, String> userUIDNameMapping = {};
+  Map<String, String> userUIDDisplayNameMapping = {};
+  Map<String, String> userUIDNumberMapping = {};
 
   // contact related variables
-  List<Map<String, dynamic>> contactsMap = [];
-  bool isFetchingContacts = true;
+  List<String> contactsMap = [];
+  bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
 
   HomeViewModel(this.myUID, this.myPhoneNumber) {
+    initialise();
+  }
+
+  initialise() async {
+    print('start');
+    await getCache();
+    print('done');
     initialiseChatsStream();
     fetchAllContacts();
+  }
+
+  getCache() async {
+    try {
+      contactsMap =
+          List<String>.from(await cache.load('contactsMap', contactsMap));
+    } catch (e) {
+      print(e);
+      contactsMap = [];
+    }
+    try {
+      userUIDDisplayNameMapping = Map<String, String>.from(
+          await cache.load('userUIDDisplayNameMapping', <String, String>{}));
+    } catch (e) {
+      print(e);
+      userUIDDisplayNameMapping = {};
+    }
+    try {
+      userUIDNumberMapping = Map<String, String>.from(
+          await cache.load('userUIDNumberMapping', userUIDNumberMapping));
+    } catch (e) {
+      print(e);
+      userUIDNumberMapping = {};
+    }
+    try {
+      userNumberContactNameMapping = Map<String, String>.from(await cache.load(
+          'userNumberContactNameMapping', userNumberContactNameMapping));
+    } catch (e) {
+      print(e);
+      userNumberContactNameMapping = {};
+    }
   }
 
   initialiseChatsStream() async {
@@ -38,21 +78,17 @@ class HomeViewModel extends BaseModel {
     chatStreamSubscription = chatsStream.listen((event) async {
       // handle chat stream logic here
       if (event.docChanges.length != 0) {
-        List<Map<String, String>> chatListChanged = [];
+        List<String> chatListChanged = [];
         for (QueryDocumentSnapshot element in event.docs) {
           String uid = element.id;
-          String userName = userUIDNameMapping.containsKey(uid)
-              ? userUIDNameMapping[uid]
-              : await _firestoreService.getUserData(uid).then((value) {
-                  String name = value.get('displayName');
-                  userUIDNameMapping[uid] = name;
-                  return name;
-                });
-          chatListChanged.add({
-            'yourUID': uid,
-            'yourName': userName,
+          chatListChanged.add(uid);
+          await _firestoreService.getUserData(uid).then((value) {
+            userUIDDisplayNameMapping[uid] = value.get('displayName');
+            userUIDNumberMapping[uid] = value.get('phoneNumber');
           });
         }
+        cache.remember('userUIDDisplayNameMapping', userUIDDisplayNameMapping);
+        cache.remember('userUIDNumberMapping', userUIDNumberMapping);
         chatsList.clear();
         chatsList.addAll(chatListChanged);
         notifyListeners();
@@ -94,49 +130,67 @@ class HomeViewModel extends BaseModel {
   fetchAllContacts() async {
     bool contactPermission = await getContactPermission();
     if (contactPermission) {
-      isFetchingContacts = true;
-      notifyListeners();
-      final Iterable<Contact> contacts = await ContactsService.getContacts();
-      for (Contact contact in contacts) {
-        for (Item phone in contact.phones) {
-          String number = refactorPhoneNumber(phone.value.toString());
-          if (number != null) {
-            userNumberContactNameMapping[number] = contact.displayName;
+      if (contactsMap.length == 0) {
+        isFetchingContacts = true;
+        notifyListeners();
+        final Iterable<Contact> contacts = await ContactsService.getContacts();
+        for (Contact contact in contacts) {
+          for (Item phone in contact.phones) {
+            String number = refactorPhoneNumber(phone.value.toString());
+            if (number != null) {
+              userNumberContactNameMapping[number] = contact.displayName;
+            }
           }
         }
-      }
-      List<Map<String, dynamic>> contactsData = [];
-      List<String> userContactsList =
-          userNumberContactNameMapping.keys.toList(growable: false);
-      for (int i = 0; i < userContactsList.length; i += 10) {
-        List<String> phoneNumbers = userContactsList.sublist(
-            i,
-            i + 10 <= userContactsList.length
-                ? i + 10
-                : userContactsList.length);
-        await _firestoreService
-            .getUserFromPhone(phoneNumbers)
-            .then((querySnapshot) {
-          querySnapshot.docs.forEach((element) {
-            String userUID = element.id;
-            Map<String, dynamic> metadata = element.data();
-            String phone = metadata['phoneNumber'];
-            String displayName = metadata['displayName'];
-            contactsData.add({
-              'yourUID': userUID,
-              'yourName': displayName,
-              'yourPhoneNumber': phone,
+        cache.remember(
+            'userNumberContactNameMapping', userNumberContactNameMapping);
+        List<String> contactsData = [];
+        List<String> userContactsList =
+            userNumberContactNameMapping.keys.toList(growable: false);
+        for (int i = 0; i < userContactsList.length; i += 10) {
+          List<String> phoneNumbers = userContactsList.sublist(
+              i,
+              i + 10 <= userContactsList.length
+                  ? i + 10
+                  : userContactsList.length);
+          await _firestoreService
+              .getUserFromPhone(phoneNumbers)
+              .then((querySnapshot) {
+            querySnapshot.docs.forEach((element) {
+              String userUID = element.id;
+              Map<String, dynamic> metadata = element.data();
+              String phone = metadata['phoneNumber'];
+              String displayName = metadata['displayName'];
+              contactsData.add(userUID);
+              userUIDDisplayNameMapping[userUID] = displayName;
+              userUIDNumberMapping[userUID] = phone;
             });
-            userUIDNameMapping[userUID] = displayName;
           });
-        });
-      }
+        }
+        contactsMap.clear();
+        contactsMap.addAll(contactsData);
+        cache.remember('contactsMap', contactsMap);
+        cache.remember('userUIDDisplayNameMapping', userUIDDisplayNameMapping);
+        cache.remember('userUIDNumberMapping', userUIDNumberMapping);
 
-      contactsMap.clear();
-      contactsMap.addAll(contactsData);
-      isFetchingContacts = false;
+        isFetchingContacts = false;
+      }
       notifyListeners();
     }
+  }
+
+  String getUserName(String uid) {
+    String number = userUIDNumberMapping[uid];
+    String contactName = userNumberContactNameMapping[number];
+    if (contactName != null) {
+      return contactName;
+    } else {
+      return number;
+    }
+  }
+
+  String getUserStatus(String uid) {
+    return 'Vibing';
   }
 
   void signOut() async {
@@ -148,6 +202,7 @@ class HomeViewModel extends BaseModel {
 
   void refreshContacts() {
     if (!this.isFetchingContacts) {
+      cache.destroy('contactsMap');
       fetchAllContacts();
     }
   }
@@ -157,7 +212,11 @@ class HomeViewModel extends BaseModel {
     bool storagePermission = await getStoragePermission();
     if (microphonePermission && storagePermission) {
       _navigationService.navigateTo(routes.ChatViewRoute,
-          arguments: {'yourUID': uid, 'yourName': userUIDNameMapping[uid]});
+          arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
     }
+  }
+
+  String getPhoneNumber(String uid) {
+    return userUIDNumberMapping[uid];
   }
 }
