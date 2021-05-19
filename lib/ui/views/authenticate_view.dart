@@ -38,7 +38,6 @@ class MobileFormWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: Padding(
@@ -68,7 +67,9 @@ class MobileFormWidget extends StatelessWidget {
                 ),
                 Text(
                   model.mobileError ? "Oops, try again." : "",
-                  style: TextStyle(fontSize: 14, color: Colors.red),
+                  style: TextStyle(
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -82,8 +83,6 @@ class MobileFormWidget extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                     elevation: 0,
                     textStyle: TextStyle(),
-                    primary: Colors.white10,
-                    onPrimary: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8))),
                 onPressed: () {
@@ -108,7 +107,6 @@ class OTPFormWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(PhosphorIcons.arrowLeft),
@@ -145,7 +143,9 @@ class OTPFormWidget extends StatelessWidget {
                   ),
                   Text(
                     model.otpError ? "Invalid OTP, try again." : "",
-                    style: TextStyle(fontSize: 14, color: Colors.red),
+                    style: TextStyle(
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -161,8 +161,6 @@ class OTPFormWidget extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                           elevation: 0,
                           textStyle: TextStyle(),
-                          primary: Colors.white10,
-                          onPrimary: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8))),
                       onPressed: () {},
@@ -179,8 +177,6 @@ class OTPFormWidget extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                           elevation: 0,
                           textStyle: TextStyle(),
-                          primary: Colors.white10,
-                          onPrimary: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8))),
                       onPressed: () {

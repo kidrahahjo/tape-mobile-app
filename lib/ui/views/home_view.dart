@@ -18,7 +18,6 @@ class HomeView extends StatelessWidget {
       viewModelBuilder: () => HomeViewModel(userUID, phoneNumber),
       builder: (context, model, child) {
         return Scaffold(
-          backgroundColor: Theme.of(context).primaryColor,
           floatingActionButton: ContactsButton(),
           body: CustomScrollView(
             slivers: <Widget>[
@@ -51,7 +50,7 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
           onPressed: null,
           icon: Icon(
             PhosphorIcons.eject,
-            // color: Colors.transparent,
+            color: Colors.transparent,
           ),
         ),
       ),
@@ -59,7 +58,6 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
       expandedHeight: 120,
       pinned: true,
       stretch: true,
-      backgroundColor: Theme.of(context).primaryColor,
       // actions: <Widget>[
       // StatusChip(),
       // SizedBox(width: 16),
@@ -120,9 +118,7 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
           leading: CircleAvatar(
             child: Icon(
               PhosphorIcons.user,
-              color: Colors.white,
             ),
-            backgroundColor: Colors.white12,
           ),
           title: Text(
             viewModel.getUserName(yourUID),
@@ -139,8 +135,7 @@ class ContactsButton extends ViewModelWidget<HomeViewModel> {
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
     return FloatingActionButton(
-      elevation: 0,
-      child: Icon(PhosphorIcons.plusBold),
+      child: Icon(PhosphorIcons.plus),
       onPressed: () async {
         bool contactPermissionGranted = await getContactPermission();
         if (contactPermissionGranted) {
@@ -176,7 +171,7 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
         height: 640,
         child: Scaffold(
           appBar: AppBar(
-            elevation: 1,
+            elevation: 0,
             automaticallyImplyLeading: false,
             title: Text(
               'New Shout',
@@ -222,10 +217,8 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
               viewModel.goToContactScreen(uid);
             },
             leading: CircleAvatar(
-              backgroundColor: Colors.white12,
               child: Icon(
                 PhosphorIcons.user,
-                color: Colors.white,
               ),
             ),
             title: Text(viewModel.getUserName(uid)),

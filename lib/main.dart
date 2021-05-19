@@ -17,11 +17,11 @@ void main() async {
       initialRoute: StartupViewRoute,
       navigatorKey: locator<NavigationService>().navigatorKey,
       title: "shout",
+      darkTheme: ThemeData(),
       theme: ThemeData(
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         fontFamily: GoogleFonts.dmSans().fontFamily,
-        primaryColor: Color(0xff333333),
-        accentColor: Color(0xffffa000),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
       ),
     ),
   );
