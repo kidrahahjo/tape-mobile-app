@@ -16,8 +16,7 @@ class ChatPageView extends StatelessWidget {
       viewModelBuilder: () => ChatViewModel(yourUID, yourName),
       builder: (context, model, child) {
         return Scaffold(
-            backgroundColor: Theme.of(context).primaryColor,
-            resizeToAvoidBottomInset: false,
+            resizeToAvoidBottomInset: true,
             body: SafeArea(
                 child: Padding(
                     padding: const EdgeInsets.fromLTRB(0, 24, 0, 24),
@@ -46,7 +45,6 @@ class MainHeader extends ViewModelWidget<ChatViewModel> {
           IconButton(
               icon: Icon(
                 PhosphorIcons.caretLeft,
-                color: Colors.white,
                 size: 32,
               ),
               onPressed: () {
@@ -58,10 +56,7 @@ class MainHeader extends ViewModelWidget<ChatViewModel> {
             ),
             Text(
               viewModel.yourName,
-              style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             SizedBox(
               height: 8,
@@ -90,13 +85,15 @@ class CurrentStatus extends ViewModelWidget<ChatViewModel> {
             ? Text(
                 viewModel.youAreRecording ? "Recording..." : "Listening...",
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).accentColor),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               )
             : Text(
                 "Vibing",
-                style: TextStyle(fontSize: 16, color: Colors.white70),
+                style: TextStyle(
+                  fontSize: 16,
+                ),
               ));
   }
 }
@@ -151,17 +148,10 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
       onHorizontalDragEnd: (value) {
         viewModel.stopRecording();
       },
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Theme.of(context).accentColor,
-        ),
-        width: 80,
-        height: 80,
+      child: FloatingActionButton(
+        onPressed: null,
         child: Icon(
-          PhosphorIcons.broadcast,
-          size: 36,
-          color: Theme.of(context).primaryColor,
+          PhosphorIcons.voicemail,
         ),
       ),
     );
@@ -182,17 +172,13 @@ class SkipButton extends ViewModelWidget<ChatViewModel> {
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xfff5f5f5),
                   ),
                   width: 60,
                   height: 60,
                   child: IconButton(
                     icon: Icon(
                       PhosphorIcons.skipForward,
-                      color: Colors.white,
                     ),
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
                     onPressed: () {
                       viewModel.playNextShout();
                     },
@@ -226,14 +212,15 @@ class RecordingDisplay extends ViewModelWidget<ChatViewModel> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(160),
-        color: Colors.white10,
       ),
       width: 160,
       height: 160,
       child: Center(
         child: Text(
           "Recording...",
-          style: TextStyle(fontSize: 16, color: Theme.of(context).accentColor),
+          style: TextStyle(
+            fontSize: 16,
+          ),
         ),
       ),
     );
@@ -261,7 +248,9 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
                   ? "${viewModel.yourName} sent a shout!"
                   : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.shoutQueue.length.toString()}",
       style: TextStyle(
-          fontSize: 16, fontWeight: FontWeight.w400, color: Colors.white70),
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+      ),
     );
   }
 }
@@ -271,7 +260,6 @@ class ShoutsPlayerDisplay extends ViewModelWidget<ChatViewModel> {
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black54,
         borderRadius: BorderRadius.circular(160),
       ),
       width: 160,
@@ -286,7 +274,6 @@ class ShoutsPlayerDisplay extends ViewModelWidget<ChatViewModel> {
                       : viewModel.iAmListening
                           ? PhosphorIcons.stop
                           : PhosphorIcons.play,
-                  color: Colors.white,
                   size: 36,
                 ),
                 onPressed: () {
@@ -307,26 +294,17 @@ class ShoutsPlayerDisplay extends ViewModelWidget<ChatViewModel> {
 class CircularStatusAvatar extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(160),
-        color: Colors.white10,
-      ),
-      width: 160,
-      height: 160,
-      child: Center(
-        child: Icon(
-          (viewModel.numberOfLonelyShouts == null &&
-                  viewModel.myFirstShoutSent == null)
-              ? PhosphorIcons.microphoneThin
-              : viewModel.hasPlayed
-                  ? PhosphorIcons.paperPlaneTiltThin
-                  : viewModel.numberOfLonelyShouts == 0
-                      ? PhosphorIcons.microphoneThin
-                      : PhosphorIcons.paperPlaneTiltThin,
-          size: 48,
-          color: Theme.of(context).accentColor,
-        ),
+    return Center(
+      child: Icon(
+        (viewModel.numberOfLonelyShouts == null &&
+                viewModel.myFirstShoutSent == null)
+            ? PhosphorIcons.microphoneThin
+            : viewModel.hasPlayed
+                ? PhosphorIcons.paperPlaneTiltThin
+                : viewModel.numberOfLonelyShouts == 0
+                    ? PhosphorIcons.microphoneThin
+                    : PhosphorIcons.paperPlaneTiltThin,
+        size: 120,
       ),
     );
   }

@@ -12,14 +12,16 @@ class OnboardingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ViewModelBuilder<OnboardingViewModel>.reactive(
-        viewModelBuilder: () => OnboardingViewModel(this.userUID, this.phoneNumber),
+        viewModelBuilder: () =>
+            OnboardingViewModel(this.userUID, this.phoneNumber),
         builder: (context, model, child) {
           return model.busy
               ? Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          ) : OnboardingForm(model);
+                  body: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : OnboardingForm(model);
         });
   }
 }
@@ -42,7 +44,6 @@ class _OnboardingFormState extends State<OnboardingForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: Padding(
@@ -68,7 +69,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 ),
                 Text(
                   widget.model.showError ? "Oops, try again." : "",
-                  style: TextStyle(fontSize: 14, color: Colors.red),
+                  style: TextStyle(
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -82,8 +85,6 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 style: ElevatedButton.styleFrom(
                     elevation: 0,
                     textStyle: TextStyle(),
-                    primary: Colors.white10,
-                    onPrimary: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8))),
                 onPressed: () async {
