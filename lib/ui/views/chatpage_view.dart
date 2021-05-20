@@ -19,7 +19,10 @@ class ChatPageView extends StatelessWidget {
             appBar: AppBar(
               title: Text(
                 yourName,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               leading: IconButton(
                 icon: Icon(
@@ -56,11 +59,14 @@ class CurrentStatus extends ViewModelWidget<ChatViewModel> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
+              color: Theme.of(context).accentColor,
             ),
           )
         : Text(
             "Vibing",
-            style: TextStyle(),
+            style: TextStyle(
+              fontSize: 16,
+            ),
           );
   }
 }
@@ -71,9 +77,12 @@ class MainFooter extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        SendingShoutIndicator(),
+        SizedBox(
+          width: 64,
+          height: 64,
+        ),
         RecordButton(),
         SkipButton(),
       ],
@@ -114,15 +123,15 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
         viewModel.stopRecording();
       },
       child: SizedBox(
-        height: 64,
-        width: 64,
+        height: 72,
+        width: 72,
         child: RawMaterialButton(
           shape: CircleBorder(),
-          fillColor: Colors.black87,
+          fillColor: Theme.of(context).accentColor,
           onPressed: null,
           child: Icon(
             PhosphorIcons.voicemail,
-            color: Colors.white,
+            color: Colors.black,
           ),
         ),
       ),
@@ -136,28 +145,20 @@ class SkipButton extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return SizedBox(
-        height: 80,
-        width: 80,
-        child: viewModel.currentShoutPlaying < viewModel.shoutQueue.length
-            ? Padding(
-                padding: EdgeInsets.only(top: 10, bottom: 10, left: 20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
-                  width: 60,
-                  height: 60,
-                  child: IconButton(
-                    icon: Icon(
-                      PhosphorIcons.skipForward,
-                    ),
-                    onPressed: () {
-                      viewModel.playNextShout();
-                    },
-                  ),
-                ),
-              )
-            : null);
+      width: 64,
+      height: 64,
+      child: viewModel.currentShoutPlaying < viewModel.shoutQueue.length
+          ? RawMaterialButton(
+              onPressed: () {
+                viewModel.playNextShout();
+              },
+              shape: CircleBorder(),
+              child: Icon(
+                PhosphorIcons.skipForward,
+              ),
+            )
+          : null,
+    );
   }
 }
 
@@ -169,9 +170,29 @@ class CenterImageDisplay extends ViewModelWidget<ChatViewModel> {
     return Column(children: <Widget>[
       viewModel.iAmRecording
           ? RecordingDisplay()
-          : viewModel.shoutQueue.length == 0
-              ? CircularStatusAvatar()
-              : ShoutsPlayerDisplay(),
+          : viewModel.sendingShout
+              ? CircleAvatar(
+                  radius: 120,
+                  child: Stack(children: [
+                    Center(
+                      child: Icon(
+                        PhosphorIcons.paperPlaneThin,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Container(
+                      width: 240,
+                      height: 240,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ]),
+                )
+              : viewModel.shoutQueue.length == 0
+                  ? CircularStatusAvatar()
+                  : ShoutsPlayerDisplay(),
       SizedBox(
         height: 24,
       ),
@@ -187,7 +208,11 @@ class RecordingDisplay extends ViewModelWidget<ChatViewModel> {
       radius: 120,
       child: Text(
         viewModel.recordingTimer,
-        style: TextStyle(fontSize: 72, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 56,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).accentColor,
+        ),
       ),
     );
   }
@@ -203,27 +228,38 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
         Text(
           viewModel.iAmRecording
               ? "Recording..."
-              : viewModel.showPlayer()
-                  ? viewModel.totalShouts == 1
-                      ? "${viewModel.yourName} sent a shout!"
-                      : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.totalShouts.toString()}"
-                  : viewModel.showClear()
-                      ? "Hold to record, and release to send!"
-                      : viewModel.showSent()
-                          ? "You sent a shout!"
-                          : viewModel.showShoutPlayed()
-                              ? "${viewModel.yourName} played your shouts!"
-                              : "Hold to record, and release to send!",
-          style: TextStyle(),
+              : viewModel.sendingShout
+                  ? "Sending..."
+                  : viewModel.showPlayer()
+                      ? viewModel.totalShouts == 1
+                          ? "${viewModel.yourName} sent a shout!"
+                          : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.totalShouts.toString()}"
+                      : viewModel.showClear()
+                          ? "Hold to record, release to send!"
+                          : viewModel.showSent()
+                              ? "You sent a shout!"
+                              : viewModel.showShoutPlayed()
+                                  ? "${viewModel.yourName} played your shouts!"
+                                  : "Hold to record, and release to send!",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
         ),
         SizedBox(
-          height: 4,
+          height: 8,
         ),
-        Text(viewModel.iAmRecording
-            ? ""
-            : viewModel.showClear()
-                ? ""
-                : viewModel.getTime()),
+        Text(
+          viewModel.iAmRecording
+              ? ""
+              : viewModel.sendingShout
+                  ? ""
+                  : viewModel.showClear()
+                      ? ""
+                      : viewModel.getTime(),
+          style: TextStyle(fontSize: 16),
+        ),
       ],
     );
   }
@@ -232,15 +268,18 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
 class ShoutsPlayerDisplay extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Center(
+    return CircleAvatar(
+      radius: 120,
+      backgroundColor: Theme.of(context).accentColor.withOpacity(0.3),
       child: viewModel.isLoadingShout
           ? CircularProgressIndicator()
           : IconButton(
+              iconSize: 64,
               icon: Icon(
                 viewModel.iAmListening
-                    ? PhosphorIcons.stop
-                    : PhosphorIcons.play,
-                size: 36,
+                    ? PhosphorIcons.stopThin
+                    : PhosphorIcons.playThin,
+                color: Colors.black,
               ),
               onPressed: () {
                 if (viewModel.iAmListening) {
@@ -261,13 +300,14 @@ class CircularStatusAvatar extends ViewModelWidget<ChatViewModel> {
       radius: 120,
       child: Icon(
         viewModel.showClear()
-            ? PhosphorIcons.microphoneFill
+            ? PhosphorIcons.microphoneThin
             : viewModel.showSent()
-                ? PhosphorIcons.paperPlane
+                ? PhosphorIcons.paperPlaneThin
                 : viewModel.showShoutPlayed()
-                    ? PhosphorIcons.speakerSimpleHighFill
-                    : PhosphorIcons.microphoneFill,
-        size: 72,
+                    ? PhosphorIcons.speakerSimpleHighThin
+                    : PhosphorIcons.microphoneThin,
+        size: 64,
+        color: Theme.of(context).accentColor,
       ),
     );
   }

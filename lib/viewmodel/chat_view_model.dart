@@ -235,8 +235,7 @@ class ChatViewModel extends ReactiveViewModel {
     if (currentShoutPlaying == shoutQueue.length) {
       _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played'});
       if (yourChatState == 'Played') {
-        _firestoreService
-            .updateChatState(chatForMeUID, {"chatState": null});
+        _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
       }
       shoutQueue = new Queue();
     } else {
@@ -262,6 +261,6 @@ class ChatViewModel extends ReactiveViewModel {
   }
 
   String getTime() {
-    return "Time goes here";
+    return "5m ago";
   }
 }

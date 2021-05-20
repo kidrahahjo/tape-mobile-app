@@ -64,7 +64,7 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
       // ],
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
-          'shouts',
+          'Chats',
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
