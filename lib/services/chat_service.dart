@@ -68,12 +68,12 @@ class ChatService with ReactiveServiceMixin {
     return [audioPath, audioUID];
   }
 
-  Future startPlaying(String downloadURL, Function whenFinished) async {
+  Future startPlaying(String downloadURL, Function whenFinished, String thisAudioUID) async {
     _loadingShout.value = true;
     await suspendPlaying();
     await _flutterSoundPlayer.openAudioSession();
     _flutterSoundPlayerSubscription = _flutterSoundPlayer.onProgress.listen((event) {
-      if (_flutterSoundPlayer.playerState == PlayerState.isPlaying) {
+      if (_flutterSoundPlayer.isPlaying) {
         _loadingShout.value = false;
         _playingShout.value = true;
       } else {
@@ -82,13 +82,13 @@ class ChatService with ReactiveServiceMixin {
       }
     });
     await _flutterSoundPlayer.setSubscriptionDuration(Duration(milliseconds: 500));
-    return _flutterSoundPlayer.startPlayer(
+    await _flutterSoundPlayer.startPlayer(
       fromURI: downloadURL,
       codec: Codec.mp3,
       whenFinished: () {
         _playingShout.value = false;
         _loadingShout.value = false;
-        whenFinished();
+        whenFinished(thisAudioUID);
       }
     );
   }
