@@ -21,6 +21,7 @@ void main() async {
       darkTheme: ThemeData(
         primarySwatch: Colors.orange,
         primaryColorDark: Color(0xff444444),
+        accentColor: Colors.orange,
         appBarTheme:
             AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
         brightness: Brightness.dark,

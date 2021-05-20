@@ -148,7 +148,7 @@ class SkipButton extends ViewModelWidget<ChatViewModel> {
     return SizedBox(
       width: 64,
       height: 64,
-      child: viewModel.currentShoutPlaying < viewModel.shoutQueue.length
+      child: viewModel.totalShouts != 0
           ? RawMaterialButton(
               onPressed: () {
                 viewModel.skip();
@@ -301,12 +301,12 @@ class CircularStatusAvatar extends ViewModelWidget<ChatViewModel> {
       radius: 120,
       child: Icon(
         viewModel.showClear()
-            ? PhosphorIcons.microphoneThin
+            ? PhosphorIcons.voicemailThin
             : viewModel.showSent()
                 ? PhosphorIcons.paperPlaneThin
                 : viewModel.showShoutPlayed()
                     ? PhosphorIcons.speakerSimpleHighThin
-                    : PhosphorIcons.microphoneThin,
+                    : PhosphorIcons.voicemailThin,
         size: 64,
         color: Theme.of(context).accentColor,
       ),
