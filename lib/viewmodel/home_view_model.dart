@@ -38,7 +38,6 @@ class HomeViewModel extends BaseModel {
     fetchAllContacts();
   }
 
-
   initialiseChatsStream() async {
     chatsStream = _firestoreService.getUserChats(myUID);
     chatStreamSubscription = chatsStream.listen((event) async {
@@ -93,50 +92,47 @@ class HomeViewModel extends BaseModel {
   }
 
   fetchAllContacts() async {
+    isFetchingContacts = true;
     bool contactPermission = await getContactPermission();
     if (contactPermission) {
-      if (contactsMap.length == 0) {
-        isFetchingContacts = true;
-        notifyListeners();
-        final Iterable<Contact> contacts = await ContactsService.getContacts();
-        for (Contact contact in contacts) {
-          for (Item phone in contact.phones) {
-            String number = refactorPhoneNumber(phone.value.toString());
-            if (number != null) {
-              userNumberContactNameMapping[number] = contact.displayName;
-            }
+      notifyListeners();
+      final Iterable<Contact> contacts = await ContactsService.getContacts();
+      for (Contact contact in contacts) {
+        for (Item phone in contact.phones) {
+          String number = refactorPhoneNumber(phone.value.toString());
+          if (number != null) {
+            userNumberContactNameMapping[number] = contact.displayName;
           }
         }
-        List<String> contactsData = [];
-        List<String> userContactsList =
-            userNumberContactNameMapping.keys.toList(growable: false);
-        for (int i = 0; i < userContactsList.length; i += 10) {
-          List<String> phoneNumbers = userContactsList.sublist(
-              i,
-              i + 10 <= userContactsList.length
-                  ? i + 10
-                  : userContactsList.length);
-          await _firestoreService
-              .getUserFromPhone(phoneNumbers)
-              .then((querySnapshot) {
-            querySnapshot.docs.forEach((element) {
-              String userUID = element.id;
-              Map<String, dynamic> metadata = element.data();
-              String phone = metadata['phoneNumber'];
-              String displayName = metadata['displayName'];
-              contactsData.add(userUID);
-              userUIDDisplayNameMapping[userUID] = displayName;
-              userUIDNumberMapping[userUID] = phone;
-            });
-          });
-        }
-        contactsMap.clear();
-        contactsMap.addAll(contactsData);
-
-        isFetchingContacts = false;
       }
+      List<String> contactsData = [];
+      List<String> userContactsList =
+          userNumberContactNameMapping.keys.toList(growable: false);
+      for (int i = 0; i < userContactsList.length; i += 10) {
+        List<String> phoneNumbers = userContactsList.sublist(
+            i,
+            i + 10 <= userContactsList.length
+                ? i + 10
+                : userContactsList.length);
+        await _firestoreService
+            .getUserFromPhone(phoneNumbers)
+            .then((querySnapshot) {
+          querySnapshot.docs.forEach((element) {
+            String userUID = element.id;
+            Map<String, dynamic> metadata = element.data();
+            String phone = metadata['phoneNumber'];
+            String displayName = metadata['displayName'];
+            contactsData.add(userUID);
+            userUIDDisplayNameMapping[userUID] = displayName;
+            userUIDNumberMapping[userUID] = phone;
+          });
+        });
+      }
+      contactsMap.clear();
+      contactsMap.addAll(contactsData);
       notifyListeners();
     }
+    isFetchingContacts = false;
   }
 
   String getUserName(String uid) {
