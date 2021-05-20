@@ -263,9 +263,9 @@ class CircularStatusAvatar extends ViewModelWidget<ChatViewModel> {
         viewModel.showClear()
             ? PhosphorIcons.microphoneFill
             : viewModel.showSent()
-                ? PhosphorIcons.paperPlaneTiltFill
+                ? PhosphorIcons.paperPlane
                 : viewModel.showShoutPlayed()
-                    ? PhosphorIcons.paperPlaneTiltFill
+                    ? PhosphorIcons.speakerSimpleHighFill
                     : PhosphorIcons.microphoneFill,
         size: 72,
       ),
