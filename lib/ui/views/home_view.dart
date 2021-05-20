@@ -84,6 +84,9 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
         viewModel.updateStatus = true;
         viewModel.onHome = false;
         viewModel.statusTextController.text = viewModel.realStatus();
+        if (viewModel.statusTextController.text == "What's happening?") {
+          viewModel.statusTextController.text = "";
+        }
         final myModel = Provider.of<HomeViewModel>(context, listen: false);
         showDialog(
             context: context,
@@ -127,7 +130,6 @@ class StatusView extends ViewModelWidget<HomeViewModel> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
-            onSubmitted: (value) => viewModel.popIt(),
             autofocus: true,
             maxLength: 32,
             controller: viewModel.statusTextController,
