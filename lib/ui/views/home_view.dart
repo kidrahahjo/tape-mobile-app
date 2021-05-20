@@ -174,26 +174,29 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
             elevation: 0,
             automaticallyImplyLeading: false,
             title: Text(
-              'New Shout',
+              "Contacts",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
             actions: [
-              GestureDetector(
-                onTap: () {
-                  viewModel.refreshContacts();
-                },
-                child: Center(
-                  child: viewModel.isFetchingContacts
-                      ? CircularProgressIndicator()
-                      : Text("Refresh",
+              viewModel.isFetchingContacts
+                  ? CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      child: CircularProgressIndicator(strokeWidth: 2,))
+                  : TextButton(
+                      onPressed: () {
+                        viewModel.refreshContacts();
+                      },
+                      child: Text("Refresh",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           )),
-                ),
+                    ),
+              SizedBox(
+                width: 16,
               )
             ],
           ),
