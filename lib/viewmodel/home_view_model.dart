@@ -40,15 +40,24 @@ class HomeViewModel extends BaseModel {
   Stream<QuerySnapshot> myStatusStream;
   StreamSubscription<QuerySnapshot> myStatusStreamSubscription;
   bool updateStatus = false;
+  String textToShow;
   final TextEditingController statusTextController =
       new TextEditingController();
 
   HomeViewModel(this.myUID, this.myPhoneNumber) {
     initialise();
+    statusTextController.addListener(() {
+      textToShow = statusTextController.text.trim();
+      notifyListeners();
+    });
   }
 
   String get status {
-    return currentStatus == null ? "What's happening?" : statusesUIDStatusTextMap[currentStatus];
+    return textToShow != null
+        ? textToShow
+        : currentStatus == null
+            ? "What's happening?"
+            : statusesUIDStatusTextMap[currentStatus];
   }
 
   initialise() async {
@@ -84,8 +93,8 @@ class HomeViewModel extends BaseModel {
   }
 
   deleteStatus(String statusUID) {
-    _firestoreService.updateStatusState(
-        myUID, statusUID, {"isDeleted": true, "lastModifiedAt": DateTime.now()});
+    _firestoreService.updateStatusState(myUID, statusUID,
+        {"isDeleted": true, "lastModifiedAt": DateTime.now()});
     if (currentStatus == statusUID) {
       _firestoreService.saveUserInfo(myUID, {"currentStatus": null});
       updateStatus = false;
@@ -101,8 +110,7 @@ class HomeViewModel extends BaseModel {
       setStatusWithUID(uid);
     } else if (message == null || message.length == 0) {
       // do nothing
-    }
-    else {
+    } else {
       String statusUID = Uuid().v4().replaceAll("-", "");
       statusesUIDStatusTextMap[statusUID] = message;
       _firestoreService.updateStatusState(myUID, statusUID, {
@@ -116,10 +124,13 @@ class HomeViewModel extends BaseModel {
 
   setStatusWithUID(String statusUID) {
     updateStatus = false;
-    _firestoreService.updateStatusState(
-        myUID, statusUID, {"isDeleted": false, "lastModifiedAt": DateTime.now()});
-    _firestoreService.saveUserInfo(
-        myUID, {"currentStatus": statusesUIDStatusTextMap[statusUID]});
+    statusTextController.text = statusesUIDStatusTextMap[statusUID];
+    if (currentStatus != statusUID) {
+      _firestoreService.updateStatusState(myUID, statusUID,
+          {"isDeleted": false, "lastModifiedAt": DateTime.now()});
+      _firestoreService.saveUserInfo(
+          myUID, {"currentStatus": statusesUIDStatusTextMap[statusUID]});
+    }
     // update this status
   }
 

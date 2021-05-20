@@ -92,6 +92,7 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
                 child: StatusView(),
               );
             }).then((value) {
+              viewModel.textToShow = null;
           if (viewModel.updateStatus) {
             viewModel.addNewStatus();
           }
