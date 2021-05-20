@@ -236,7 +236,7 @@ class ChatViewModel extends ReactiveViewModel {
       _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played'});
       if (yourChatState == 'Played') {
         _firestoreService
-            .updateChatState(chatForMeUID, {"chatState": 'Played'});
+            .updateChatState(chatForMeUID, {"chatState": null});
       }
       shoutQueue = new Queue();
     } else {
