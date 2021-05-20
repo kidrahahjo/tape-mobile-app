@@ -138,7 +138,21 @@ class ChatViewModel extends ReactiveViewModel {
   void playNextShout() {
     currentShoutPlaying += 1;
     notifyListeners();
-    startPlaying();
+    if (autoplay) {
+      startPlaying();
+    }
+  }
+
+  void skip() {
+    _firestoreService.updateYourShoutState(
+      chatForMeUID,
+      shoutQueue.elementAt(currentShoutPlaying - 1),
+      {
+        "isListened": true,
+        "isListenedAt": DateTime.now(),
+      },
+    );
+    playNextShout();
   }
 
   void startRecording() async {
@@ -224,6 +238,7 @@ class ChatViewModel extends ReactiveViewModel {
 
   void whenFinished(String audioUID) {
     // update message and chat state
+    autoplay = false;
     _firestoreService.updateYourShoutState(
       chatForMeUID,
       audioUID,

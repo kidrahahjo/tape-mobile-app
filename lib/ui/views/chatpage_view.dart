@@ -24,6 +24,7 @@ class ChatPageView extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              centerTitle: true,
               leading: IconButton(
                 icon: Icon(
                   PhosphorIcons.caretLeft,
@@ -150,7 +151,7 @@ class SkipButton extends ViewModelWidget<ChatViewModel> {
       child: viewModel.currentShoutPlaying < viewModel.shoutQueue.length
           ? RawMaterialButton(
               onPressed: () {
-                viewModel.playNextShout();
+                viewModel.skip();
               },
               shape: CircleBorder(),
               child: Icon(
