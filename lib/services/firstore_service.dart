@@ -36,7 +36,7 @@ class FirestoreService {
         .doc(chatUID)
         .collection("messages")
         .where("isListened", isEqualTo: false)
-        .orderBy("sendAt", descending: false)
+        .orderBy("sentAt", descending: false)
         .snapshots();
   }
 
@@ -53,23 +53,14 @@ class FirestoreService {
         .set({"isRecording": state}, SetOptions(merge: true));
   }
 
-  setListeningStateToDatabase(String chatUID, bool state) {
-    // if current user is listening, update the database regarding that
-    _chatsCollectionReference
-        .doc(chatUID)
-        .set({"isListening": state}, SetOptions(merge: true));
-  }
-
-  Future updateYourShoutState(String chatUID, String messageUID) async {
+  Future updateYourShoutState(
+      String chatUID, String messageUID, Map<String, dynamic> data) async {
     // if a shout is listened, update it in the database.
     return _chatsCollectionReference
         .doc(chatUID)
         .collection("messages")
         .doc(messageUID)
-        .update({
-      "isListened": true,
-      "listenedAt": DateTime.now(),
-    });
+        .set(data, SetOptions(merge: true));
   }
 
   Future updateChatState(String chatUID, Map<String, dynamic> data) {
@@ -78,31 +69,31 @@ class FirestoreService {
         .set(data, SetOptions(merge: true));
   }
 
-  Future<void> sendShout(String myUID, String yourUID, String chatForYou,
-      String audioUID, DateTime currentTime) async {
+  Future<void> sendShout(Map<String, dynamic> metaData, String audioUID,
+      DateTime currentTime) async {
     // update the shout in the database
     await _chatsCollectionReference
-        .doc(chatForYou)
+        .doc(metaData['chatForYou'])
         .collection("messages")
         .doc(audioUID)
         .set({
       "isListened": false,
-      "sendAt": currentTime,
+      "sentAt": currentTime,
       "listenedAt": null,
     });
-    await _userCollectionReference
-        .doc(yourUID)
-        .collection("chats")
-        .doc(myUID)
-        .set({
+
+    await _chatsCollectionReference.doc(metaData['chatForYou']).set({
+      "sender": metaData['myUID'],
+      "receiver": metaData['yourUID'],
+      "lastSentAt": currentTime,
       "lastModifiedAt": currentTime,
-    });
-    await _userCollectionReference
-        .doc(myUID)
-        .collection("chats")
-        .doc(yourUID)
-        .set({
+    }, SetOptions(merge: true));
+
+    await _chatsCollectionReference.doc(metaData['chatForMe']).set({
+      "sender": metaData['yourUID'],
+      "receiver": metaData['myUID'],
       "lastModifiedAt": currentTime,
-    });
+      "chatState": metaData['chatState'],
+    }, SetOptions(merge: true));
   }
 }

@@ -28,16 +28,14 @@ class ChatViewModel extends ReactiveViewModel {
 
   // shout related variables
   Queue<String> shoutQueue = new Queue<String>();
-  Queue<String> shoutsToDelete = new Queue<String>();
   int currentShoutPlaying = 1;
 
   // current state related variables
   bool youAreRecording = false;
   bool youAreListening = false;
-  String yourFirstShoutReceived;
-  String myFirstShoutSent;
-  int numberOfLonelyShouts;
   bool hasPlayed = false;
+  String myChatState;
+  String yourChatState;
 
   // recording related variables
   bool _record = false;
@@ -45,7 +43,6 @@ class ChatViewModel extends ReactiveViewModel {
 
   // player related variables
   bool autoplay = false;
-  bool showReplay = false;
 
   // Streams
   Stream<QuerySnapshot> shoutsStream;
@@ -57,8 +54,8 @@ class ChatViewModel extends ReactiveViewModel {
 
   ChatViewModel(this.yourUID, this.yourName) {
     enableShoutsStream();
-    enableChatStateStream();
-    enableMySentShoutsStateStream();
+    enableChatForMeStateStream();
+    enableChatForYouStateStream();
   }
 
   @override
@@ -80,6 +77,8 @@ class ChatViewModel extends ReactiveViewModel {
 
   bool get sendingShout => _sendingShout;
 
+  int get totalShouts => shoutQueue.length;
+
   enableShoutsStream() {
     shoutsStream =
         _firestoreService.fetchEndToEndShoutsFromDatabase(chatForMeUID);
@@ -87,48 +86,36 @@ class ChatViewModel extends ReactiveViewModel {
       event.docs.forEach((element) {
         if (!shoutQueue.contains(element.id)) {
           shoutQueue.add(element.id);
-          showReplay = false;
-          if (autoplay && !(iAmRecording || iAmListening)) {
-            currentShoutPlaying = shoutQueue.length;
-            startPlaying();
-          } else if (showReplay == true &&
-              currentShoutPlaying == shoutQueue.length - 1) {
-            currentShoutPlaying = shoutQueue.length;
+          notifyListeners();
+          if (shoutQueue.length == 1 && autoplay) {
+            currentShoutPlaying = 1;
             startPlaying();
           }
-          notifyListeners();
         }
       });
     });
   }
 
-  enableChatStateStream() {
+  enableChatForMeStateStream() {
     chatStateStream = _firestoreService.getChatState(chatForMeUID);
     chatStateStreamSubscription = chatStateStream.listen((event) {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
         this.youAreRecording =
             data['isRecording'] != null ? data['isRecording'] : false;
-        this.youAreListening =
-            data['isListening'] != null ? data['isListening'] : false;
-        this.yourFirstShoutReceived = data['firstShoutSent'];
+        this.yourChatState = data['chatState'];
         notifyListeners();
       }
     });
   }
 
-  enableMySentShoutsStateStream() {
+  enableChatForYouStateStream() {
     myShoutsSentStateStream = _firestoreService.getChatState(chatForYouUID);
     myShoutsSentStateStreamSubscription =
         myShoutsSentStateStream.listen((event) {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
-        numberOfLonelyShouts = data['numberOfLonelyShouts'];
-        myFirstShoutSent = data['firstShoutSent'];
-        hasPlayed = data['hasPlayed'];
-      } else {
-        myFirstShoutSent = null;
-        numberOfLonelyShouts = null;
+        this.myChatState = data['chatState'];
       }
       notifyListeners();
     });
@@ -150,24 +137,14 @@ class ChatViewModel extends ReactiveViewModel {
   }
 
   void playNextShout() {
-    if (!iAmRecording && currentShoutPlaying < shoutQueue.length) {
-      currentShoutPlaying += 1;
-      notifyListeners();
-      startPlaying();
-    } else if (currentShoutPlaying >= shoutQueue.length) {
-      showReplay = true;
-      notifyListeners();
-      _chatService.suspendPlaying();
-    }
+    currentShoutPlaying += 1;
+    notifyListeners();
+    startPlaying();
   }
 
   void startRecording() async {
     _record = true;
     bool continueRecording = true;
-    shoutsToDelete = new Queue<String>();
-    for (String val in shoutQueue) {
-      shoutsToDelete.add(val);
-    }
     String audioUID = Uuid().v4().replaceAll("-", "");
     var tempDir = await getTemporaryDirectory();
     String audioPath = '${tempDir.path}/$audioUID.aac';
@@ -183,40 +160,16 @@ class ChatViewModel extends ReactiveViewModel {
         _chatService.recordingTime == "0s") {
       await _chatService.stopRecording();
       // show snackbar
-      print('recording too short');
     } else {
       try {
         _sendingShout = true;
         notifyListeners();
         List<String> audioVariables = await _chatService.stopRecording();
-        currentShoutPlaying = 1;
-        if (shoutsToDelete.contains(yourFirstShoutReceived)) {
-          _firestoreService.updateChatState(chatForMeUID, {
-            "firstShoutSent": null,
-            "numberOfLonelyShouts": 0,
-          });
-        }
-
-        for (String val in shoutsToDelete) {
-          await _firestoreService
-              .updateYourShoutState(chatForMeUID, val)
-              .onError((error, stackTrace) => null);
-          shoutQueue.remove(val);
-        }
-        Map<String, dynamic> data = {};
-        if (numberOfLonelyShouts == 0 || numberOfLonelyShouts == null) {
-          data['firstShoutSent'] = audioVariables[1];
-          data['hasPlayed'] = false;
-        }
-        data['numberOfLonelyShouts'] =
-            numberOfLonelyShouts == null ? 1 : numberOfLonelyShouts + 1;
-        _firestoreService.updateChatState(chatForYouUID, data);
         _uploadAudio(audioVariables[0], audioVariables[1]);
       } catch (e) {
         _sendingShout = false;
         notifyListeners();
         // show failed to send snackbar
-        print('failed to send audio 1');
       }
     }
     _firestoreService.setRecordingStateToDatabase(chatForYouUID, false);
@@ -227,23 +180,18 @@ class ChatViewModel extends ReactiveViewModel {
     await _firebaseStorageService
         .getLocationReference(chatForYouUID, currentAudioUID)
         .putFile(file);
-    _firestoreService
-        .sendShout(
-            myUID, yourUID, chatForYouUID, currentAudioUID, DateTime.now())
-        .onError((error, stackTrace) {
+    _firestoreService.sendShout({
+      "chatForMe": chatForMeUID,
+      "chatForYou": chatForYouUID,
+      "myUID": myUID,
+      "yourUID": yourUID,
+      "chatState": 'Received',
+    }, currentAudioUID, DateTime.now()).onError((error, stackTrace) {
       // show failed to send snackbar
-      print('failed to send audio 2');
     }).whenComplete(() {
       _sendingShout = false;
       notifyListeners();
     });
-  }
-
-  void replayShouts() {
-    currentShoutPlaying = 1;
-    showReplay = false;
-    notifyListeners();
-    startPlaying();
   }
 
   void startPlaying() async {
@@ -251,29 +199,20 @@ class ChatViewModel extends ReactiveViewModel {
     int current = currentShoutPlaying;
     if (current > shoutQueue.length) {
       currentShoutPlaying = shoutQueue.length;
-      showReplay = false;
       notifyListeners();
     } else {
       try {
-        showReplay = false;
         notifyListeners();
         String thisAudioUID = shoutQueue.elementAt(current - 1);
         String downloadURL = await _firebaseStorageService
             .getLocationReference(chatForMeUID, thisAudioUID)
             .getDownloadURL();
-        if (thisAudioUID == yourFirstShoutReceived) {
-          _firestoreService.updateChatState(chatForMeUID, {
-            "hasPlayed": true,
-          });
-        }
         if (current == currentShoutPlaying) {
-          _firestoreService.setListeningStateToDatabase(chatForYouUID, true);
-          _chatService.startPlaying(downloadURL, whenFinished);
+          _chatService.startPlaying(downloadURL, whenFinished, thisAudioUID);
         }
       } catch (e) {
         notifyListeners();
         _chatService.stopPlaying();
-        _firestoreService.setListeningStateToDatabase(chatForYouUID, false);
       }
     }
   }
@@ -281,12 +220,45 @@ class ChatViewModel extends ReactiveViewModel {
   void stopPlaying() {
     autoplay = false;
     notifyListeners();
-    _firestoreService.setListeningStateToDatabase(chatForYouUID, false);
     _chatService.stopPlaying();
   }
 
-  void whenFinished() {
-    _firestoreService.setListeningStateToDatabase(chatForYouUID, false);
-    playNextShout();
+  void whenFinished(String audioUID) {
+    // update message and chat state
+    _firestoreService.updateYourShoutState(
+      chatForMeUID,
+      audioUID,
+      {
+        "isListened": true,
+        "isListenedAt": DateTime.now(),
+      },
+    );
+    if (currentShoutPlaying == shoutQueue.length) {
+      _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played'});
+      if (yourChatState == 'Played') {
+        _firestoreService
+            .updateChatState(chatForMeUID, {"chatState": 'Played'});
+      }
+      shoutQueue = new Queue();
+    } else {
+      playNextShout();
+    }
+  }
+
+  bool showPlayer() {
+    return totalShouts > 0;
+  }
+
+  bool showClear() {
+    return (myChatState == null || myChatState == 'Played') &&
+        yourChatState == null;
+  }
+
+  bool showSent() {
+    return yourChatState == 'Received';
+  }
+
+  bool showShoutPlayed() {
+    return yourChatState == 'Played';
   }
 }

@@ -68,7 +68,7 @@ class ChatService with ReactiveServiceMixin {
     return [audioPath, audioUID];
   }
 
-  Future startPlaying(String downloadURL, Function whenFinished) async {
+  Future startPlaying(String downloadURL, Function whenFinished, String thisAudioUID) async {
     _loadingShout.value = true;
     await suspendPlaying();
     await _flutterSoundPlayer.openAudioSession();
@@ -88,7 +88,7 @@ class ChatService with ReactiveServiceMixin {
       whenFinished: () {
         _playingShout.value = false;
         _loadingShout.value = false;
-        whenFinished();
+        whenFinished(thisAudioUID);
       }
     );
   }
