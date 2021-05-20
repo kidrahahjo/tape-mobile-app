@@ -214,7 +214,7 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
         return Column(children: [
           ListTile(
             onTap: () {
-              viewModel.goToContactScreen(uid);
+              viewModel.goToContactScreen(uid, fromContacts: true);
             },
             leading: CircleAvatar(
               child: Icon(

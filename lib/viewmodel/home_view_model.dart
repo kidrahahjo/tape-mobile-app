@@ -45,30 +45,18 @@ class HomeViewModel extends BaseModel {
   getCache() async {
     try {
       contactsMap =
-          List<String>.from(await cache.load('contactsMap', contactsMap));
+          List<String>.from(await cache.load('contactsMap', <String>[]));
+      userUIDDisplayNameMapping = Map<String, String>.from(
+          await cache.load('userUIDDisplayNameMapping', <String, String>{}));
+      userUIDNumberMapping = Map<String, String>.from(
+          await cache.load('userUIDNumberMapping', <String, String>{}));
+      userNumberContactNameMapping = Map<String, String>.from(
+          await cache.load('userNumberContactNameMapping', <String, String>{}));
     } catch (e) {
       print(e);
       contactsMap = [];
-    }
-    try {
-      userUIDDisplayNameMapping = Map<String, String>.from(
-          await cache.load('userUIDDisplayNameMapping', <String, String>{}));
-    } catch (e) {
-      print(e);
       userUIDDisplayNameMapping = {};
-    }
-    try {
-      userUIDNumberMapping = Map<String, String>.from(
-          await cache.load('userUIDNumberMapping', userUIDNumberMapping));
-    } catch (e) {
-      print(e);
       userUIDNumberMapping = {};
-    }
-    try {
-      userNumberContactNameMapping = Map<String, String>.from(await cache.load(
-          'userNumberContactNameMapping', userNumberContactNameMapping));
-    } catch (e) {
-      print(e);
       userNumberContactNameMapping = {};
     }
   }
@@ -80,7 +68,8 @@ class HomeViewModel extends BaseModel {
       if (event.docChanges.length != 0) {
         List<String> chatListChanged = [];
         for (QueryDocumentSnapshot element in event.docs) {
-          String uid = element.id;
+          Map<String, dynamic> data = element.data();
+          String uid = data['receiver'];
           chatListChanged.add(uid);
           await _firestoreService.getUserData(uid).then((value) {
             userUIDDisplayNameMapping[uid] = value.get('displayName');
@@ -202,15 +191,18 @@ class HomeViewModel extends BaseModel {
 
   void refreshContacts() {
     if (!this.isFetchingContacts) {
-      cache.destroy('contactsMap');
+      cache.clear();
       fetchAllContacts();
     }
   }
 
-  void goToContactScreen(String uid) async {
+  void goToContactScreen(String uid, {bool fromContacts: false}) async {
     bool microphonePermission = await getMicrophonePermission();
     bool storagePermission = await getStoragePermission();
     if (microphonePermission && storagePermission) {
+      if (fromContacts) {
+        _navigationService.goBack();
+      }
       _navigationService.navigateTo(routes.ChatViewRoute,
           arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
     }

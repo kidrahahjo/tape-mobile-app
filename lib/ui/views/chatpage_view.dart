@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:wavemobileapp/viewmodel/chat_view_model.dart';
+import 'package:wavemobileapp/viewmodel/home_view_model.dart';
 
 class ChatPageView extends StatelessWidget {
   final String yourUID;
@@ -26,7 +27,7 @@ class ChatPageView extends StatelessWidget {
                   PhosphorIcons.caretLeft,
                   size: 32,
                 ),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => model.backToHome(),
               ),
             ),
             resizeToAvoidBottomInset: true,
@@ -44,47 +45,6 @@ class ChatPageView extends StatelessWidget {
     );
   }
 }
-
-// class MainHeader extends ViewModelWidget<ChatViewModel> {
-//   MainHeader() : super(reactive: false);
-
-//   @override
-//   Widget build(BuildContext context, ChatViewModel viewModel) {
-//     return Container(
-//       child: Row(
-//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: <Widget>[
-//           IconButton(
-//               icon: Icon(
-//                 PhosphorIcons.caretLeft,
-//                 size: 32,
-//               ),
-//               onPressed: () {
-//                 viewModel.backToHome();
-//               }),
-//           Column(children: [
-//             SizedBox(
-//               height: 8,
-//             ),
-//             Text(
-//               viewModel.yourName,
-//               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-//             ),
-//             SizedBox(
-//               height: 8,
-//             ),
-//             CurrentStatus(),
-//           ]),
-//           SizedBox(
-//             height: 48,
-//             width: 48,
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
 
 class CurrentStatus extends ViewModelWidget<ChatViewModel> {
   CurrentStatus() : super(reactive: true);
@@ -244,24 +204,27 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
         Text(
           viewModel.iAmRecording
               ? "Recording..."
-              : viewModel.shoutQueue.length == 0
-                  ? (viewModel.numberOfLonelyShouts == null &&
-                          viewModel.myFirstShoutSent == null)
-                      ? "Hold to record, and release to send!"
-                      : viewModel.hasPlayed
-                          ? "${viewModel.yourName} played your shouts!"
-                          : viewModel.numberOfLonelyShouts == 0
-                              ? ""
-                              : "You sent ${viewModel.numberOfLonelyShouts} shouts!"
-                  : viewModel.shoutQueue.length == 1
+              : viewModel.showPlayer()
+                  ? viewModel.totalShouts == 1
                       ? "${viewModel.yourName} sent a shout!"
-                      : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.shoutQueue.length.toString()}",
+                      : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.totalShouts.toString()}"
+                  : viewModel.showClear()
+                      ? "Hold to record, and release to send!"
+                      : viewModel.showSent()
+                          ? "You sent a shout!"
+                          : viewModel.showShoutPlayed()
+                              ? "${viewModel.yourName} played your shouts!"
+                              : "Hold to record, and release to send!",
           style: TextStyle(),
         ),
         SizedBox(
           height: 4,
         ),
-        Text('5m ago')
+        Text(viewModel.iAmRecording
+            ? ""
+            : viewModel.showClear()
+                ? ""
+                : viewModel.getTime()),
       ],
     );
   }
@@ -275,17 +238,13 @@ class ShoutsPlayerDisplay extends ViewModelWidget<ChatViewModel> {
           ? CircularProgressIndicator()
           : IconButton(
               icon: Icon(
-                viewModel.showReplay
-                    ? PhosphorIcons.arrowCounterClockwise
-                    : viewModel.iAmListening
-                        ? PhosphorIcons.stop
-                        : PhosphorIcons.play,
+                viewModel.iAmListening
+                    ? PhosphorIcons.stop
+                    : PhosphorIcons.play,
                 size: 36,
               ),
               onPressed: () {
-                if (viewModel.showReplay) {
-                  viewModel.replayShouts();
-                } else if (viewModel.iAmListening) {
+                if (viewModel.iAmListening) {
                   viewModel.stopPlaying();
                 } else {
                   viewModel.startPlaying();
@@ -302,14 +261,13 @@ class CircularStatusAvatar extends ViewModelWidget<ChatViewModel> {
     return CircleAvatar(
       radius: 120,
       child: Icon(
-        (viewModel.numberOfLonelyShouts == null &&
-                viewModel.myFirstShoutSent == null)
+        viewModel.showClear()
             ? PhosphorIcons.microphoneFill
-            : viewModel.hasPlayed
+            : viewModel.showSent()
                 ? PhosphorIcons.paperPlaneTiltFill
-                : viewModel.numberOfLonelyShouts == 0
-                    ? PhosphorIcons.microphoneFill
-                    : PhosphorIcons.paperPlaneTiltFill,
+                : viewModel.showShoutPlayed()
+                    ? PhosphorIcons.paperPlaneTiltFill
+                    : PhosphorIcons.microphoneFill,
         size: 72,
       ),
     );

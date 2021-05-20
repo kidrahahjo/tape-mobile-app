@@ -261,4 +261,8 @@ class ChatViewModel extends ReactiveViewModel {
   bool showShoutPlayed() {
     return yourChatState == 'Played';
   }
+
+  String getTime() {
+    return "Time goes here";
+  }
 }

@@ -17,9 +17,8 @@ class FirestoreService {
   }
 
   Stream<QuerySnapshot> getUserChats(String userUID) {
-    return _userCollectionReference
-        .doc(userUID)
-        .collection("chats")
+    return _chatsCollectionReference
+        .where("sender", isEqualTo: userUID)
         .orderBy("lastModifiedAt", descending: true)
         .snapshots();
   }
