@@ -115,6 +115,7 @@ class HomeViewModel extends BaseModel {
 
   resetTempVars() {
     onHome = true;
+    textToShow = null;
     notifyListeners();
   }
 

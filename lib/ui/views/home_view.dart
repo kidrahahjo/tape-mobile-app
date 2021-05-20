@@ -119,7 +119,6 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
 
 class StatusView extends ViewModelWidget<HomeViewModel> {
 
-
   StatusView(): super(reactive: true);
 
   @override
