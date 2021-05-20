@@ -8,7 +8,6 @@ import 'package:wavemobileapp/services/authentication_service.dart';
 import 'package:wavemobileapp/services/firstore_service.dart';
 import 'package:wavemobileapp/services/navigation_service.dart';
 import 'package:wavemobileapp/viewmodel/base_model.dart';
-import 'package:flutter_cache/flutter_cache.dart' as cache;
 
 class HomeViewModel extends BaseModel {
   final String myUID;
@@ -35,31 +34,10 @@ class HomeViewModel extends BaseModel {
   }
 
   initialise() async {
-    print('start');
-    await getCache();
-    print('done');
     initialiseChatsStream();
     fetchAllContacts();
   }
 
-  getCache() async {
-    try {
-      contactsMap =
-          List<String>.from(await cache.load('contactsMap', <String>[]));
-      userUIDDisplayNameMapping = Map<String, String>.from(
-          await cache.load('userUIDDisplayNameMapping', <String, String>{}));
-      userUIDNumberMapping = Map<String, String>.from(
-          await cache.load('userUIDNumberMapping', <String, String>{}));
-      userNumberContactNameMapping = Map<String, String>.from(
-          await cache.load('userNumberContactNameMapping', <String, String>{}));
-    } catch (e) {
-      print(e);
-      contactsMap = [];
-      userUIDDisplayNameMapping = {};
-      userUIDNumberMapping = {};
-      userNumberContactNameMapping = {};
-    }
-  }
 
   initialiseChatsStream() async {
     chatsStream = _firestoreService.getUserChats(myUID);
@@ -76,8 +54,6 @@ class HomeViewModel extends BaseModel {
             userUIDNumberMapping[uid] = value.get('phoneNumber');
           });
         }
-        cache.remember('userUIDDisplayNameMapping', userUIDDisplayNameMapping);
-        cache.remember('userUIDNumberMapping', userUIDNumberMapping);
         chatsList.clear();
         chatsList.addAll(chatListChanged);
         notifyListeners();
@@ -131,8 +107,6 @@ class HomeViewModel extends BaseModel {
             }
           }
         }
-        cache.remember(
-            'userNumberContactNameMapping', userNumberContactNameMapping);
         List<String> contactsData = [];
         List<String> userContactsList =
             userNumberContactNameMapping.keys.toList(growable: false);
@@ -158,9 +132,6 @@ class HomeViewModel extends BaseModel {
         }
         contactsMap.clear();
         contactsMap.addAll(contactsData);
-        cache.remember('contactsMap', contactsMap);
-        cache.remember('userUIDDisplayNameMapping', userUIDDisplayNameMapping);
-        cache.remember('userUIDNumberMapping', userUIDNumberMapping);
 
         isFetchingContacts = false;
       }
@@ -191,7 +162,6 @@ class HomeViewModel extends BaseModel {
 
   void refreshContacts() {
     if (!this.isFetchingContacts) {
-      cache.clear();
       fetchAllContacts();
     }
   }
