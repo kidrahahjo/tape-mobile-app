@@ -88,6 +88,8 @@ class HomeViewModel extends BaseModel {
         myUID, statusUID, {"isDeleted": true, "lastModifiedAt": DateTime.now()});
     if (currentStatus == statusUID) {
       _firestoreService.saveUserInfo(myUID, {"currentStatus": null});
+      updateStatus = false;
+      statusTextController.text = "";
     }
   }
 
