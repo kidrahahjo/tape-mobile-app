@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:uuid/uuid.dart';
@@ -278,6 +279,7 @@ class ChatViewModel extends ReactiveViewModel {
         _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
       }
       shoutQueue = new Queue();
+      currentShoutPlaying = 1;
     } else {
       playNextShout();
     }
@@ -301,8 +303,23 @@ class ChatViewModel extends ReactiveViewModel {
   }
 
   String convertTime (DateTime dateTime) {
-    var format = DateFormat("yyyy-MM-dd hh:mm:ss");
-    return format.format(dateTime);
+    Duration difference = DateTime.now().difference(dateTime);
+    int day = difference.inDays;
+    int hours = difference.inHours;
+    int minutes = difference.inMinutes;
+    int seconds = difference.inSeconds;
+    if (day != 0) {
+      return day.toString() + 'd ago';
+    } else if (hours != 0){
+      return hours.toString() + 'h ago';
+    } else if (minutes != 0) {
+      return minutes.toString() + 'm ago';
+    } else if (seconds >= 20) {
+      return seconds.toString() + 's ago';
+    }
+    else {
+      return 'Just now';
+    }
   }
   String getTime() {
     if (showPlayer()) {

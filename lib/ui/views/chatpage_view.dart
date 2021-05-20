@@ -210,7 +210,7 @@ class RecordingDisplay extends ViewModelWidget<ChatViewModel> {
       child: Text(
         viewModel.recordingTimer,
         style: TextStyle(
-          fontSize: 56,
+          fontSize: 48,
           fontWeight: FontWeight.bold,
           color: Theme.of(context).accentColor,
         ),
@@ -233,14 +233,14 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
                   ? "Sending..."
                   : viewModel.showPlayer()
                       ? viewModel.totalShouts == 1
-                          ? "${viewModel.yourName} sent a shout!"
+                          ? "${viewModel.yourName} sent a Tape!"
                           : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.totalShouts.toString()}"
                       : viewModel.showClear()
                           ? "Hold to record, release to send!"
                           : viewModel.showSent()
-                              ? "You sent a shout!"
+                              ? "You sent a Tape!"
                               : viewModel.showShoutPlayed()
-                                  ? "${viewModel.yourName} played your shouts!"
+                                  ? "${viewModel.yourName} played your Tape!"
                                   : "Hold to record, and release to send!",
           style: TextStyle(
             fontSize: 20,
