@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:collection';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:uuid/uuid.dart';
 import 'package:wavemobileapp/permissions.dart';
 import 'package:wavemobileapp/routing_constants.dart' as routes;
 import 'package:wavemobileapp/locator.dart';
@@ -29,13 +32,93 @@ class HomeViewModel extends BaseModel {
   bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
 
+  // status related variables
+  String currentStatus;
+  Queue<String> allStatuses = new Queue();
+  Queue<String> allStatusesMessages = new Queue();
+  Map<String, String> statusesUIDStatusTextMap = {};
+  Stream<QuerySnapshot> myStatusStream;
+  StreamSubscription<QuerySnapshot> myStatusStreamSubscription;
+  bool updateStatus = false;
+  final TextEditingController statusTextController =
+      new TextEditingController();
+
   HomeViewModel(this.myUID, this.myPhoneNumber) {
     initialise();
   }
 
+  String get status {
+    return currentStatus == null ? "What's happening?" : statusesUIDStatusTextMap[currentStatus];
+  }
+
   initialise() async {
+    initialiseStatusStream();
     initialiseChatsStream();
     fetchAllContacts();
+  }
+
+  initialiseStatusStream() async {
+    myStatusStream = _firestoreService.getStatuses(myUID);
+    myStatusStreamSubscription = myStatusStream.listen((event) {
+      allStatuses.clear();
+      allStatusesMessages.clear();
+      int i = 0;
+      if (event.docs.length == 0) {
+        currentStatus = null;
+        allStatuses.clear();
+        allStatusesMessages.clear();
+        notifyListeners();
+      }
+      event.docs.forEach((element) {
+        Map<String, dynamic> data = element.data();
+        statusesUIDStatusTextMap[element.id] = data['message'];
+        allStatuses.add(element.id);
+        allStatusesMessages.add(data['message']);
+        if (i == 0) {
+          currentStatus = element.id;
+        }
+        i += 1;
+        notifyListeners();
+      });
+    });
+  }
+
+  deleteStatus(String statusUID) {
+    _firestoreService.updateStatusState(
+        myUID, statusUID, {"isDeleted": true, "lastModifiedAt": DateTime.now()});
+    if (currentStatus == statusUID) {
+      _firestoreService.saveUserInfo(myUID, {"currentStatus": null});
+    }
+  }
+
+  addNewStatus() {
+    String message = statusTextController.text.trim();
+    if (allStatusesMessages.contains(message)) {
+      int index = allStatusesMessages.toList().indexOf(message);
+      String uid = allStatuses.elementAt(index);
+      setStatusWithUID(uid);
+    } else if (message == null || message.length == 0) {
+      // do nothing
+    }
+    else {
+      String statusUID = Uuid().v4().replaceAll("-", "");
+      statusesUIDStatusTextMap[statusUID] = message;
+      _firestoreService.updateStatusState(myUID, statusUID, {
+        "message": message,
+        "isDeleted": false,
+        "lastModifiedAt": DateTime.now()
+      });
+      _firestoreService.saveUserInfo(myUID, {"currentStatus": message});
+    }
+  }
+
+  setStatusWithUID(String statusUID) {
+    updateStatus = false;
+    _firestoreService.updateStatusState(
+        myUID, statusUID, {"isDeleted": false, "lastModifiedAt": DateTime.now()});
+    _firestoreService.saveUserInfo(
+        myUID, {"currentStatus": statusesUIDStatusTextMap[statusUID]});
+    // update this status
   }
 
   initialiseChatsStream() async {
@@ -63,6 +146,7 @@ class HomeViewModel extends BaseModel {
   @override
   void dispose() {
     chatStreamSubscription?.cancel();
+    myStatusStreamSubscription?.cancel();
     super.dispose();
   }
 
@@ -176,5 +260,9 @@ class HomeViewModel extends BaseModel {
 
   String getPhoneNumber(String uid) {
     return userUIDNumberMapping[uid];
+  }
+
+  popIt() {
+    _navigationService.goBack();
   }
 }
