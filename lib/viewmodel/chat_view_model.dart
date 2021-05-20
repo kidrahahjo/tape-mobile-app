@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,7 @@ import 'package:wavemobileapp/services/chat_service.dart';
 import 'package:wavemobileapp/services/firebase_storage_service.dart';
 import 'package:wavemobileapp/services/firstore_service.dart';
 import 'package:wavemobileapp/services/navigation_service.dart';
+import 'package:intl/intl.dart';
 
 class ChatViewModel extends ReactiveViewModel {
   final String yourUID;
@@ -29,12 +31,15 @@ class ChatViewModel extends ReactiveViewModel {
   // shout related variables
   Queue<String> shoutQueue = new Queue<String>();
   int currentShoutPlaying = 1;
+  Map<String, DateTime> shoutsToTimeStamp = {};
 
   // current state related variables
   bool youAreRecording = false;
   bool hasPlayed = false;
   String myChatState;
   String yourChatState;
+  DateTime lastSentTime;
+  DateTime lastPlayedTime;
 
   // recording related variables
   bool _record = false;
@@ -78,6 +83,13 @@ class ChatViewModel extends ReactiveViewModel {
 
   int get totalShouts => shoutQueue.length;
 
+  convertToDateTime(Timestamp time) {
+    if (time == null) {
+      return null;
+    } else {
+      return DateTime.fromMicrosecondsSinceEpoch(time.microsecondsSinceEpoch);
+    }
+  }
   enableShoutsStream() {
     shoutsStream =
         _firestoreService.fetchEndToEndShoutsFromDatabase(chatForMeUID);
@@ -85,6 +97,8 @@ class ChatViewModel extends ReactiveViewModel {
       event.docs.forEach((element) {
         if (!shoutQueue.contains(element.id)) {
           shoutQueue.add(element.id);
+          Map<String, dynamic> data = element.data();
+          shoutsToTimeStamp[element.id] = convertToDateTime(data['sentAt']);
           notifyListeners();
           if (shoutQueue.length == 1 && autoplay) {
             currentShoutPlaying = 1;
@@ -103,6 +117,7 @@ class ChatViewModel extends ReactiveViewModel {
         this.youAreRecording =
             data['isRecording'] != null ? data['isRecording'] : false;
         this.yourChatState = data['chatState'];
+        this.lastPlayedTime = convertToDateTime(data['lastListenedAt']);
         notifyListeners();
       }
     });
@@ -115,6 +130,7 @@ class ChatViewModel extends ReactiveViewModel {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
         this.myChatState = data['chatState'];
+        this.lastSentTime = convertToDateTime(data['lastSentAt']);
       }
       notifyListeners();
     });
@@ -138,7 +154,31 @@ class ChatViewModel extends ReactiveViewModel {
   void playNextShout() {
     currentShoutPlaying += 1;
     notifyListeners();
-    startPlaying();
+    if (autoplay) {
+      startPlaying();
+    }
+  }
+
+  void skip() {
+    _firestoreService.updateYourShoutState(
+      chatForMeUID,
+      shoutQueue.elementAt(currentShoutPlaying - 1),
+      {
+        "isListened": true,
+        "listenedAt": DateTime.now(),
+      },
+    );
+    if (currentShoutPlaying == shoutQueue.length) {
+      _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
+      if (yourChatState == 'Played') {
+        _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
+      }
+      shoutQueue = new Queue();
+      currentShoutPlaying = 1;
+    } else {
+      playNextShout();
+    }
+
   }
 
   void startRecording() async {
@@ -148,8 +188,8 @@ class ChatViewModel extends ReactiveViewModel {
     var tempDir = await getTemporaryDirectory();
     String audioPath = '${tempDir.path}/$audioUID.aac';
     if (continueRecording == _record) {
-      _chatService.startRecording(audioUID, audioPath);
       _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
+      _chatService.startRecording(audioUID, audioPath);
     }
   }
 
@@ -224,21 +264,22 @@ class ChatViewModel extends ReactiveViewModel {
 
   void whenFinished(String audioUID) {
     // update message and chat state
+    autoplay = false;
     _firestoreService.updateYourShoutState(
       chatForMeUID,
       audioUID,
       {
         "isListened": true,
-        "isListenedAt": DateTime.now(),
+        "listenedAt": DateTime.now(),
       },
     );
     if (currentShoutPlaying == shoutQueue.length) {
-      _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played'});
+      _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
       if (yourChatState == 'Played') {
-        _firestoreService
-            .updateChatState(chatForMeUID, {"chatState": null});
+        _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
       }
       shoutQueue = new Queue();
+      currentShoutPlaying = 1;
     } else {
       playNextShout();
     }
@@ -261,7 +302,35 @@ class ChatViewModel extends ReactiveViewModel {
     return yourChatState == 'Played';
   }
 
+  String convertTime (DateTime dateTime) {
+    Duration difference = DateTime.now().difference(dateTime);
+    int day = difference.inDays;
+    int hours = difference.inHours;
+    int minutes = difference.inMinutes;
+    int seconds = difference.inSeconds;
+    if (day != 0) {
+      return day.toString() + 'd ago';
+    } else if (hours != 0){
+      return hours.toString() + 'h ago';
+    } else if (minutes != 0) {
+      return minutes.toString() + 'm ago';
+    } else if (seconds >= 20) {
+      return seconds.toString() + 's ago';
+    }
+    else {
+      return 'Just now';
+    }
+  }
   String getTime() {
-    return "Time goes here";
+    if (showPlayer()) {
+      DateTime time =  shoutsToTimeStamp[shoutQueue.elementAt(currentShoutPlaying - 1)];
+      return time == null ? "" : convertTime(time);
+    } else if (showSent()) {
+      return lastSentTime == null ? "" : convertTime(lastSentTime);
+    } else if (showShoutPlayed()) {
+      return lastPlayedTime == null ? "" : convertTime(lastPlayedTime);
+    } else {
+      return "";
+    }
   }
 }

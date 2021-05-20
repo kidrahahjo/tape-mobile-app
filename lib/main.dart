@@ -10,7 +10,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   setupLocator();
-  final bgColor = Color(0xffeeeeee);
+  final bgColor = Color(0xfff5f5f5);
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -18,10 +18,19 @@ void main() async {
       initialRoute: StartupViewRoute,
       navigatorKey: locator<NavigationService>().navigatorKey,
       title: "shout",
-      darkTheme: ThemeData(),
+      darkTheme: ThemeData(
+        primarySwatch: Colors.orange,
+        primaryColorDark: Color(0xff444444),
+        accentColor: Colors.orange,
+        appBarTheme:
+            AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
+        brightness: Brightness.dark,
+        fontFamily: GoogleFonts.dmSans().fontFamily,
+        floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
+      ),
       theme: ThemeData(
         primarySwatch: Colors.orange,
-        primaryColorLight: Color(0xfffafafa),
+        primaryColorLight: Color(0xffffffff),
         scaffoldBackgroundColor: bgColor,
         appBarTheme: AppBarTheme(backgroundColor: bgColor, elevation: 0),
         brightness: Brightness.light,
