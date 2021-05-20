@@ -41,6 +41,8 @@ class HomeViewModel extends BaseModel {
   StreamSubscription<QuerySnapshot> myStatusStreamSubscription;
   bool updateStatus = false;
   String textToShow;
+  bool onHome = true;
+
   final TextEditingController statusTextController =
       new TextEditingController();
 
@@ -48,16 +50,25 @@ class HomeViewModel extends BaseModel {
     initialise();
     statusTextController.addListener(() {
       textToShow = statusTextController.text.trim();
+      if (onHome) {
+        textToShow = null;
+      }
       notifyListeners();
     });
   }
 
+  String realStatus() {
+    return currentStatus == null
+        ? "What's happening?"
+        : statusesUIDStatusTextMap[currentStatus];
+  }
+
   String get status {
     return textToShow != null
-        ? textToShow
-        : currentStatus == null
+        ? textToShow.length == 0
             ? "What's happening?"
-            : statusesUIDStatusTextMap[currentStatus];
+            : textToShow
+        : realStatus();
   }
 
   initialise() async {
@@ -100,6 +111,11 @@ class HomeViewModel extends BaseModel {
       updateStatus = false;
       statusTextController.text = "";
     }
+  }
+
+  resetTempVars() {
+    onHome = true;
+    notifyListeners();
   }
 
   addNewStatus() {

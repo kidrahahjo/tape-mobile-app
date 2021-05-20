@@ -82,6 +82,8 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
     return GestureDetector(
       onTap: () {
         viewModel.updateStatus = true;
+        viewModel.onHome = false;
+        viewModel.statusTextController.text = viewModel.realStatus();
         final myModel = Provider.of<HomeViewModel>(context, listen: false);
         showDialog(
             context: context,
@@ -92,7 +94,7 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
                 child: StatusView(),
               );
             }).then((value) {
-              viewModel.textToShow = null;
+              viewModel.resetTempVars();
           if (viewModel.updateStatus) {
             viewModel.addNewStatus();
           }
