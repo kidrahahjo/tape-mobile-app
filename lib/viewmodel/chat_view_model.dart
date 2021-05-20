@@ -32,7 +32,6 @@ class ChatViewModel extends ReactiveViewModel {
 
   // current state related variables
   bool youAreRecording = false;
-  bool youAreListening = false;
   bool hasPlayed = false;
   String myChatState;
   String yourChatState;

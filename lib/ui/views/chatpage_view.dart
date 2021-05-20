@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:wavemobileapp/viewmodel/chat_view_model.dart';
-import 'package:wavemobileapp/viewmodel/home_view_model.dart';
 
 class ChatPageView extends StatelessWidget {
   final String yourUID;
@@ -51,9 +50,9 @@ class CurrentStatus extends ViewModelWidget<ChatViewModel> {
 
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return (viewModel.youAreRecording || viewModel.youAreListening)
+    return (viewModel.youAreRecording)
         ? Text(
-            viewModel.youAreRecording ? "Recording..." : "Listening...",
+            "Recording...",
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
