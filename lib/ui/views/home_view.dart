@@ -165,7 +165,7 @@ class StatusView extends ViewModelWidget<HomeViewModel> {
                       child: Icon(PhosphorIcons.fireFill,
                           color: Theme.of(context).accentColor),
                     ),
-                    title: Text(viewModel.statusesUIDStatusTextMap[statusUID]),
+                    title: Text(viewModel.getStatusFromUID(statusUID)),
                   ))
               .toList(),
         )

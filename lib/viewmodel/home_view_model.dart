@@ -282,6 +282,10 @@ class HomeViewModel extends BaseModel {
     return userUIDStatusMapping[uid] == null ? "" : userUIDStatusMapping[uid];
   }
 
+  String getStatusFromUID(String statusUID) {
+    return statusesUIDStatusTextMap[statusUID] == null ? "" : statusesUIDStatusTextMap[statusUID];
+  }
+
   void signOut() async {
     bool signedOut = await _authenticationService.signOutUser();
     if (signedOut) {
