@@ -7,12 +7,28 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1034857558300:android:58a369502d0aa2904ccad9",
+        "mobilesdk_app_id": "1:1034857558300:android:a140e5a21e2865ac4ccad9",
         "android_client_info": {
-          "package_name": "com.example.wavemobileapp"
+          "package_name": "com.jointape.app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "1034857558300-30iequ0qtpt460ri7qp8n7rv9n9lqjnh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jointape.app",
+            "certificate_hash": "770a98ae0a14605d80bee2f3eb35c70f60d61647"
+          }
+        },
+        {
+          "client_id": "1034857558300-nrjek1a8uu6bpd9b766igeets1mblsvc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jointape.app",
+            "certificate_hash": "b5a5704966e7f2e3860655b96d5ed6878cd510db"
+          }
+        },
         {
           "client_id": "1034857558300-545iuv0qar4lspvs2hms2m5g5b3hms07.apps.googleusercontent.com",
           "client_type": 3
@@ -29,6 +45,13 @@
             {
               "client_id": "1034857558300-545iuv0qar4lspvs2hms2m5g5b3hms07.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1034857558300-r2co3mpd05css8egi211u8ahfbjpacp4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gillontherocks-gmail.wavemobileapp"
+              }
             }
           ]
         }
