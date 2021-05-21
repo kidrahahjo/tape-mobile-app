@@ -10,6 +10,10 @@ class FirestoreService {
     return _userCollectionReference.doc(userUID).get();
   }
 
+  Future<DocumentSnapshot> getChatStateData(String chatUID) {
+    return _chatsCollectionReference.doc(chatUID).get();
+  }
+
   Stream<DocumentSnapshot> getUserDataStream(String userUID) {
     return _userCollectionReference.doc(userUID).snapshots();
   }

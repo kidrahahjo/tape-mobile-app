@@ -59,6 +59,7 @@ class ChatViewModel extends ReactiveViewModel {
   Stream<DocumentSnapshot> myShoutsSentStateStream;
   StreamSubscription<DocumentSnapshot> myShoutsSentStateStreamSubscription;
 
+
   ChatViewModel(this.yourUID, this.yourName) {
     enableYourDocumentStream();
     enableShoutsStream();
