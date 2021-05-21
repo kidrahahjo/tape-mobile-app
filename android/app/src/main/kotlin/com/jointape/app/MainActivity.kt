@@ -1,4 +1,4 @@
-package com.example.wavemobileapp
+package com.jointape.app
 
 import io.flutter.embedding.android.FlutterActivity
 
