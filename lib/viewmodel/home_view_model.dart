@@ -369,7 +369,7 @@ class HomeViewModel extends BaseModel {
     String yourState = userUIDDYourChatStateMapping[yourUID];
     if (myState == 'Received') {
       return Icon(
-        PhosphorIcons.play,
+        PhosphorIcons.playFill,
         color: Colors.orange,
       );
     } else if ((myState == null || myState == 'Played') && yourState == null) {
