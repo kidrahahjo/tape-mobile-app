@@ -279,7 +279,7 @@ class HomeViewModel extends BaseModel {
   }
 
   String getUserStatus(String uid) {
-    return userUIDStatusMapping[uid] == null ? "Start a Tape" : userUIDStatusMapping[uid];
+    return userUIDStatusMapping[uid] == null ? "" : userUIDStatusMapping[uid];
   }
 
   void signOut() async {
@@ -312,6 +312,15 @@ class HomeViewModel extends BaseModel {
   }
 
   popIt() {
+    _navigationService.goBack();
+  }
+
+  void submit() {
+    if (textToShow == null || textToShow == userUIDStatusMapping[currentStatus]) {
+      updateStatus = false;
+    } else {
+      updateStatus = true;
+    }
     _navigationService.goBack();
   }
 }

@@ -129,6 +129,9 @@ class StatusView extends ViewModelWidget<HomeViewModel> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
+            onSubmitted: (String string) {
+              viewModel.submit();
+            },
             autofocus: true,
             maxLength: 32,
             controller: viewModel.statusTextController,
