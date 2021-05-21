@@ -169,9 +169,7 @@ class HomeViewModel extends BaseModel {
             userUIDs.add(uid);
             userDocumentStream(uid);
           }
-          await _firestoreService.getUserData(uid).then((value) {
-
-          });
+          await _firestoreService.getUserData(uid).then((value) {});
         }
         chatsList.clear();
         chatsList.addAll(chatListChanged);
@@ -181,7 +179,8 @@ class HomeViewModel extends BaseModel {
   }
 
   userDocumentStream(String uid) {
-    Stream<DocumentSnapshot> userStream = _firestoreService.getUserDataStream(uid);
+    Stream<DocumentSnapshot> userStream =
+        _firestoreService.getUserDataStream(uid);
     usersDocuments.add(userStream);
     usersDocumentsSubscriptions.add(userStream.listen((event) {
       if (event.exists) {
@@ -283,7 +282,9 @@ class HomeViewModel extends BaseModel {
   }
 
   String getStatusFromUID(String statusUID) {
-    return statusesUIDStatusTextMap[statusUID] == null ? "" : statusesUIDStatusTextMap[statusUID];
+    return statusesUIDStatusTextMap[statusUID] == null
+        ? ""
+        : statusesUIDStatusTextMap[statusUID];
   }
 
   void signOut() async {
@@ -320,7 +321,8 @@ class HomeViewModel extends BaseModel {
   }
 
   void submit() {
-    if (textToShow == null || textToShow == userUIDStatusMapping[currentStatus]) {
+    if (textToShow == null ||
+        textToShow == userUIDStatusMapping[currentStatus]) {
       updateStatus = false;
     } else {
       updateStatus = true;

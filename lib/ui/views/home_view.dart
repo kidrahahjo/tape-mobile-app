@@ -97,7 +97,7 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
                 child: StatusView(),
               );
             }).then((value) {
-              viewModel.resetTempVars();
+          viewModel.resetTempVars();
           if (viewModel.updateStatus) {
             viewModel.addNewStatus();
           }
@@ -107,7 +107,7 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
         avatar: CircleAvatar(
           backgroundColor: Colors.transparent,
           child: Icon(PhosphorIcons.fireFill,
-              color: Theme.of(context).accentColor),
+              size: 20, color: Theme.of(context).accentColor),
         ),
         label: Text(viewModel.status),
         elevation: 0,
@@ -118,8 +118,7 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
 }
 
 class StatusView extends ViewModelWidget<HomeViewModel> {
-
-  StatusView(): super(reactive: true);
+  StatusView() : super(reactive: true);
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
@@ -296,7 +295,7 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
                           )),
                     ),
               SizedBox(
-                width: 16,
+                width: 8,
               )
             ],
           ),
