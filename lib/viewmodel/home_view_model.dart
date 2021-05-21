@@ -22,10 +22,14 @@ class HomeViewModel extends BaseModel {
 
   // chat related variables
   List<String> chatsList = [];
+  List<String> userUIDs = [];
+  List<Stream<DocumentSnapshot>> usersDocuments = [];
+  List<StreamSubscription<DocumentSnapshot>> usersDocumentsSubscriptions = [];
   Stream<QuerySnapshot> chatsStream;
   StreamSubscription<QuerySnapshot> chatStreamSubscription;
   Map<String, String> userUIDDisplayNameMapping = {};
   Map<String, String> userUIDNumberMapping = {};
+  Map<String, String> userUIDStatusMapping = {};
 
   // contact related variables
   List<String> contactsMap = [];
@@ -161,9 +165,12 @@ class HomeViewModel extends BaseModel {
           Map<String, dynamic> data = element.data();
           String uid = data['receiver'];
           chatListChanged.add(uid);
+          if (!userUIDs.contains(uid)) {
+            userUIDs.add(uid);
+            userDocumentStream(uid);
+          }
           await _firestoreService.getUserData(uid).then((value) {
-            userUIDDisplayNameMapping[uid] = value.get('displayName');
-            userUIDNumberMapping[uid] = value.get('phoneNumber');
+
           });
         }
         chatsList.clear();
@@ -171,6 +178,20 @@ class HomeViewModel extends BaseModel {
         notifyListeners();
       }
     });
+  }
+
+  userDocumentStream(String uid) {
+    Stream<DocumentSnapshot> userStream = _firestoreService.getUserDataStream(uid);
+    usersDocuments.add(userStream);
+    usersDocumentsSubscriptions.add(userStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        userUIDDisplayNameMapping[uid] = data['displayName'];
+        userUIDNumberMapping[uid] = data['phoneNumber'];
+        userUIDStatusMapping[uid] = data['currentStatus'];
+        notifyListeners();
+      }
+    }));
   }
 
   @override
@@ -233,12 +254,10 @@ class HomeViewModel extends BaseModel {
             .then((querySnapshot) {
           querySnapshot.docs.forEach((element) {
             String userUID = element.id;
-            Map<String, dynamic> metadata = element.data();
-            String phone = metadata['phoneNumber'];
-            String displayName = metadata['displayName'];
+            if (!userUIDs.contains(userUID)) {
+              userDocumentStream(element.id);
+            }
             contactsData.add(userUID);
-            userUIDDisplayNameMapping[userUID] = displayName;
-            userUIDNumberMapping[userUID] = phone;
           });
         });
       }
@@ -260,7 +279,7 @@ class HomeViewModel extends BaseModel {
   }
 
   String getUserStatus(String uid) {
-    return 'Vibing';
+    return userUIDStatusMapping[uid] == null ? "Start a Tape" : userUIDStatusMapping[uid];
   }
 
   void signOut() async {

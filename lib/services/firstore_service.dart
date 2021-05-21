@@ -10,6 +10,10 @@ class FirestoreService {
     return _userCollectionReference.doc(userUID).get();
   }
 
+  Stream<DocumentSnapshot> getUserDataStream(String userUID) {
+    return _userCollectionReference.doc(userUID).snapshots();
+  }
+
   saveUserInfo(String userUID, Map<String, dynamic> data) async {
     await _userCollectionReference
         .doc(userUID)
@@ -113,5 +117,4 @@ class FirestoreService {
         .doc(statusUID)
         .set(data, SetOptions(merge: true));
   }
-
 }
