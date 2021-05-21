@@ -306,8 +306,10 @@ class HomeViewModel extends BaseModel {
     String contactName = userNumberContactNameMapping[number];
     if (contactName != null) {
       return contactName;
-    } else {
+    } else if (number != null) {
       return number;
+    } else {
+      return "";
     }
   }
 
