@@ -63,12 +63,19 @@ class CurrentStatus extends ViewModelWidget<ChatViewModel> {
               color: Theme.of(context).accentColor,
             ),
           )
-        : Text(
-            "Vibing",
-            style: TextStyle(
-              fontSize: 16,
-            ),
-          );
+        : YourStatus();
+  }
+}
+
+class YourStatus extends ViewModelWidget<ChatViewModel> {
+  @override
+  Widget build(BuildContext context, ChatViewModel viewModel) {
+    return Text(
+      viewModel.status,
+      style: TextStyle(
+        fontSize: 16,
+      ),
+    );
   }
 }
 

@@ -58,10 +58,10 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
       expandedHeight: 120,
       pinned: true,
       stretch: true,
-      // actions: <Widget>[
-      // StatusChip(),
-      // SizedBox(width: 16),
-      // ],
+      actions: <Widget>[
+        StatusChip(),
+        SizedBox(width: 16),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           'Chats',
@@ -72,6 +72,103 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
         centerTitle: false,
         titlePadding: EdgeInsets.all(16),
       ),
+    );
+  }
+}
+
+class StatusChip extends ViewModelWidget<HomeViewModel> {
+  @override
+  Widget build(BuildContext context, HomeViewModel viewModel) {
+    return GestureDetector(
+      onTap: () {
+        viewModel.updateStatus = true;
+        viewModel.onHome = false;
+        viewModel.statusTextController.text = viewModel.realStatus();
+        if (viewModel.statusTextController.text == "What's happening?") {
+          viewModel.statusTextController.text = "";
+        }
+        final myModel = Provider.of<HomeViewModel>(context, listen: false);
+        showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (context) {
+              return ListenableProvider.value(
+                value: myModel,
+                child: StatusView(),
+              );
+            }).then((value) {
+          viewModel.resetTempVars();
+          if (viewModel.updateStatus) {
+            viewModel.addNewStatus();
+          }
+        });
+      },
+      child: Chip(
+        avatar: CircleAvatar(
+          backgroundColor: Colors.transparent,
+          child: Icon(PhosphorIcons.fireFill,
+              size: 20, color: Theme.of(context).accentColor),
+        ),
+        label: Text(viewModel.status),
+        elevation: 0,
+        labelStyle: TextStyle(),
+      ),
+    );
+  }
+}
+
+class StatusView extends ViewModelWidget<HomeViewModel> {
+  StatusView() : super(reactive: true);
+
+  @override
+  Widget build(BuildContext context, HomeViewModel viewModel) {
+    return SimpleDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: TextField(
+            onSubmitted: (String string) {
+              viewModel.submit();
+            },
+            autofocus: true,
+            maxLength: 32,
+            controller: viewModel.statusTextController,
+            decoration: InputDecoration(
+              suffixIcon: IconButton(
+                icon: Icon(PhosphorIcons.x),
+                onPressed: () {
+                  viewModel.statusTextController.clear();
+                },
+              ),
+              hintText: "What's happening?",
+            ),
+          ),
+        ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: viewModel.allStatuses
+              .map((statusUID) => ListTile(
+                    trailing: IconButton(
+                      icon: Icon(PhosphorIcons.minus),
+                      onPressed: () {
+                        viewModel.deleteStatus(statusUID);
+                      },
+                    ),
+                    onTap: () {
+                      viewModel.setStatusWithUID(statusUID);
+                      viewModel.popIt();
+                    },
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.white10,
+                      child: Icon(PhosphorIcons.fireFill,
+                          color: Theme.of(context).accentColor),
+                    ),
+                    title: Text(viewModel.getStatusFromUID(statusUID)),
+                  ))
+              .toList(),
+        )
+      ],
     );
   }
 }
@@ -184,7 +281,9 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
               viewModel.isFetchingContacts
                   ? CircleAvatar(
                       backgroundColor: Colors.transparent,
-                      child: CircularProgressIndicator(strokeWidth: 2,))
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ))
                   : TextButton(
                       onPressed: () {
                         viewModel.refreshContacts();
@@ -196,7 +295,7 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
                           )),
                     ),
               SizedBox(
-                width: 16,
+                width: 8,
               )
             ],
           ),

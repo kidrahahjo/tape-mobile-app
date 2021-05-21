@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:uuid/uuid.dart';
@@ -13,7 +12,6 @@ import 'package:wavemobileapp/services/chat_service.dart';
 import 'package:wavemobileapp/services/firebase_storage_service.dart';
 import 'package:wavemobileapp/services/firstore_service.dart';
 import 'package:wavemobileapp/services/navigation_service.dart';
-import 'package:intl/intl.dart';
 
 class ChatViewModel extends ReactiveViewModel {
   final String yourUID;
@@ -33,6 +31,9 @@ class ChatViewModel extends ReactiveViewModel {
   int currentShoutPlaying = 1;
   Map<String, DateTime> shoutsToTimeStamp = {};
 
+  // status related variables
+  String yourStatus;
+
   // current state related variables
   bool youAreRecording = false;
   bool hasPlayed = false;
@@ -49,6 +50,8 @@ class ChatViewModel extends ReactiveViewModel {
   bool autoplay = false;
 
   // Streams
+  Stream<DocumentSnapshot> yourDocumentStream;
+  StreamSubscription<DocumentSnapshot> yourDocumentStreamSubscription;
   Stream<QuerySnapshot> shoutsStream;
   StreamSubscription<QuerySnapshot> shoutsStreamSubscription;
   Stream<DocumentSnapshot> chatStateStream;
@@ -57,6 +60,7 @@ class ChatViewModel extends ReactiveViewModel {
   StreamSubscription<DocumentSnapshot> myShoutsSentStateStreamSubscription;
 
   ChatViewModel(this.yourUID, this.yourName) {
+    enableYourDocumentStream();
     enableShoutsStream();
     enableChatForMeStateStream();
     enableChatForYouStateStream();
@@ -82,6 +86,19 @@ class ChatViewModel extends ReactiveViewModel {
   bool get sendingShout => _sendingShout;
 
   int get totalShouts => shoutQueue.length;
+
+  String get status => yourStatus == null ? "" : yourStatus;
+
+  enableYourDocumentStream() {
+    yourDocumentStream = _firestoreService.getUserDataStream(yourUID);
+    yourDocumentStreamSubscription = yourDocumentStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        yourStatus = data['currentStatus'];
+        notifyListeners();
+      }
+    });
+  }
 
   convertToDateTime(Timestamp time) {
     if (time == null) {
@@ -144,6 +161,7 @@ class ChatViewModel extends ReactiveViewModel {
 
   @override
   void dispose() {
+    yourDocumentStreamSubscription?.cancel();
     _chatService.cancelSubscriptions();
     shoutsStreamSubscription?.cancel();
     chatStateStreamSubscription?.cancel();

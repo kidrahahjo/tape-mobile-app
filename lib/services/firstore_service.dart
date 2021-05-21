@@ -10,6 +10,10 @@ class FirestoreService {
     return _userCollectionReference.doc(userUID).get();
   }
 
+  Stream<DocumentSnapshot> getUserDataStream(String userUID) {
+    return _userCollectionReference.doc(userUID).snapshots();
+  }
+
   saveUserInfo(String userUID, Map<String, dynamic> data) async {
     await _userCollectionReference
         .doc(userUID)
@@ -94,5 +98,23 @@ class FirestoreService {
       "lastModifiedAt": currentTime,
       "chatState": metaData['chatState'],
     }, SetOptions(merge: true));
+  }
+
+  Stream<QuerySnapshot> getStatuses(String userUID) {
+    return _userCollectionReference
+        .doc(userUID)
+        .collection("statuses")
+        .where("isDeleted", isEqualTo: false)
+        .orderBy("lastModifiedAt", descending: true)
+        .snapshots();
+  }
+
+  updateStatusState(
+      String userUID, String statusUID, Map<String, dynamic> data) {
+    _userCollectionReference
+        .doc(userUID)
+        .collection("statuses")
+        .doc(statusUID)
+        .set(data, SetOptions(merge: true));
   }
 }
