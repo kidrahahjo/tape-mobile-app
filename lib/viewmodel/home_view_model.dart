@@ -3,6 +3,8 @@ import 'dart:collection';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wavemobileapp/permissions.dart';
 import 'package:wavemobileapp/routing_constants.dart' as routes;
@@ -23,13 +25,19 @@ class HomeViewModel extends BaseModel {
   // chat related variables
   List<String> chatsList = [];
   List<String> userUIDs = [];
+  List<Stream<DocumentSnapshot>> usersChatStateStream = [];
+  List<StreamSubscription<DocumentSnapshot>> usersChatStateStreamSubscription = [];
   List<Stream<DocumentSnapshot>> usersDocuments = [];
   List<StreamSubscription<DocumentSnapshot>> usersDocumentsSubscriptions = [];
+  Map<String, String> userUIDDYourChatStateMapping = {};
+  Map<String, String> userUIDDMyChatStateMapping = {};
+
   Stream<QuerySnapshot> chatsStream;
   StreamSubscription<QuerySnapshot> chatStreamSubscription;
   Map<String, String> userUIDDisplayNameMapping = {};
   Map<String, String> userUIDNumberMapping = {};
   Map<String, String> userUIDStatusMapping = {};
+  Map<String, bool> userUIDRecordingState = {};
 
   // contact related variables
   List<String> contactsMap = [];
@@ -73,6 +81,10 @@ class HomeViewModel extends BaseModel {
             ? "What's happening?"
             : textToShow
         : realStatus();
+  }
+
+  bool isRecording(String userUID) {
+    return userUIDRecordingState[userUID] == null ? false : userUIDRecordingState[userUID];
   }
 
   initialise() async {
@@ -159,7 +171,7 @@ class HomeViewModel extends BaseModel {
     chatsStream = _firestoreService.getUserChats(myUID);
     chatStreamSubscription = chatsStream.listen((event) async {
       // handle chat stream logic here
-      if (event.docChanges.length != 0) {
+      if (event.docs.length != 0) {
         List<String> chatListChanged = [];
         for (QueryDocumentSnapshot element in event.docs) {
           Map<String, dynamic> data = element.data();
@@ -168,7 +180,9 @@ class HomeViewModel extends BaseModel {
           if (!userUIDs.contains(uid)) {
             userUIDs.add(uid);
             userDocumentStream(uid);
+            userChatStateStream(uid);
           }
+          userUIDDMyChatStateMapping[uid] = data['chatState'];
           await _firestoreService.getUserData(uid).then((value) {});
         }
         chatsList.clear();
@@ -193,10 +207,30 @@ class HomeViewModel extends BaseModel {
     }));
   }
 
+  userChatStateStream(String uid) {
+    Stream<DocumentSnapshot> chatState = _firestoreService.getChatState(uid + '_' + myUID);
+    usersDocuments.add(chatState);
+    usersDocumentsSubscriptions.add(chatState.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        userUIDDYourChatStateMapping[data['sender']] = data['chatState'];
+        userUIDRecordingState[data['sender']] = data['isRecording'];
+        notifyListeners();
+      }
+    }));
+  }
+
+
   @override
   void dispose() {
     chatStreamSubscription?.cancel();
     myStatusStreamSubscription?.cancel();
+    for (var stream in usersDocumentsSubscriptions) {
+      stream?.cancel;
+    }
+    for (var stream in usersChatStateStreamSubscription) {
+      stream?.cancel;
+    }
     super.dispose();
   }
 
@@ -272,8 +306,10 @@ class HomeViewModel extends BaseModel {
     String contactName = userNumberContactNameMapping[number];
     if (contactName != null) {
       return contactName;
-    } else {
+    } else if (number != null) {
       return number;
+    } else {
+      return "";
     }
   }
 
@@ -328,5 +364,22 @@ class HomeViewModel extends BaseModel {
       updateStatus = true;
     }
     _navigationService.goBack();
+  }
+
+  Icon showChatState(String yourUID) {
+    String myState = userUIDDMyChatStateMapping[yourUID];
+    String yourState = userUIDDYourChatStateMapping[yourUID];
+    if (myState == 'Received') {
+      return Icon(
+        PhosphorIcons.playFill,
+        color: Colors.orange,
+      );
+    } else if ((myState == null || myState == 'Played') && yourState == null) {
+      return null;
+    } else if (yourState == 'Received') {
+      return Icon(PhosphorIcons.paperPlane);
+    } else if (yourState == 'Played') {
+      return Icon(PhosphorIcons.speakerSimpleHigh);
+    }
   }
 }

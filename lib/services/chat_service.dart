@@ -7,7 +7,7 @@ class ChatService with ReactiveServiceMixin {
   // recorder related variables
   FlutterSoundRecorder _flutterSoundRecorder = new FlutterSoundRecorder();
   var _flutterSoundRecorderSubscription;
-  ReactiveValue<String> _recordingTime = ReactiveValue<String>("");
+  ReactiveValue<String> _recordingTime = ReactiveValue<String>("0s");
   String audioUID;
   String audioPath;
 
@@ -41,7 +41,7 @@ class ChatService with ReactiveServiceMixin {
   }
 
   Future<void> suspendRecording() async {
-    _recordingTime.value = "";
+    _recordingTime.value = "0s";
     _recordingShout.value = false;
     await _flutterSoundRecorderSubscription?.cancel();
     await _flutterSoundRecorder?.stopRecorder();

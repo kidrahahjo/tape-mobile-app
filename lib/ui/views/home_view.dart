@@ -211,7 +211,7 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
           viewModel.goToContactScreen(yourUID);
         },
         child: ListTile(
-          trailing: Icon(PhosphorIcons.megaphoneLight),
+          trailing: viewModel.showChatState(yourUID),
           leading: CircleAvatar(
             child: Icon(
               PhosphorIcons.user,
@@ -221,7 +221,14 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
             viewModel.getUserName(yourUID),
             style: TextStyle(),
           ),
-          subtitle: Text(viewModel.getUserStatus(yourUID)),
+          subtitle: viewModel.isRecording(yourUID)
+              ? Text(
+                  "Recording...",
+                  style: TextStyle(
+                      color: Theme.of(context).accentColor,
+                      fontWeight: FontWeight.bold),
+                )
+              : Text(viewModel.getUserStatus(yourUID)),
         ));
   }
 }
