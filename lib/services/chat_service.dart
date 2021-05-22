@@ -24,7 +24,8 @@ class ChatService with ReactiveServiceMixin {
   bool get isRecordingShout => _recordingShout.value;
 
   ChatService() {
-    listenToReactiveValues([_recordingTime,  _recordingShout, _loadingShout, _playingShout]);
+    listenToReactiveValues(
+        [_recordingTime, _recordingShout, _loadingShout, _playingShout]);
   }
 
   cancelSubscriptions() {
@@ -53,10 +54,12 @@ class ChatService with ReactiveServiceMixin {
     this.audioPath = audioPath;
     await _flutterSoundRecorder.openAudioSession();
     _recordingShout.value = true;
-    _flutterSoundRecorderSubscription = _flutterSoundRecorder.onProgress.listen((event) {
+    _flutterSoundRecorderSubscription =
+        _flutterSoundRecorder.onProgress.listen((event) {
       _recordingTime.value = event.duration.inSeconds.toString() + 's';
     });
-    await _flutterSoundRecorder.setSubscriptionDuration(Duration(milliseconds: 500));
+    await _flutterSoundRecorder
+        .setSubscriptionDuration(Duration(milliseconds: 500));
     await _flutterSoundRecorder.startRecorder(
       toFile: audioPath,
       codec: Codec.aacADTS,
@@ -68,11 +71,13 @@ class ChatService with ReactiveServiceMixin {
     return [audioPath, audioUID];
   }
 
-  Future startPlaying(String downloadURL, Function whenFinished, String thisAudioUID) async {
+  Future startPlaying(
+      String downloadURL, Function whenFinished, String thisAudioUID) async {
     _loadingShout.value = true;
     await suspendPlaying();
     await _flutterSoundPlayer.openAudioSession();
-    _flutterSoundPlayerSubscription = _flutterSoundPlayer.onProgress.listen((event) {
+    _flutterSoundPlayerSubscription =
+        _flutterSoundPlayer.onProgress.listen((event) {
       if (_flutterSoundPlayer.isPlaying) {
         _loadingShout.value = false;
         _playingShout.value = true;
@@ -81,16 +86,16 @@ class ChatService with ReactiveServiceMixin {
         _playingShout.value = false;
       }
     });
-    await _flutterSoundPlayer.setSubscriptionDuration(Duration(milliseconds: 500));
+    await _flutterSoundPlayer
+        .setSubscriptionDuration(Duration(milliseconds: 500));
     await _flutterSoundPlayer.startPlayer(
-      fromURI: downloadURL,
-      codec: Codec.mp3,
-      whenFinished: () {
-        _playingShout.value = false;
-        _loadingShout.value = false;
-        whenFinished(thisAudioUID);
-      }
-    );
+        fromURI: downloadURL,
+        codec: Codec.mp3,
+        whenFinished: () {
+          _playingShout.value = false;
+          _loadingShout.value = false;
+          whenFinished(thisAudioUID);
+        });
   }
 
   Future<void> stopPlaying() async {

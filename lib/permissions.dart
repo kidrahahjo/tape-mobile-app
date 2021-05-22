@@ -18,7 +18,6 @@ Future<bool> getStoragePermission() async {
   return permission.isGranted;
 }
 
-
 Future<bool> getContactPermission() async {
   PermissionStatus permission = await Permission.contacts.status;
   if (!permission.isGranted) {

@@ -59,7 +59,6 @@ class ChatViewModel extends ReactiveViewModel {
   Stream<DocumentSnapshot> myShoutsSentStateStream;
   StreamSubscription<DocumentSnapshot> myShoutsSentStateStreamSubscription;
 
-
   ChatViewModel(this.yourUID, this.yourName) {
     enableYourDocumentStream();
     enableShoutsStream();
@@ -108,6 +107,7 @@ class ChatViewModel extends ReactiveViewModel {
       return DateTime.fromMicrosecondsSinceEpoch(time.microsecondsSinceEpoch);
     }
   }
+
   enableShoutsStream() {
     shoutsStream =
         _firestoreService.fetchEndToEndShoutsFromDatabase(chatForMeUID);
@@ -188,7 +188,8 @@ class ChatViewModel extends ReactiveViewModel {
       },
     );
     if (currentShoutPlaying == shoutQueue.length) {
-      _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
+      _firestoreService.updateChatState(chatForYouUID,
+          {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
       if (yourChatState == 'Played') {
         _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
       }
@@ -197,7 +198,6 @@ class ChatViewModel extends ReactiveViewModel {
     } else {
       playNextShout();
     }
-
   }
 
   void startRecording() async {
@@ -237,18 +237,9 @@ class ChatViewModel extends ReactiveViewModel {
     File file = File(filePath);
     await _firebaseStorageService
         .getLocationReference(chatForYouUID, currentAudioUID)
-        .putFile(file);
-    _firestoreService.sendShout({
-      "chatForMe": chatForMeUID,
-      "chatForYou": chatForYouUID,
-      "myUID": myUID,
-      "yourUID": yourUID,
-      "chatState": 'Received',
-    }, currentAudioUID, DateTime.now()).onError((error, stackTrace) {
-      // show failed to send snackbar
-    }).whenComplete(() {
+        .putFile(file)
+        .whenComplete(() {
       _sendingShout = false;
-      notifyListeners();
     });
   }
 
@@ -293,7 +284,8 @@ class ChatViewModel extends ReactiveViewModel {
       },
     );
     if (currentShoutPlaying == shoutQueue.length) {
-      _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
+      _firestoreService.updateChatState(chatForYouUID,
+          {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
       if (yourChatState == 'Played') {
         _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
       }
@@ -321,7 +313,7 @@ class ChatViewModel extends ReactiveViewModel {
     return yourChatState == 'Played';
   }
 
-  String convertTime (DateTime dateTime) {
+  String convertTime(DateTime dateTime) {
     Duration difference = DateTime.now().difference(dateTime);
     int day = difference.inDays;
     int hours = difference.inHours;
@@ -329,20 +321,21 @@ class ChatViewModel extends ReactiveViewModel {
     int seconds = difference.inSeconds;
     if (day != 0) {
       return day.toString() + 'd ago';
-    } else if (hours != 0){
+    } else if (hours != 0) {
       return hours.toString() + 'h ago';
     } else if (minutes != 0) {
       return minutes.toString() + 'm ago';
     } else if (seconds >= 20) {
       return seconds.toString() + 's ago';
-    }
-    else {
+    } else {
       return 'Just now';
     }
   }
+
   String getTime() {
     if (showPlayer()) {
-      DateTime time =  shoutsToTimeStamp[shoutQueue.elementAt(currentShoutPlaying - 1)];
+      DateTime time =
+          shoutsToTimeStamp[shoutQueue.elementAt(currentShoutPlaying - 1)];
       return time == null ? "" : convertTime(time);
     } else if (showSent()) {
       return lastSentTime == null ? "" : convertTime(lastSentTime);

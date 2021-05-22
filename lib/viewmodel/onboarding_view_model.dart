@@ -24,7 +24,8 @@ class OnboardingViewModel extends BaseModel {
         'phoneNumber': phoneNumber,
       };
       await _firestoreService.saveUserInfo(userUID, data);
-      _navigationService.navigateReplacementTo(routes.HomeViewRoute, arguments: {
+      _navigationService
+          .navigateReplacementTo(routes.HomeViewRoute, arguments: {
         'userUID': userUID,
         'phoneNumber': phoneNumber,
       });

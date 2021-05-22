@@ -26,7 +26,8 @@ class HomeViewModel extends BaseModel {
   List<String> chatsList = [];
   List<String> userUIDs = [];
   List<Stream<DocumentSnapshot>> usersChatStateStream = [];
-  List<StreamSubscription<DocumentSnapshot>> usersChatStateStreamSubscription = [];
+  List<StreamSubscription<DocumentSnapshot>> usersChatStateStreamSubscription =
+      [];
   List<Stream<DocumentSnapshot>> usersDocuments = [];
   List<StreamSubscription<DocumentSnapshot>> usersDocumentsSubscriptions = [];
   Map<String, String> userUIDDYourChatStateMapping = {};
@@ -84,7 +85,9 @@ class HomeViewModel extends BaseModel {
   }
 
   bool isRecording(String userUID) {
-    return userUIDRecordingState[userUID] == null ? false : userUIDRecordingState[userUID];
+    return userUIDRecordingState[userUID] == null
+        ? false
+        : userUIDRecordingState[userUID];
   }
 
   initialise() async {
@@ -208,7 +211,8 @@ class HomeViewModel extends BaseModel {
   }
 
   userChatStateStream(String uid) {
-    Stream<DocumentSnapshot> chatState = _firestoreService.getChatState(uid + '_' + myUID);
+    Stream<DocumentSnapshot> chatState =
+        _firestoreService.getChatState(uid + '_' + myUID);
     usersDocuments.add(chatState);
     usersDocumentsSubscriptions.add(chatState.listen((event) {
       if (event.exists) {
@@ -219,7 +223,6 @@ class HomeViewModel extends BaseModel {
       }
     }));
   }
-
 
   @override
   void dispose() {

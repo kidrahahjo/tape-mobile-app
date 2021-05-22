@@ -27,6 +27,7 @@ class AuthenticationService {
       return false;
     }
   }
+
   onVerificationCompleted(PhoneAuthCredential phoneAuthCredential) {
     return null;
   }
@@ -43,7 +44,6 @@ class AuthenticationService {
   onCodeAutoRetrievalTimeout(String verificationID) {
     return null;
   }
-
 
   Future sendOTP(String mobileNumber, int resendingToken) async {
     return auth.verifyPhoneNumber(
@@ -75,9 +75,11 @@ class AuthenticationService {
             .getUserData(authCredential.user.uid)
             .then((value) {
           if (value.exists) {
+            Map<String, dynamic> data = value.data();
             return {
               'userVerified': true,
-              'userOnboarded': true,
+              'userOnboarded':
+                  data['hasOnboarded'] == null ? false : data['hasOnboarded'],
               'userUID': authCredential.user.uid,
             };
           } else {
