@@ -18,8 +18,8 @@ class FirestoreService {
     return _userCollectionReference.doc(userUID).snapshots();
   }
 
-  saveUserInfo(String userUID, Map<String, dynamic> data) async {
-    await _userCollectionReference
+  Future<void> saveUserInfo(String userUID, Map<String, dynamic> data) async {
+    return _userCollectionReference
         .doc(userUID)
         .set(data, SetOptions(merge: true));
   }

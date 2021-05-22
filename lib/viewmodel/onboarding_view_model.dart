@@ -16,20 +16,28 @@ class OnboardingViewModel extends BaseModel {
   saveUserInfo(String displayName) async {
     setBusy(true);
     if (displayName.length == 0) {
-      showError = false;
+      showError = true;
+      setBusy(false);
       notifyListeners();
     } else {
       Map<String, dynamic> data = {
         'displayName': displayName,
         'phoneNumber': phoneNumber,
+        'hasOnboarded': true,
       };
-      await _firestoreService.saveUserInfo(userUID, data);
-      _navigationService
-          .navigateReplacementTo(routes.HomeViewRoute, arguments: {
-        'userUID': userUID,
-        'phoneNumber': phoneNumber,
+      _firestoreService.saveUserInfo(userUID, data)
+      .onError((error, stackTrace) {
+        showError = true;
+        setBusy(false);
+      })
+      .then((value) {
+        setBusy(false);
+        _navigationService
+            .navigateReplacementTo(routes.HomeViewRoute, arguments: {
+          'userUID': userUID,
+          'phoneNumber': phoneNumber,
+        });
       });
     }
-    setBusy(false);
   }
 }
