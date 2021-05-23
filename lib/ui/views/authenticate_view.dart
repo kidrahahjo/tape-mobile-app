@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
-import 'package:wavemobileapp/viewmodel/authentication_view_model.dart';
+import 'package:tapemobileapp/viewmodel/authentication_view_model.dart';
 
 class AuthenticationView extends StatelessWidget {
   @override

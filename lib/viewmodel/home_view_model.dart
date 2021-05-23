@@ -5,14 +5,15 @@ import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:tapemobileapp/services/push_notification_service.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wavemobileapp/permissions.dart';
-import 'package:wavemobileapp/routing_constants.dart' as routes;
-import 'package:wavemobileapp/locator.dart';
-import 'package:wavemobileapp/services/authentication_service.dart';
-import 'package:wavemobileapp/services/firstore_service.dart';
-import 'package:wavemobileapp/services/navigation_service.dart';
-import 'package:wavemobileapp/viewmodel/base_model.dart';
+import 'package:tapemobileapp/permissions.dart';
+import 'package:tapemobileapp/routing_constants.dart' as routes;
+import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/services/authentication_service.dart';
+import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/navigation_service.dart';
+import 'package:tapemobileapp/viewmodel/base_model.dart';
 
 class HomeViewModel extends BaseModel {
   final String myUID;
@@ -21,6 +22,7 @@ class HomeViewModel extends BaseModel {
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
   final NavigationService _navigationService = locator<NavigationService>();
+  final PushNotification _pushNotification = locator<PushNotification>();
 
   // chat related variables
   List<String> chatsList = [];
@@ -91,6 +93,7 @@ class HomeViewModel extends BaseModel {
   }
 
   initialise() async {
+    _pushNotification.initialise(this.myUID);
     initialiseStatusStream();
     initialiseChatsStream();
     fetchAllContacts();
@@ -384,5 +387,6 @@ class HomeViewModel extends BaseModel {
     } else if (yourState == 'Played') {
       return Icon(PhosphorIcons.speakerSimpleHigh);
     }
+    return null;
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
-import 'package:wavemobileapp/viewmodel/chat_view_model.dart';
+import 'package:tapemobileapp/viewmodel/chat_view_model.dart';
 
 class ChatPageView extends StatelessWidget {
   final String yourUID;
@@ -87,10 +87,7 @@ class MainFooter extends ViewModelWidget<ChatViewModel> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        SizedBox(
-          width: 64,
-          height: 64,
-        ),
+        PokeButton(),
         RecordButton(),
         SkipButton(),
       ],
@@ -112,6 +109,24 @@ class SendingShoutIndicator extends ViewModelWidget<ChatViewModel> {
             )
           : null,
     );
+  }
+}
+
+class PokeButton extends ViewModelWidget<ChatViewModel> {
+  @override
+  Widget build(BuildContext context, ChatViewModel viewModel) {
+    return SizedBox(
+        width: 64,
+        height: 64,
+        child: RawMaterialButton(
+          onPressed: () {
+            viewModel.poke();
+          },
+          shape: CircleBorder(),
+          child: Icon(
+            PhosphorIcons.handWaving,
+          ),
+        ));
   }
 }
 

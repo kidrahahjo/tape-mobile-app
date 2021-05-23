@@ -6,12 +6,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wavemobileapp/locator.dart';
-import 'package:wavemobileapp/services/authentication_service.dart';
-import 'package:wavemobileapp/services/chat_service.dart';
-import 'package:wavemobileapp/services/firebase_storage_service.dart';
-import 'package:wavemobileapp/services/firstore_service.dart';
-import 'package:wavemobileapp/services/navigation_service.dart';
+import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/services/authentication_service.dart';
+import 'package:tapemobileapp/services/chat_service.dart';
+import 'package:tapemobileapp/services/firebase_storage_service.dart';
+import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/navigation_service.dart';
 
 class ChatViewModel extends ReactiveViewModel {
   final String yourUID;
@@ -294,6 +294,10 @@ class ChatViewModel extends ReactiveViewModel {
     } else {
       playNextShout();
     }
+  }
+
+  void poke() {
+    _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
   }
 
   bool showPlayer() {

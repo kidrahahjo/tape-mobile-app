@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:stacked/stacked.dart';
-import 'package:wavemobileapp/permissions.dart';
-import 'package:wavemobileapp/viewmodel/home_view_model.dart';
+import 'package:tapemobileapp/permissions.dart';
+import 'package:tapemobileapp/viewmodel/home_view_model.dart';
 
 class HomeView extends StatelessWidget {
   final String userUID;

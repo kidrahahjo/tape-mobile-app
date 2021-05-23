@@ -1,8 +1,8 @@
-import 'package:wavemobileapp/locator.dart';
-import 'package:wavemobileapp/services/navigation_service.dart';
-import 'package:wavemobileapp/viewmodel/base_model.dart';
-import 'package:wavemobileapp/services/authentication_service.dart';
-import 'package:wavemobileapp/routing_constants.dart' as routes;
+import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/services/navigation_service.dart';
+import 'package:tapemobileapp/viewmodel/base_model.dart';
+import 'package:tapemobileapp/services/authentication_service.dart';
+import 'package:tapemobileapp/routing_constants.dart' as routes;
 
 class AuthenticationViewModel extends BaseModel {
   final AuthenticationService _authenticationService =

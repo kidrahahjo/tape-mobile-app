@@ -93,4 +93,8 @@ class FirestoreService {
         .doc(statusUID)
         .set(data, SetOptions(merge: true));
   }
+
+  sendPoke(String chatUID, Map<String, dynamic> data) {
+    _chatsCollectionReference.doc(chatUID).collection("pokes").add(data);
+  }
 }

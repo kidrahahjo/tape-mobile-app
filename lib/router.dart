@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:wavemobileapp/routing_constants.dart';
-import 'package:wavemobileapp/ui/views/authenticate_view.dart';
-import 'package:wavemobileapp/ui/views/chatpage_view.dart';
-import 'package:wavemobileapp/ui/views/home_view.dart';
-import 'package:wavemobileapp/ui/views/onboarding_view.dart';
-import 'package:wavemobileapp/ui/views/startup_view.dart';
+import 'package:tapemobileapp/routing_constants.dart';
+import 'package:tapemobileapp/ui/views/authenticate_view.dart';
+import 'package:tapemobileapp/ui/views/chatpage_view.dart';
+import 'package:tapemobileapp/ui/views/home_view.dart';
+import 'package:tapemobileapp/ui/views/onboarding_view.dart';
+import 'package:tapemobileapp/ui/views/startup_view.dart';
 
 Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
