@@ -274,7 +274,6 @@ class ChatViewModel extends ReactiveViewModel {
 
   void whenFinished(String audioUID) {
     // update message and chat state
-    autoplay = false;
     _firestoreService.updateYourShoutState(
       chatForMeUID,
       audioUID,
@@ -291,6 +290,7 @@ class ChatViewModel extends ReactiveViewModel {
       }
       shoutQueue = new Queue();
       currentShoutPlaying = 1;
+      autoplay = false;
     } else {
       playNextShout();
     }

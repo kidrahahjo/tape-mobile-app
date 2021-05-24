@@ -14,6 +14,7 @@ import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/services/firstore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
+import 'package:flutter_cache/flutter_cache.dart' as cache;
 
 class HomeViewModel extends BaseModel {
   final String myUID;
@@ -46,7 +47,7 @@ class HomeViewModel extends BaseModel {
   List<String> contactsMap = [];
   bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
-
+  Map<String, String> userUIDContactNameMapping = {};
   // status related variables
   String currentStatus;
   Queue<String> allStatuses = new Queue();
@@ -92,11 +93,23 @@ class HomeViewModel extends BaseModel {
         : userUIDRecordingState[userUID];
   }
 
-  initialise() async {
+  initialise() {
     _pushNotification.initialise(this.myUID);
+    initialise_cache();
     initialiseStatusStream();
     initialiseChatsStream();
-    fetchAllContacts();
+  }
+
+  initialise_cache() async {
+    try {
+      userUIDContactNameMapping = await cache.load('userUIDContactNameMapping');
+      print(userUIDContactNameMapping);
+      if (userUIDContactNameMapping == null) {
+        userUIDContactNameMapping = {};
+      }
+    } catch(e) {
+      userUIDContactNameMapping = {};
+    }
   }
 
   initialiseStatusStream() async {
@@ -267,49 +280,50 @@ class HomeViewModel extends BaseModel {
 
   fetchAllContacts() async {
     isFetchingContacts = true;
-    bool contactPermission = await getContactPermission();
-    if (contactPermission) {
-      notifyListeners();
-      final Iterable<Contact> contacts = await ContactsService.getContacts();
-      for (Contact contact in contacts) {
-        for (Item phone in contact.phones) {
-          String number = refactorPhoneNumber(phone.value.toString());
-          if (number != null) {
-            userNumberContactNameMapping[number] = contact.displayName;
-          }
+    notifyListeners();
+    final Iterable<Contact> contacts = await ContactsService.getContacts();
+    for (Contact contact in contacts) {
+      for (Item phone in contact.phones) {
+        String number = refactorPhoneNumber(phone.value.toString());
+        if (number != null) {
+          userNumberContactNameMapping[number] = contact.displayName;
         }
       }
-      List<String> contactsData = [];
-      List<String> userContactsList =
-          userNumberContactNameMapping.keys.toList(growable: false);
-      for (int i = 0; i < userContactsList.length; i += 10) {
-        List<String> phoneNumbers = userContactsList.sublist(
-            i,
-            i + 10 <= userContactsList.length
-                ? i + 10
-                : userContactsList.length);
-        await _firestoreService
-            .getUserFromPhone(phoneNumbers)
-            .then((querySnapshot) {
-          querySnapshot.docs.forEach((element) {
-            String userUID = element.id;
-            if (!userUIDs.contains(userUID)) {
-              userDocumentStream(element.id);
-            }
-            contactsData.add(userUID);
-          });
-        });
-      }
-      contactsMap.clear();
-      contactsMap.addAll(contactsData);
-      notifyListeners();
     }
+    List<String> contactsData = [];
+    List<String> userContactsList =
+        userNumberContactNameMapping.keys.toList(growable: false);
+    for (int i = 0; i < userContactsList.length; i += 10) {
+      List<String> phoneNumbers = userContactsList.sublist(
+          i,
+          i + 10 <= userContactsList.length
+              ? i + 10
+              : userContactsList.length);
+      await _firestoreService
+          .getUserFromPhone(phoneNumbers)
+          .then((querySnapshot) {
+        querySnapshot.docs.forEach((element) {
+          String userUID = element.id;
+          if (!userUIDs.contains(userUID)) {
+            userDocumentStream(element.id);
+          }
+          Map<String, dynamic> data = element.data();
+          contactsData.add(userUID);
+          userUIDContactNameMapping[userUID] = userNumberContactNameMapping[data['phoneNumber']];
+        });
+      });
+    }
+    await cache.destroy('userUIDContactNameMapping');
+    await cache.remember('userUIDContactNameMapping', userUIDContactNameMapping);
+    contactsMap.clear();
+    contactsMap.addAll(contactsData);
+    notifyListeners();
     isFetchingContacts = false;
   }
 
   String getUserName(String uid) {
     String number = userUIDNumberMapping[uid];
-    String contactName = userNumberContactNameMapping[number];
+    String contactName = userUIDContactNameMapping[uid];
     if (contactName != null) {
       return contactName;
     } else if (number != null) {
@@ -336,8 +350,14 @@ class HomeViewModel extends BaseModel {
     }
   }
 
-  void refreshContacts() {
-    if (!this.isFetchingContacts) {
+  void refreshContacts() async {
+    bool contactPermission = false;
+    try {
+      contactPermission = await getContactPermission();
+    } catch (err) {
+      contactPermission = false;
+    }
+    if (!this.isFetchingContacts && contactPermission) {
       fetchAllContacts();
     }
   }

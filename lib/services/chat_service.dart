@@ -71,8 +71,8 @@ class ChatService with ReactiveServiceMixin {
 
   Future startPlaying(
       String downloadURL, Function whenFinished, String thisAudioUID) async {
-    _loadingShout.value = true;
     await suspendPlaying();
+    _loadingShout.value = true;
     await _flutterSoundPlayer.openAudioSession();
     _flutterSoundPlayerSubscription =
         _flutterSoundPlayer.onProgress.listen((event) {

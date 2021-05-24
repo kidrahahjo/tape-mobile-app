@@ -24,8 +24,8 @@ class PushNotification {
       announcement: false,
       badge: true,
       carPlay: false,
-      criticalAlert: false,
-      provisional: false,
+      criticalAlert: true,
+      provisional: true,
       sound: true,
     );
 
