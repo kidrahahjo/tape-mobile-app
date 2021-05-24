@@ -36,7 +36,7 @@ class ChatPageView extends StatelessWidget {
             resizeToAvoidBottomInset: true,
             body: SafeArea(
                 child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
