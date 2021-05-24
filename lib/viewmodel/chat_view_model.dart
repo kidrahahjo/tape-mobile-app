@@ -63,7 +63,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   ChatViewModel(this.yourUID, this.yourName) {
     WidgetsBinding.instance.addObserver(this);
-    _firestoreService.saveUserInfo(_authenticationService.currentUser.uid, {"chattingWith": yourUID});
+    _firestoreService.saveUserInfo(
+        _authenticationService.currentUser.uid, {"chattingWith": yourUID});
     enableYourDocumentStream();
     enableShoutsStream();
     enableChatForMeStateStream();
@@ -160,7 +161,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   backToHome() {
-    _firestoreService.saveUserInfo(_authenticationService.currentUser.uid, {"chattingWith": null});
+    _firestoreService.saveUserInfo(
+        _authenticationService.currentUser.uid, {"chattingWith": null});
     _chatService.suspendPlaying();
     _chatService.suspendRecording();
     _navigationService.goBack();
@@ -169,9 +171,11 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid, {"isOnline": false, "chattingWith": null});
+      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
+          {"isOnline": false, "chattingWith": null});
     } else if (state == AppLifecycleState.resumed) {
-      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid, {"isOnline": true, "chattingWith": yourUID});
+      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
+          {"isOnline": true, "chattingWith": yourUID});
     }
     super.didChangeAppLifecycleState(state);
   }

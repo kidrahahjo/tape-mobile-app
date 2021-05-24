@@ -26,7 +26,10 @@ class ChatPageView extends StatelessWidget {
                 onPressed: () => model.backToHome(),
               ),
               actions: <Widget>[
-                model.youAreOnline ?  Icon(PhosphorIcons.eye, color: Theme.of(context).accentColor,) : Icon(PhosphorIcons.eyeClosed, color: Colors.grey,),
+                model.youAreOnline
+                    ? Icon(PhosphorIcons.circleFill,
+                        color: Colors.green, size: 16)
+                    : Icon(PhosphorIcons.circle, color: Colors.grey, size: 16),
                 SizedBox(width: 16)
               ],
             ),

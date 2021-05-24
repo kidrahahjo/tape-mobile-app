@@ -101,9 +101,22 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     await initialise_cache();
     initialiseStatusStream();
     initialiseChatsStream();
+    if (contactsMap.length == 0) {
+      fetchAllContacts();
+    }
   }
 
   initialise_cache() async {
+    try {
+      contactsMap = List<String>.from(await cache.load('contactsMap'));
+      if (chatsList == null) {
+        contactsMap = <String>[];
+      } else {
+        notifyListeners();
+      }
+    } catch (e) {
+      contactsMap = <String>[];
+    }
     try {
       userUIDContactNameMapping = Map<String, String>.from(
           await cache.load('userUIDContactNameMapping'));
@@ -322,9 +335,11 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
             userDocumentStream(element.id);
           }
           Map<String, dynamic> data = element.data();
-          contactsData.add(userUID);
-          userUIDContactNameMapping[userUID] =
-              userNumberContactNameMapping[data['phoneNumber']];
+          if (data['phoneNumber'] != myPhoneNumber) {
+            contactsData.add(userUID);
+            userUIDContactNameMapping[userUID] =
+                userNumberContactNameMapping[data['phoneNumber']];
+          }
         });
       });
     }
@@ -332,6 +347,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     await cache.write('userUIDContactNameMapping', userUIDContactNameMapping);
     contactsMap.clear();
     contactsMap.addAll(contactsData);
+    await cache.write('contactsMap', contactsMap);
     notifyListeners();
     isFetchingContacts = false;
   }
@@ -349,7 +365,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   }
 
   String getUserStatus(String uid) {
-    return userUIDStatusMapping[uid] == null ? "" : userUIDStatusMapping[uid];
+    return userUIDStatusMapping[uid] == null
+        ? "Tap to Tape"
+        : userUIDStatusMapping[uid];
   }
 
   String getStatusFromUID(String statusUID) {
@@ -359,7 +377,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   }
 
   bool getUserOnlineState(String uid) {
-    return userUIDOnlineMapping[uid] == null ? false : userUIDOnlineMapping[uid];
+    return userUIDOnlineMapping[uid] == null
+        ? false
+        : userUIDOnlineMapping[uid];
   }
 
   void signOut() async {

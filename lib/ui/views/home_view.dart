@@ -203,12 +203,25 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
         child: ListTile(
           trailing: viewModel.showChatState(yourUID),
           leading: CircleAvatar(
-            child: viewModel.getUserOnlineState(yourUID) ? Icon(PhosphorIcons.eye, color: Theme.of(context).accentColor) : Icon(PhosphorIcons.eyeClosed, color: Colors.grey,),
-          ),
-          title: Text(
-            viewModel.getUserName(yourUID),
-            style: TextStyle(),
-          ),
+              child: Icon(
+            PhosphorIcons.user,
+          )),
+          title: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Text(
+                  viewModel.getUserName(yourUID),
+                  style: TextStyle(),
+                ),
+                viewModel.getUserOnlineState(yourUID)
+                    ? Icon(
+                        PhosphorIcons.circleFill,
+                        color: Colors.green,
+                        size: 12,
+                      )
+                    : SizedBox(),
+              ]),
           subtitle: viewModel.isRecording(yourUID)
               ? Text(
                   "Recording...",
