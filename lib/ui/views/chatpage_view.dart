@@ -133,8 +133,8 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
           viewModel.stopRecording();
         },
         child: SizedBox(
-          height: 60,
-          width: 160,
+          height: 56,
+          width: 144,
           child: RawMaterialButton(
             shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(24)),
