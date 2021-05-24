@@ -103,9 +103,10 @@ class HomeViewModel extends BaseModel {
   initialise_cache() async {
     try {
       userUIDContactNameMapping = await cache.load('userUIDContactNameMapping');
-      print(userUIDContactNameMapping);
       if (userUIDContactNameMapping == null) {
         userUIDContactNameMapping = {};
+      } else {
+        notifyListeners();
       }
     } catch(e) {
       userUIDContactNameMapping = {};
