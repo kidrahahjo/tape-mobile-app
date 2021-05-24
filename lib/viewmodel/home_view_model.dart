@@ -93,22 +93,23 @@ class HomeViewModel extends BaseModel {
         : userUIDRecordingState[userUID];
   }
 
-  initialise() {
+  initialise() async {
     _pushNotification.initialise(this.myUID);
-    initialise_cache();
+    await initialise_cache();
     initialiseStatusStream();
     initialiseChatsStream();
   }
 
   initialise_cache() async {
     try {
-      userUIDContactNameMapping = await cache.load('userUIDContactNameMapping');
+      userUIDContactNameMapping = Map<String, String>.from(
+          await cache.load('userUIDContactNameMapping'));
       if (userUIDContactNameMapping == null) {
         userUIDContactNameMapping = {};
       } else {
         notifyListeners();
       }
-    } catch(e) {
+    } catch (e) {
       userUIDContactNameMapping = {};
     }
   }
@@ -295,11 +296,8 @@ class HomeViewModel extends BaseModel {
     List<String> userContactsList =
         userNumberContactNameMapping.keys.toList(growable: false);
     for (int i = 0; i < userContactsList.length; i += 10) {
-      List<String> phoneNumbers = userContactsList.sublist(
-          i,
-          i + 10 <= userContactsList.length
-              ? i + 10
-              : userContactsList.length);
+      List<String> phoneNumbers = userContactsList.sublist(i,
+          i + 10 <= userContactsList.length ? i + 10 : userContactsList.length);
       await _firestoreService
           .getUserFromPhone(phoneNumbers)
           .then((querySnapshot) {
@@ -310,12 +308,13 @@ class HomeViewModel extends BaseModel {
           }
           Map<String, dynamic> data = element.data();
           contactsData.add(userUID);
-          userUIDContactNameMapping[userUID] = userNumberContactNameMapping[data['phoneNumber']];
+          userUIDContactNameMapping[userUID] =
+              userNumberContactNameMapping[data['phoneNumber']];
         });
       });
     }
-    await cache.destroy('userUIDContactNameMapping');
-    await cache.remember('userUIDContactNameMapping', userUIDContactNameMapping);
+
+    await cache.write('userUIDContactNameMapping', userUIDContactNameMapping);
     contactsMap.clear();
     contactsMap.addAll(contactsData);
     notifyListeners();

@@ -2,7 +2,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:tapemobileapp/locator.dart';
 import 'package:tapemobileapp/routing_constants.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
@@ -30,7 +29,7 @@ void main() async {
         appBarTheme:
             AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
         brightness: Brightness.dark,
-        fontFamily: GoogleFonts.dmSans().fontFamily,
+        fontFamily: 'DMSans',
         floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
       ),
       theme: ThemeData(
@@ -39,7 +38,7 @@ void main() async {
         scaffoldBackgroundColor: bgColor,
         appBarTheme: AppBarTheme(backgroundColor: bgColor, elevation: 0),
         brightness: Brightness.light,
-        fontFamily: GoogleFonts.dmSans().fontFamily,
+        fontFamily: 'DMSans',
         floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
       ),
     ),
