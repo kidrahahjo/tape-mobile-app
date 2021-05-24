@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -18,25 +20,29 @@ class ChatPageView extends StatelessWidget {
         return Scaffold(
             appBar: AppBar(
               centerTitle: true,
-              leading: IconButton(
-                icon: Icon(
+              leading: GestureDetector(
+                child: Icon(
                   PhosphorIcons.caretLeft,
                   size: 32,
                 ),
-                onPressed: () => model.backToHome(),
+                onTap: () => model.backToHome(),
               ),
               actions: <Widget>[
-                model.youAreOnline
-                    ? Icon(PhosphorIcons.circleFill,
-                        color: Colors.green, size: 16)
-                    : Icon(PhosphorIcons.circle, color: Colors.grey, size: 16),
+                Chip(
+                  avatar: model.youAreOnline
+                      ? Icon(PhosphorIcons.circleFill,
+                          color: Colors.green, size: 16)
+                      : Icon(PhosphorIcons.circle,
+                          color: Colors.grey, size: 16),
+                  label: YourStatus(),
+                ),
                 SizedBox(width: 16)
               ],
             ),
             resizeToAvoidBottomInset: true,
             body: SafeArea(
                 child: Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 0, 0, 24),
+                    padding: const EdgeInsets.fromLTRB(0, 32, 0, 40),
                     child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
@@ -44,11 +50,9 @@ class ChatPageView extends StatelessWidget {
                             Text(yourName,
                                 style: TextStyle(
                                   fontSize: 32,
-                                  fontWeight: FontWeight.bold,
                                 ),
                                 textAlign: TextAlign.center,
                                 overflow: TextOverflow.ellipsis),
-                            SizedBox(height: 8),
                             CurrentStatus()
                           ]),
                           CenterImageDisplay(),
@@ -64,16 +68,24 @@ class CurrentStatus extends ViewModelWidget<ChatViewModel> {
 
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return (viewModel.youAreRecording)
-        ? Text(
-            "Recording...",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).accentColor,
-            ),
-          )
-        : YourStatus();
+    return Column(
+      children: [
+        SizedBox(height: 8),
+        viewModel.youAreRecording
+            ? Text(
+                "Recording...",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).accentColor,
+                ),
+              )
+            : Text(
+                "",
+                style: TextStyle(fontSize: 16),
+              ),
+      ],
+    );
   }
 }
 
@@ -95,10 +107,12 @@ class MainFooter extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         PokeButton(),
+        SizedBox(width: 16),
         RecordButton(),
+        SizedBox(width: 16),
         SkipButton(),
       ],
     );
@@ -140,19 +154,14 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
           viewModel.stopRecording();
         },
         child: SizedBox(
-          height: 56,
-          width: 144,
+          height: 64,
+          width: 64,
           child: RawMaterialButton(
-            shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.circular(24)),
+            shape: CircleBorder(),
             fillColor: Theme.of(context).accentColor,
             onPressed: null,
-            child: Text('Tape',
-                style: TextStyle(
-                  color: Color(0xff2f2f2f),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                )),
+            child: Icon(PhosphorIcons.voicemail,
+                size: 32, color: Color(0xff2f2f2f)),
           ),
         ));
   }
@@ -201,11 +210,13 @@ class CenterImageDisplay extends ViewModelWidget<ChatViewModel> {
                         color: Colors.grey,
                       ),
                     ),
-                    Container(
-                      width: 240,
-                      height: 240,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                    Center(
+                      child: Container(
+                        width: 176,
+                        height: 176,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
                       ),
                     ),
                   ]),
@@ -267,7 +278,7 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
           textAlign: TextAlign.center,
         ),
         SizedBox(
-          height: 8,
+          height: 4,
         ),
         Text(
           viewModel.iAmRecording
@@ -278,6 +289,9 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
                       ? ""
                       : viewModel.getTime(),
           style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+        SizedBox(
+          height: 48,
         ),
       ],
     );
