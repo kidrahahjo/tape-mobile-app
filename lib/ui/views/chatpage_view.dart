@@ -12,7 +12,7 @@ class ChatPageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ViewModelBuilder<ChatViewModel>.nonReactive(
+    return ViewModelBuilder<ChatViewModel>.reactive(
       viewModelBuilder: () => ChatViewModel(yourUID, yourName),
       builder: (context, model, child) {
         return Scaffold(
@@ -25,6 +25,10 @@ class ChatPageView extends StatelessWidget {
                 ),
                 onPressed: () => model.backToHome(),
               ),
+              actions: <Widget>[
+                model.youAreOnline ?  Icon(PhosphorIcons.eye, color: Theme.of(context).accentColor,) : Icon(PhosphorIcons.eyeClosed, color: Colors.grey,),
+                SizedBox(width: 16)
+              ],
             ),
             resizeToAvoidBottomInset: true,
             body: SafeArea(

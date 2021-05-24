@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:uuid/uuid.dart';
@@ -13,7 +14,7 @@ import 'package:tapemobileapp/services/firebase_storage_service.dart';
 import 'package:tapemobileapp/services/firstore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 
-class ChatViewModel extends ReactiveViewModel {
+class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final String yourUID;
   final String yourName;
 
@@ -33,6 +34,7 @@ class ChatViewModel extends ReactiveViewModel {
 
   // status related variables
   String yourStatus;
+  bool youAreOnline = false;
 
   // current state related variables
   bool youAreRecording = false;
@@ -60,6 +62,8 @@ class ChatViewModel extends ReactiveViewModel {
   StreamSubscription<DocumentSnapshot> myShoutsSentStateStreamSubscription;
 
   ChatViewModel(this.yourUID, this.yourName) {
+    WidgetsBinding.instance.addObserver(this);
+    _firestoreService.saveUserInfo(_authenticationService.currentUser.uid, {"chattingWith": yourUID});
     enableYourDocumentStream();
     enableShoutsStream();
     enableChatForMeStateStream();
@@ -95,6 +99,7 @@ class ChatViewModel extends ReactiveViewModel {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
         yourStatus = data['currentStatus'];
+        youAreOnline = data['isOnline'] == null ? false : data['isOnline'];
         notifyListeners();
       }
     });
@@ -155,13 +160,25 @@ class ChatViewModel extends ReactiveViewModel {
   }
 
   backToHome() {
+    _firestoreService.saveUserInfo(_authenticationService.currentUser.uid, {"chattingWith": null});
     _chatService.suspendPlaying();
     _chatService.suspendRecording();
     _navigationService.goBack();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid, {"isOnline": false, "chattingWith": null});
+    } else if (state == AppLifecycleState.resumed) {
+      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid, {"isOnline": true, "chattingWith": yourUID});
+    }
+    super.didChangeAppLifecycleState(state);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     yourDocumentStreamSubscription?.cancel();
     _chatService.cancelSubscriptions();
     shoutsStreamSubscription?.cancel();

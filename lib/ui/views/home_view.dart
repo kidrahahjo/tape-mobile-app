@@ -104,11 +104,6 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
         });
       },
       child: Chip(
-        avatar: CircleAvatar(
-          backgroundColor: Colors.transparent,
-          child: Icon(PhosphorIcons.fireFill,
-              size: 20, color: Theme.of(context).accentColor),
-        ),
         label: Text(viewModel.status),
         elevation: 0,
         labelStyle: TextStyle(),
@@ -159,11 +154,6 @@ class StatusView extends ViewModelWidget<HomeViewModel> {
                       viewModel.setStatusWithUID(statusUID);
                       viewModel.popIt();
                     },
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.white10,
-                      child: Icon(PhosphorIcons.fireFill,
-                          color: Theme.of(context).accentColor),
-                    ),
                     title: Text(viewModel.getStatusFromUID(statusUID)),
                   ))
               .toList(),
@@ -213,9 +203,7 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
         child: ListTile(
           trailing: viewModel.showChatState(yourUID),
           leading: CircleAvatar(
-            child: Icon(
-              PhosphorIcons.user,
-            ),
+            child: viewModel.getUserOnlineState(yourUID) ? Icon(PhosphorIcons.eye, color: Theme.of(context).accentColor) : Icon(PhosphorIcons.eyeClosed, color: Colors.grey,),
           ),
           title: Text(
             viewModel.getUserName(yourUID),

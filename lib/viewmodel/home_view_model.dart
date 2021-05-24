@@ -16,7 +16,7 @@ import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:flutter_cache/flutter_cache.dart' as cache;
 
-class HomeViewModel extends BaseModel {
+class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   final String myUID;
   final String myPhoneNumber;
   final FirestoreService _firestoreService = locator<FirestoreService>();
@@ -53,6 +53,7 @@ class HomeViewModel extends BaseModel {
   Queue<String> allStatuses = new Queue();
   Queue<String> allStatusesMessages = new Queue();
   Map<String, String> statusesUIDStatusTextMap = {};
+  Map<String, bool> userUIDOnlineMapping = {};
   Stream<QuerySnapshot> myStatusStream;
   StreamSubscription<QuerySnapshot> myStatusStreamSubscription;
   bool updateStatus = false;
@@ -63,6 +64,8 @@ class HomeViewModel extends BaseModel {
       new TextEditingController();
 
   HomeViewModel(this.myUID, this.myPhoneNumber) {
+    WidgetsBinding.instance.addObserver(this);
+    _firestoreService.saveUserInfo(myUID, {"isOnline": true});
     initialise();
     statusTextController.addListener(() {
       textToShow = statusTextController.text.trim();
@@ -223,6 +226,7 @@ class HomeViewModel extends BaseModel {
         userUIDDisplayNameMapping[uid] = data['displayName'];
         userUIDNumberMapping[uid] = data['phoneNumber'];
         userUIDStatusMapping[uid] = data['currentStatus'];
+        userUIDOnlineMapping[uid] = data['isOnline'];
         notifyListeners();
       }
     }));
@@ -244,6 +248,7 @@ class HomeViewModel extends BaseModel {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     chatStreamSubscription?.cancel();
     myStatusStreamSubscription?.cancel();
     for (var stream in usersDocumentsSubscriptions) {
@@ -253,6 +258,16 @@ class HomeViewModel extends BaseModel {
       stream?.cancel;
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _firestoreService.saveUserInfo(myUID, {"isOnline": false});
+    } else if (state == AppLifecycleState.resumed) {
+      _firestoreService.saveUserInfo(myUID, {"isOnline": true});
+    }
+    super.didChangeAppLifecycleState(state);
   }
 
   String refactorPhoneNumber(String phone) {
@@ -341,6 +356,10 @@ class HomeViewModel extends BaseModel {
     return statusesUIDStatusTextMap[statusUID] == null
         ? ""
         : statusesUIDStatusTextMap[statusUID];
+  }
+
+  bool getUserOnlineState(String uid) {
+    return userUIDOnlineMapping[uid] == null ? false : userUIDOnlineMapping[uid];
   }
 
   void signOut() async {
