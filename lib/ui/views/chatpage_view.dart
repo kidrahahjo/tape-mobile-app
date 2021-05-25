@@ -31,7 +31,6 @@ class ChatPageView extends StatelessWidget {
                   SizedBox(height: 32),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    trailing: PokeButton(),
                     subtitle: CurrentStatus(),
                     title: Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -41,17 +40,15 @@ class ChatPageView extends StatelessWidget {
                             yourName,
                             style: TextStyle(fontSize: 28),
                           ),
-                          model.youAreOnline
-                              ? Icon(
-                                  PhosphorIcons.circleFill,
-                                  color: Colors.green,
-                                  size: 12,
-                                )
-                              : SizedBox(),
+                          Icon(
+                            PhosphorIcons.circleFill,
+                            color: model.youAreOnline ? Colors.green : Colors.transparent,
+                            size: 12,
+                          )
                         ]),
                   ),
                   SizedBox(
-                    height: 32,
+                    height: 24,
                   ),
                   AspectRatio(
                     aspectRatio: 1,
@@ -122,10 +119,7 @@ class MainFooter extends ViewModelWidget<ChatViewModel> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 72,
-          height: 72,
-        ),
+        PokeButton(),
         SizedBox(width: 16),
         RecordButton(),
         SizedBox(width: 16),
