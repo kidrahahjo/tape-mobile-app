@@ -284,7 +284,9 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
     return Column(
       children: [
         Text(
-          viewModel.iAmRecording
+          viewModel.poked
+          ? "You waved at ${viewModel.yourName}"
+          : viewModel.iAmRecording
               ? "Recording..."
               : viewModel.sendingShout
                   ? "Sending..."
@@ -308,13 +310,9 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
           height: 4,
         ),
         Text(
-          viewModel.iAmRecording
+          viewModel.iAmRecording || viewModel.poked || viewModel.sendingShout || viewModel.showClear()
               ? ""
-              : viewModel.sendingShout
-                  ? ""
-                  : viewModel.showClear()
-                      ? ""
-                      : viewModel.getTime(),
+              : viewModel.getTime(),
           style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
       ],

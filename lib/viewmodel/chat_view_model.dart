@@ -325,6 +325,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   void poke() {
     poked = true;
+    notifyListeners();
     _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
     Future.delayed(Duration(seconds: 1), () {
       poked = false;
