@@ -30,7 +30,7 @@ class ChatPageView extends StatelessWidget {
                         color: Colors.grey.withOpacity(.4),
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  SizedBox(height: 40),
+                  SizedBox(height: 32),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     trailing: PokeButton(),
@@ -53,7 +53,7 @@ class ChatPageView extends StatelessWidget {
                         ]),
                   ),
                   SizedBox(
-                    height: 20,
+                    height: 32,
                   ),
                   AspectRatio(
                     aspectRatio: 1,
@@ -67,11 +67,11 @@ class ChatPageView extends StatelessWidget {
                     ),
                   ),
                   SizedBox(
-                    height: 24,
+                    height: 32,
                   ),
                   CenterStatusDisplay(),
                   SizedBox(
-                    height: 24,
+                    height: 32,
                   ),
                   Divider(
                     height: 1,
@@ -172,8 +172,8 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
           viewModel.stopRecording();
         },
         child: SizedBox(
-          height: 72,
-          width: 72,
+          height: 64,
+          width: 64,
           child: RawMaterialButton(
             shape: CircleBorder(),
             fillColor: Theme.of(context).accentColor,
@@ -227,8 +227,8 @@ class CenterImageDisplay extends ViewModelWidget<ChatViewModel> {
                       Center(
                         child: Icon(
                           PhosphorIcons.paperPlaneThin,
-                          size: 64,
-                          color: Colors.grey,
+                          size: 60,
+                          color: Theme.of(context).accentColor,
                         ),
                       ),
                       Center(
@@ -362,8 +362,8 @@ class CircularStatusAvatar extends ViewModelWidget<ChatViewModel> {
                 : viewModel.showShoutPlayed()
                     ? PhosphorIcons.speakerSimpleHighThin
                     : PhosphorIcons.voicemailThin,
-        size: 64,
-        color: Theme.of(context).accentColor,
+        size: 60,
+        color: Colors.grey,
       ),
     );
   }

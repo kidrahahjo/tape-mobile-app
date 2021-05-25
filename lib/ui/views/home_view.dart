@@ -198,7 +198,9 @@ void openChatSheet(BuildContext context, String uid, String yourName,
     final myModel = Provider.of<HomeViewModel>(context, listen: false);
     showModalBottomSheet<void>(
         isScrollControlled: true,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16), topRight: Radius.circular(16))),
         context: context,
         enableDrag: true,
         builder: (BuildContext context) {
