@@ -264,6 +264,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     chatStreamSubscription?.cancel();
     myStatusStreamSubscription?.cancel();
+    print('here');
+    _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     for (var stream in usersDocumentsSubscriptions) {
       stream?.cancel;
     }
@@ -275,7 +277,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached || state == AppLifecycleState.inactive) {
       _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     } else if (state == AppLifecycleState.resumed) {
       _firestoreService.saveUserInfo(myUID, {"isOnline": true});

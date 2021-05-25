@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:stacked/stacked.dart';
@@ -15,7 +16,12 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ViewModelBuilder<HomeViewModel>.nonReactive(
+    return WillPopScope(
+      onWillPop: () async {
+        SystemNavigator.pop();
+        return true;
+      },
+    child: ViewModelBuilder<HomeViewModel>.nonReactive(
       viewModelBuilder: () => HomeViewModel(userUID, phoneNumber),
       builder: (context, model, child) {
         return Scaffold(
@@ -32,7 +38,7 @@ class HomeView extends StatelessWidget {
           ),
         );
       },
-    );
+    ));
   }
 }
 
