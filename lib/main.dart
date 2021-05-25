@@ -1,44 +1,49 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:wavemobileapp/locator.dart';
-import 'package:wavemobileapp/routing_constants.dart';
-import 'package:wavemobileapp/services/navigation_service.dart';
+import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/routing_constants.dart';
+import 'package:tapemobileapp/services/navigation_service.dart';
 import 'router.dart' as router;
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+
 void main() async {
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   setupLocator();
-  final bgColor = Color(0xfff5f5f5);
+  final bgColor = Color(0xffeeeeee);
+  final bgDark = Color(0xff000000);
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       onGenerateRoute: router.generateRoute,
       initialRoute: StartupViewRoute,
       navigatorKey: locator<NavigationService>().navigatorKey,
-      title: "shout",
+      title: "Tape",
       darkTheme: ThemeData(
         primarySwatch: Colors.orange,
         primaryColorDark: Color(0xff444444),
+        primaryColorLight: Color(0xff222222),
+        scaffoldBackgroundColor: bgDark,
+        backgroundColor: bgDark,
+        bottomSheetTheme: BottomSheetThemeData(backgroundColor: bgDark),
         accentColor: Colors.orange,
-        appBarTheme:
-            AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
+        appBarTheme: AppBarTheme(backgroundColor: bgDark, elevation: 0),
         brightness: Brightness.dark,
-        fontFamily: GoogleFonts.dmSans().fontFamily,
+        fontFamily: 'DMSans',
         floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
       ),
       theme: ThemeData(
         primarySwatch: Colors.orange,
         primaryColorLight: Color(0xffffffff),
         scaffoldBackgroundColor: bgColor,
+        bottomSheetTheme: BottomSheetThemeData(backgroundColor: bgColor),
         appBarTheme: AppBarTheme(backgroundColor: bgColor, elevation: 0),
         brightness: Brightness.light,
-        fontFamily: GoogleFonts.dmSans().fontFamily,
+        fontFamily: 'DMSans',
         floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
       ),
     ),

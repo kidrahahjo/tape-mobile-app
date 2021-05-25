@@ -1,7 +1,7 @@
-import 'package:wavemobileapp/services/authentication_service.dart';
-import 'package:wavemobileapp/services/firstore_service.dart';
-import 'package:wavemobileapp/services/navigation_service.dart';
-import 'package:wavemobileapp/viewmodel/base_model.dart';
+import 'package:tapemobileapp/services/authentication_service.dart';
+import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/navigation_service.dart';
+import 'package:tapemobileapp/viewmodel/base_model.dart';
 import '../routing_constants.dart' as routes;
 
 import '../locator.dart';
@@ -22,11 +22,18 @@ class StartupViewModel extends BaseModel {
           'userUID': _authenticationService.currentUser.uid,
           'phoneNumber': _authenticationService.currentUser.phoneNumber
         };
+        bool hasOnboarded = false;
         if (value.exists) {
+          Map<String, dynamic> metadata = value.data();
+          hasOnboarded = metadata['hasOnboarded'] == null
+              ? false
+              : metadata['hasOnboarded'];
+        }
+        if (hasOnboarded) {
           _navigationService.navigateReplacementTo(routes.HomeViewRoute,
               arguments: data);
         } else {
-          _navigationService.navigateReplacementTo(routes.OnboardingViewRoute,
+          _navigationService.navigateReplacementTo(routes.HomeViewRoute,
               arguments: data);
         }
       });

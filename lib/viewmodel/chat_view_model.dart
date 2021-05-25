@@ -3,17 +3,18 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wavemobileapp/locator.dart';
-import 'package:wavemobileapp/services/authentication_service.dart';
-import 'package:wavemobileapp/services/chat_service.dart';
-import 'package:wavemobileapp/services/firebase_storage_service.dart';
-import 'package:wavemobileapp/services/firstore_service.dart';
-import 'package:wavemobileapp/services/navigation_service.dart';
+import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/services/authentication_service.dart';
+import 'package:tapemobileapp/services/chat_service.dart';
+import 'package:tapemobileapp/services/firebase_storage_service.dart';
+import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/navigation_service.dart';
 
-class ChatViewModel extends ReactiveViewModel {
+class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final String yourUID;
   final String yourName;
 
@@ -33,6 +34,7 @@ class ChatViewModel extends ReactiveViewModel {
 
   // status related variables
   String yourStatus;
+  bool youAreOnline = false;
 
   // current state related variables
   bool youAreRecording = false;
@@ -59,8 +61,10 @@ class ChatViewModel extends ReactiveViewModel {
   Stream<DocumentSnapshot> myShoutsSentStateStream;
   StreamSubscription<DocumentSnapshot> myShoutsSentStateStreamSubscription;
 
-
   ChatViewModel(this.yourUID, this.yourName) {
+    WidgetsBinding.instance.addObserver(this);
+    _firestoreService.saveUserInfo(
+        _authenticationService.currentUser.uid, {"chattingWith": yourUID});
     enableYourDocumentStream();
     enableShoutsStream();
     enableChatForMeStateStream();
@@ -96,6 +100,7 @@ class ChatViewModel extends ReactiveViewModel {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
         yourStatus = data['currentStatus'];
+        youAreOnline = data['isOnline'] == null ? false : data['isOnline'];
         notifyListeners();
       }
     });
@@ -108,6 +113,7 @@ class ChatViewModel extends ReactiveViewModel {
       return DateTime.fromMicrosecondsSinceEpoch(time.microsecondsSinceEpoch);
     }
   }
+
   enableShoutsStream() {
     shoutsStream =
         _firestoreService.fetchEndToEndShoutsFromDatabase(chatForMeUID);
@@ -155,13 +161,31 @@ class ChatViewModel extends ReactiveViewModel {
   }
 
   backToHome() {
+    _firestoreService.saveUserInfo(
+        _authenticationService.currentUser.uid, {"chattingWith": null});
     _chatService.suspendPlaying();
     _chatService.suspendRecording();
     _navigationService.goBack();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached || state == AppLifecycleState.inactive) {
+      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
+          {"isOnline": false, "chattingWith": null});
+    } else if (state == AppLifecycleState.resumed) {
+      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
+          {"isOnline": true, "chattingWith": yourUID});
+    }
+    super.didChangeAppLifecycleState(state);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
+          {"chattingWith": null});
+
     yourDocumentStreamSubscription?.cancel();
     _chatService.cancelSubscriptions();
     shoutsStreamSubscription?.cancel();
@@ -188,7 +212,8 @@ class ChatViewModel extends ReactiveViewModel {
       },
     );
     if (currentShoutPlaying == shoutQueue.length) {
-      _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
+      _firestoreService.updateChatState(chatForYouUID,
+          {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
       if (yourChatState == 'Played') {
         _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
       }
@@ -197,7 +222,6 @@ class ChatViewModel extends ReactiveViewModel {
     } else {
       playNextShout();
     }
-
   }
 
   void startRecording() async {
@@ -237,18 +261,9 @@ class ChatViewModel extends ReactiveViewModel {
     File file = File(filePath);
     await _firebaseStorageService
         .getLocationReference(chatForYouUID, currentAudioUID)
-        .putFile(file);
-    _firestoreService.sendShout({
-      "chatForMe": chatForMeUID,
-      "chatForYou": chatForYouUID,
-      "myUID": myUID,
-      "yourUID": yourUID,
-      "chatState": 'Received',
-    }, currentAudioUID, DateTime.now()).onError((error, stackTrace) {
-      // show failed to send snackbar
-    }).whenComplete(() {
+        .putFile(file)
+        .whenComplete(() {
       _sendingShout = false;
-      notifyListeners();
     });
   }
 
@@ -283,7 +298,6 @@ class ChatViewModel extends ReactiveViewModel {
 
   void whenFinished(String audioUID) {
     // update message and chat state
-    autoplay = false;
     _firestoreService.updateYourShoutState(
       chatForMeUID,
       audioUID,
@@ -293,15 +307,21 @@ class ChatViewModel extends ReactiveViewModel {
       },
     );
     if (currentShoutPlaying == shoutQueue.length) {
-      _firestoreService.updateChatState(chatForYouUID, {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
+      _firestoreService.updateChatState(chatForYouUID,
+          {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
       if (yourChatState == 'Played') {
         _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
       }
       shoutQueue = new Queue();
       currentShoutPlaying = 1;
+      autoplay = false;
     } else {
       playNextShout();
     }
+  }
+
+  void poke() {
+    _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
   }
 
   bool showPlayer() {
@@ -321,7 +341,7 @@ class ChatViewModel extends ReactiveViewModel {
     return yourChatState == 'Played';
   }
 
-  String convertTime (DateTime dateTime) {
+  String convertTime(DateTime dateTime) {
     Duration difference = DateTime.now().difference(dateTime);
     int day = difference.inDays;
     int hours = difference.inHours;
@@ -329,20 +349,21 @@ class ChatViewModel extends ReactiveViewModel {
     int seconds = difference.inSeconds;
     if (day != 0) {
       return day.toString() + 'd ago';
-    } else if (hours != 0){
+    } else if (hours != 0) {
       return hours.toString() + 'h ago';
     } else if (minutes != 0) {
       return minutes.toString() + 'm ago';
     } else if (seconds >= 20) {
       return seconds.toString() + 's ago';
-    }
-    else {
+    } else {
       return 'Just now';
     }
   }
+
   String getTime() {
     if (showPlayer()) {
-      DateTime time =  shoutsToTimeStamp[shoutQueue.elementAt(currentShoutPlaying - 1)];
+      DateTime time =
+          shoutsToTimeStamp[shoutQueue.elementAt(currentShoutPlaying - 1)];
       return time == null ? "" : convertTime(time);
     } else if (showSent()) {
       return lastSentTime == null ? "" : convertTime(lastSentTime);

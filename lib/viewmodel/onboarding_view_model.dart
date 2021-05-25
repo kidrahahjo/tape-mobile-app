@@ -1,8 +1,8 @@
-import 'package:wavemobileapp/locator.dart';
-import 'package:wavemobileapp/services/firstore_service.dart';
-import 'package:wavemobileapp/services/navigation_service.dart';
-import 'package:wavemobileapp/viewmodel/base_model.dart';
-import 'package:wavemobileapp/routing_constants.dart' as routes;
+import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/navigation_service.dart';
+import 'package:tapemobileapp/viewmodel/base_model.dart';
+import 'package:tapemobileapp/routing_constants.dart' as routes;
 
 class OnboardingViewModel extends BaseModel {
   final String userUID;
@@ -16,19 +16,28 @@ class OnboardingViewModel extends BaseModel {
   saveUserInfo(String displayName) async {
     setBusy(true);
     if (displayName.length == 0) {
-      showError = false;
+      showError = true;
+      setBusy(false);
       notifyListeners();
     } else {
       Map<String, dynamic> data = {
         'displayName': displayName,
         'phoneNumber': phoneNumber,
+        'hasOnboarded': true,
       };
-      await _firestoreService.saveUserInfo(userUID, data);
-      _navigationService.navigateReplacementTo(routes.HomeViewRoute, arguments: {
-        'userUID': userUID,
-        'phoneNumber': phoneNumber,
+      _firestoreService
+          .saveUserInfo(userUID, data)
+          .onError((error, stackTrace) {
+        showError = true;
+        setBusy(false);
+      }).then((value) {
+        setBusy(false);
+        _navigationService
+            .navigateReplacementTo(routes.HomeViewRoute, arguments: {
+          'userUID': userUID,
+          'phoneNumber': phoneNumber,
+        });
       });
     }
-    setBusy(false);
   }
 }

@@ -5,28 +5,32 @@ import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:tapemobileapp/services/push_notification_service.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wavemobileapp/permissions.dart';
-import 'package:wavemobileapp/routing_constants.dart' as routes;
-import 'package:wavemobileapp/locator.dart';
-import 'package:wavemobileapp/services/authentication_service.dart';
-import 'package:wavemobileapp/services/firstore_service.dart';
-import 'package:wavemobileapp/services/navigation_service.dart';
-import 'package:wavemobileapp/viewmodel/base_model.dart';
+import 'package:tapemobileapp/permissions.dart';
+import 'package:tapemobileapp/routing_constants.dart' as routes;
+import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/services/authentication_service.dart';
+import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/navigation_service.dart';
+import 'package:tapemobileapp/viewmodel/base_model.dart';
+import 'package:flutter_cache/flutter_cache.dart' as cache;
 
-class HomeViewModel extends BaseModel {
+class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   final String myUID;
   final String myPhoneNumber;
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
   final NavigationService _navigationService = locator<NavigationService>();
+  final PushNotification _pushNotification = locator<PushNotification>();
 
   // chat related variables
   List<String> chatsList = [];
   List<String> userUIDs = [];
   List<Stream<DocumentSnapshot>> usersChatStateStream = [];
-  List<StreamSubscription<DocumentSnapshot>> usersChatStateStreamSubscription = [];
+  List<StreamSubscription<DocumentSnapshot>> usersChatStateStreamSubscription =
+      [];
   List<Stream<DocumentSnapshot>> usersDocuments = [];
   List<StreamSubscription<DocumentSnapshot>> usersDocumentsSubscriptions = [];
   Map<String, String> userUIDDYourChatStateMapping = {};
@@ -43,12 +47,13 @@ class HomeViewModel extends BaseModel {
   List<String> contactsMap = [];
   bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
-
+  Map<String, String> userUIDContactNameMapping = {};
   // status related variables
   String currentStatus;
   Queue<String> allStatuses = new Queue();
   Queue<String> allStatusesMessages = new Queue();
   Map<String, String> statusesUIDStatusTextMap = {};
+  Map<String, bool> userUIDOnlineMapping = {};
   Stream<QuerySnapshot> myStatusStream;
   StreamSubscription<QuerySnapshot> myStatusStreamSubscription;
   bool updateStatus = false;
@@ -59,6 +64,8 @@ class HomeViewModel extends BaseModel {
       new TextEditingController();
 
   HomeViewModel(this.myUID, this.myPhoneNumber) {
+    WidgetsBinding.instance.addObserver(this);
+    _firestoreService.saveUserInfo(myUID, {"isOnline": true});
     initialise();
     statusTextController.addListener(() {
       textToShow = statusTextController.text.trim();
@@ -84,13 +91,43 @@ class HomeViewModel extends BaseModel {
   }
 
   bool isRecording(String userUID) {
-    return userUIDRecordingState[userUID] == null ? false : userUIDRecordingState[userUID];
+    return userUIDRecordingState[userUID] == null
+        ? false
+        : userUIDRecordingState[userUID];
   }
 
   initialise() async {
+    _pushNotification.initialise(this.myUID);
+    await initialise_cache();
     initialiseStatusStream();
     initialiseChatsStream();
-    fetchAllContacts();
+    if (contactsMap.length == 0) {
+      fetchAllContacts();
+    }
+  }
+
+  initialise_cache() async {
+    try {
+      contactsMap = List<String>.from(await cache.load('contactsMap'));
+      if (chatsList == null) {
+        contactsMap = <String>[];
+      } else {
+        notifyListeners();
+      }
+    } catch (e) {
+      contactsMap = <String>[];
+    }
+    try {
+      userUIDContactNameMapping = Map<String, String>.from(
+          await cache.load('userUIDContactNameMapping'));
+      if (userUIDContactNameMapping == null) {
+        userUIDContactNameMapping = {};
+      } else {
+        notifyListeners();
+      }
+    } catch (e) {
+      userUIDContactNameMapping = {};
+    }
   }
 
   initialiseStatusStream() async {
@@ -202,13 +239,15 @@ class HomeViewModel extends BaseModel {
         userUIDDisplayNameMapping[uid] = data['displayName'];
         userUIDNumberMapping[uid] = data['phoneNumber'];
         userUIDStatusMapping[uid] = data['currentStatus'];
+        userUIDOnlineMapping[uid] = data['isOnline'];
         notifyListeners();
       }
     }));
   }
 
   userChatStateStream(String uid) {
-    Stream<DocumentSnapshot> chatState = _firestoreService.getChatState(uid + '_' + myUID);
+    Stream<DocumentSnapshot> chatState =
+        _firestoreService.getChatState(uid + '_' + myUID);
     usersDocuments.add(chatState);
     usersDocumentsSubscriptions.add(chatState.listen((event) {
       if (event.exists) {
@@ -220,11 +259,13 @@ class HomeViewModel extends BaseModel {
     }));
   }
 
-
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     chatStreamSubscription?.cancel();
     myStatusStreamSubscription?.cancel();
+    print('here');
+    _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     for (var stream in usersDocumentsSubscriptions) {
       stream?.cancel;
     }
@@ -232,6 +273,16 @@ class HomeViewModel extends BaseModel {
       stream?.cancel;
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached || state == AppLifecycleState.inactive) {
+      _firestoreService.saveUserInfo(myUID, {"isOnline": false});
+    } else if (state == AppLifecycleState.resumed) {
+      _firestoreService.saveUserInfo(myUID, {"isOnline": true});
+    }
+    super.didChangeAppLifecycleState(state);
   }
 
   String refactorPhoneNumber(String phone) {
@@ -261,49 +312,51 @@ class HomeViewModel extends BaseModel {
 
   fetchAllContacts() async {
     isFetchingContacts = true;
-    bool contactPermission = await getContactPermission();
-    if (contactPermission) {
-      notifyListeners();
-      final Iterable<Contact> contacts = await ContactsService.getContacts();
-      for (Contact contact in contacts) {
-        for (Item phone in contact.phones) {
-          String number = refactorPhoneNumber(phone.value.toString());
-          if (number != null) {
-            userNumberContactNameMapping[number] = contact.displayName;
-          }
+    notifyListeners();
+    final Iterable<Contact> contacts = await ContactsService.getContacts();
+    for (Contact contact in contacts) {
+      for (Item phone in contact.phones) {
+        String number = refactorPhoneNumber(phone.value.toString());
+        if (number != null) {
+          userNumberContactNameMapping[number] = contact.displayName;
         }
       }
-      List<String> contactsData = [];
-      List<String> userContactsList =
-          userNumberContactNameMapping.keys.toList(growable: false);
-      for (int i = 0; i < userContactsList.length; i += 10) {
-        List<String> phoneNumbers = userContactsList.sublist(
-            i,
-            i + 10 <= userContactsList.length
-                ? i + 10
-                : userContactsList.length);
-        await _firestoreService
-            .getUserFromPhone(phoneNumbers)
-            .then((querySnapshot) {
-          querySnapshot.docs.forEach((element) {
-            String userUID = element.id;
-            if (!userUIDs.contains(userUID)) {
-              userDocumentStream(element.id);
-            }
-            contactsData.add(userUID);
-          });
-        });
-      }
-      contactsMap.clear();
-      contactsMap.addAll(contactsData);
-      notifyListeners();
     }
+    List<String> contactsData = [];
+    List<String> userContactsList =
+        userNumberContactNameMapping.keys.toList(growable: false);
+    for (int i = 0; i < userContactsList.length; i += 10) {
+      List<String> phoneNumbers = userContactsList.sublist(i,
+          i + 10 <= userContactsList.length ? i + 10 : userContactsList.length);
+      await _firestoreService
+          .getUserFromPhone(phoneNumbers)
+          .then((querySnapshot) {
+        querySnapshot.docs.forEach((element) {
+          String userUID = element.id;
+          if (!userUIDs.contains(userUID)) {
+            userDocumentStream(element.id);
+          }
+          Map<String, dynamic> data = element.data();
+          if (data['phoneNumber'] != myPhoneNumber) {
+            contactsData.add(userUID);
+            userUIDContactNameMapping[userUID] =
+                userNumberContactNameMapping[data['phoneNumber']];
+          }
+        });
+      });
+    }
+
+    await cache.write('userUIDContactNameMapping', userUIDContactNameMapping);
+    contactsMap.clear();
+    contactsMap.addAll(contactsData);
+    await cache.write('contactsMap', contactsMap);
+    notifyListeners();
     isFetchingContacts = false;
   }
 
   String getUserName(String uid) {
     String number = userUIDNumberMapping[uid];
-    String contactName = userNumberContactNameMapping[number];
+    String contactName = userUIDContactNameMapping[uid];
     if (contactName != null) {
       return contactName;
     } else if (number != null) {
@@ -314,13 +367,21 @@ class HomeViewModel extends BaseModel {
   }
 
   String getUserStatus(String uid) {
-    return userUIDStatusMapping[uid] == null ? "" : userUIDStatusMapping[uid];
+    return userUIDStatusMapping[uid] == null
+        ? "Tap to Tape"
+        : userUIDStatusMapping[uid];
   }
 
   String getStatusFromUID(String statusUID) {
     return statusesUIDStatusTextMap[statusUID] == null
         ? ""
         : statusesUIDStatusTextMap[statusUID];
+  }
+
+  bool getUserOnlineState(String uid) {
+    return userUIDOnlineMapping[uid] == null
+        ? false
+        : userUIDOnlineMapping[uid];
   }
 
   void signOut() async {
@@ -330,23 +391,30 @@ class HomeViewModel extends BaseModel {
     }
   }
 
-  void refreshContacts() {
-    if (!this.isFetchingContacts) {
+  void refreshContacts() async {
+    bool contactPermission = false;
+    try {
+      contactPermission = await getContactPermission();
+    } catch (err) {
+      contactPermission = false;
+    }
+    if (!this.isFetchingContacts && contactPermission) {
       fetchAllContacts();
     }
   }
 
-  void goToContactScreen(String uid, {bool fromContacts: false}) async {
-    bool microphonePermission = await getMicrophonePermission();
-    bool storagePermission = await getStoragePermission();
-    if (microphonePermission && storagePermission) {
-      if (fromContacts) {
-        _navigationService.goBack();
-      }
-      _navigationService.navigateTo(routes.ChatViewRoute,
-          arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
-    }
-  }
+  // void goToContactScreen(String uid, {bool fromContacts: false}) async {
+  //   bool microphonePermission = await getMicrophonePermission();
+  //   bool storagePermission = await getStoragePermission();
+  //   if (microphonePermission && storagePermission) {
+  //     if (fromContacts) {
+  //       _navigationService.goBack();
+  //     }
+
+  //     _navigationService.navigateTo(routes.ChatViewRoute,
+  //         arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
+  //   }
+  // }
 
   String getPhoneNumber(String uid) {
     return userUIDNumberMapping[uid];
@@ -381,5 +449,6 @@ class HomeViewModel extends BaseModel {
     } else if (yourState == 'Played') {
       return Icon(PhosphorIcons.speakerSimpleHigh);
     }
+    return null;
   }
 }

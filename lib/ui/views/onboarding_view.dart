@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:wavemobileapp/viewmodel/onboarding_view_model.dart';
+import 'package:tapemobileapp/viewmodel/onboarding_view_model.dart';
 
 class OnboardingView extends StatelessWidget {
   final String userUID;

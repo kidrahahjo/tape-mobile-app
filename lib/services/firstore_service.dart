@@ -18,8 +18,8 @@ class FirestoreService {
     return _userCollectionReference.doc(userUID).snapshots();
   }
 
-  saveUserInfo(String userUID, Map<String, dynamic> data) async {
-    await _userCollectionReference
+  Future<void> saveUserInfo(String userUID, Map<String, dynamic> data) async {
+    return _userCollectionReference
         .doc(userUID)
         .set(data, SetOptions(merge: true));
   }
@@ -76,34 +76,6 @@ class FirestoreService {
         .set(data, SetOptions(merge: true));
   }
 
-  Future<void> sendShout(Map<String, dynamic> metaData, String audioUID,
-      DateTime currentTime) async {
-    // update the shout in the database
-    await _chatsCollectionReference
-        .doc(metaData['chatForYou'])
-        .collection("messages")
-        .doc(audioUID)
-        .set({
-      "isListened": false,
-      "sentAt": currentTime,
-      "listenedAt": null,
-    });
-
-    await _chatsCollectionReference.doc(metaData['chatForYou']).set({
-      "sender": metaData['myUID'],
-      "receiver": metaData['yourUID'],
-      "lastSentAt": currentTime,
-      "lastModifiedAt": currentTime,
-    }, SetOptions(merge: true));
-
-    await _chatsCollectionReference.doc(metaData['chatForMe']).set({
-      "sender": metaData['yourUID'],
-      "receiver": metaData['myUID'],
-      "lastModifiedAt": currentTime,
-      "chatState": metaData['chatState'],
-    }, SetOptions(merge: true));
-  }
-
   Stream<QuerySnapshot> getStatuses(String userUID) {
     return _userCollectionReference
         .doc(userUID)
@@ -120,5 +92,9 @@ class FirestoreService {
         .collection("statuses")
         .doc(statusUID)
         .set(data, SetOptions(merge: true));
+  }
+
+  sendPoke(String chatUID, Map<String, dynamic> data) {
+    _chatsCollectionReference.doc(chatUID).collection("pokes").add(data);
   }
 }

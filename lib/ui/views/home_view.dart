@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:stacked/stacked.dart';
-import 'package:wavemobileapp/permissions.dart';
-import 'package:wavemobileapp/viewmodel/home_view_model.dart';
+import 'package:tapemobileapp/permissions.dart';
+import 'package:tapemobileapp/ui/views/chatpage_view.dart';
+import 'package:tapemobileapp/viewmodel/home_view_model.dart';
 
 class HomeView extends StatelessWidget {
   final String userUID;
@@ -14,7 +16,12 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ViewModelBuilder<HomeViewModel>.nonReactive(
+    return WillPopScope(
+      onWillPop: () async {
+        SystemNavigator.pop();
+        return true;
+      },
+    child: ViewModelBuilder<HomeViewModel>.nonReactive(
       viewModelBuilder: () => HomeViewModel(userUID, phoneNumber),
       builder: (context, model, child) {
         return Scaffold(
@@ -31,7 +38,7 @@ class HomeView extends StatelessWidget {
           ),
         );
       },
-    );
+    ));
   }
 }
 
@@ -104,11 +111,6 @@ class StatusChip extends ViewModelWidget<HomeViewModel> {
         });
       },
       child: Chip(
-        avatar: CircleAvatar(
-          backgroundColor: Colors.transparent,
-          child: Icon(PhosphorIcons.fireFill,
-              size: 20, color: Theme.of(context).accentColor),
-        ),
         label: Text(viewModel.status),
         elevation: 0,
         labelStyle: TextStyle(),
@@ -159,11 +161,6 @@ class StatusView extends ViewModelWidget<HomeViewModel> {
                       viewModel.setStatusWithUID(statusUID);
                       viewModel.popIt();
                     },
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.white10,
-                      child: Icon(PhosphorIcons.fireFill,
-                          color: Theme.of(context).accentColor),
-                    ),
                     title: Text(viewModel.getStatusFromUID(statusUID)),
                   ))
               .toList(),
@@ -199,6 +196,33 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
   }
 }
 
+void openChatSheet(BuildContext context, String uid, String yourName,
+    {bool fromContacts: false}) async {
+  bool microphonePermission = await getMicrophonePermission();
+  bool storagePermission = await getStoragePermission();
+  if (microphonePermission && storagePermission) {
+    final myModel = Provider.of<HomeViewModel>(context, listen: false);
+    showModalBottomSheet<void>(
+        isScrollControlled: true,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16), topRight: Radius.circular(16))),
+        context: context,
+        enableDrag: true,
+        builder: (BuildContext context) {
+          return ListenableProvider.value(
+            value: myModel,
+            child: ChatPageView(uid, yourName),
+          );
+        });
+  } else {
+    final ScaffoldMessengerState scaffoldMessenger =
+        ScaffoldMessenger.of(context);
+    scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text("Please grant microphone and storage permission.")));
+  }
+}
+
 class ContactTile extends ViewModelWidget<HomeViewModel> {
   final String yourUID;
 
@@ -206,21 +230,33 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
+    final String yourName = viewModel.getUserName(yourUID);
     return GestureDetector(
         onTap: () async {
-          viewModel.goToContactScreen(yourUID);
+          openChatSheet(context, yourUID, yourName);
         },
         child: ListTile(
           trailing: viewModel.showChatState(yourUID),
           leading: CircleAvatar(
-            child: Icon(
-              PhosphorIcons.user,
-            ),
-          ),
-          title: Text(
-            viewModel.getUserName(yourUID),
-            style: TextStyle(),
-          ),
+              child: Icon(
+            PhosphorIcons.user,
+          )),
+          title: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Text(
+                  viewModel.getUserName(yourUID),
+                  style: TextStyle(),
+                ),
+                viewModel.getUserOnlineState(yourUID)
+                    ? Icon(
+                        PhosphorIcons.circleFill,
+                        color: Colors.green,
+                        size: 12,
+                      )
+                    : SizedBox(),
+              ]),
           subtitle: viewModel.isRecording(yourUID)
               ? Text(
                   "Recording...",
@@ -272,7 +308,7 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        height: 640,
+        height: 480,
         child: Scaffold(
           appBar: AppBar(
             elevation: 0,
@@ -320,10 +356,12 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
       itemCount: viewModel.contactsMap.length,
       itemBuilder: (BuildContext context, int index) {
         String uid = viewModel.contactsMap.elementAt(index);
+        String yourName = viewModel.getUserName(uid);
         return Column(children: [
           ListTile(
             onTap: () {
-              viewModel.goToContactScreen(uid, fromContacts: true);
+              openChatSheet(context, uid, yourName);
+              Navigator.pop(context);
             },
             leading: CircleAvatar(
               child: Icon(

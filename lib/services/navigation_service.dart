@@ -8,7 +8,8 @@ class NavigationService {
   }
 
   Future<dynamic> navigateReplacementTo(String routeName, {dynamic arguments}) {
-    return navigatorKey.currentState.pushReplacementNamed(routeName, arguments: arguments);
+    return navigatorKey.currentState
+        .pushReplacementNamed(routeName, arguments: arguments);
   }
 
   void goBack() {
