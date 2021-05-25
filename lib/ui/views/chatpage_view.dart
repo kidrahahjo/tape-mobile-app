@@ -42,7 +42,9 @@ class ChatPageView extends StatelessWidget {
                           ),
                           Icon(
                             PhosphorIcons.circleFill,
-                            color: model.youAreOnline ? Colors.green : Colors.transparent,
+                            color: model.youAreOnline
+                                ? Colors.green
+                                : Colors.transparent,
                             size: 12,
                           )
                         ]),
@@ -164,14 +166,13 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
           viewModel.stopRecording();
         },
         child: SizedBox(
-          height: 64,
-          width: 64,
+          height: 72,
+          width: 72,
           child: RawMaterialButton(
             shape: CircleBorder(),
             fillColor: Theme.of(context).accentColor,
             onPressed: null,
-            child: Icon(PhosphorIcons.voicemail,
-                size: 32, color: Color(0xff2f2f2f)),
+            child: Icon(PhosphorIcons.voicemail, size: 36, color: Colors.white),
           ),
         ));
   }
@@ -210,43 +211,43 @@ class CenterImageDisplay extends ViewModelWidget<ChatViewModel> {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         viewModel.poked
-          ? CircleAvatar(
-              backgroundColor: Colors.transparent,
-              radius: 72,
-              child: Icon(
-                PhosphorIcons.handWavingThin,
-                size: 60,
-                color: Theme.of(context).accentColor,
-              ),
-            )
-          : viewModel.iAmRecording
-            ? RecordingDisplay()
-            : viewModel.sendingShout
-                ? CircleAvatar(
-                    backgroundColor: Colors.transparent,
-                    radius: 72,
-                    child: Stack(children: [
-                      Center(
-                        child: Icon(
-                          PhosphorIcons.paperPlaneThin,
-                          size: 60,
-                          color: Theme.of(context).accentColor,
-                        ),
-                      ),
-                      Center(
-                        child: Container(
-                          width: 144,
-                          height: 144,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
+            ? CircleAvatar(
+                backgroundColor: Colors.transparent,
+                radius: 72,
+                child: Icon(
+                  PhosphorIcons.handWavingThin,
+                  size: 60,
+                  color: Theme.of(context).accentColor,
+                ),
+              )
+            : viewModel.iAmRecording
+                ? RecordingDisplay()
+                : viewModel.sendingShout
+                    ? CircleAvatar(
+                        backgroundColor: Colors.transparent,
+                        radius: 72,
+                        child: Stack(children: [
+                          Center(
+                            child: Icon(
+                              PhosphorIcons.paperPlaneThin,
+                              size: 60,
+                              color: Theme.of(context).accentColor,
+                            ),
                           ),
-                        ),
-                      ),
-                    ]),
-                  )
-                : viewModel.shoutQueue.length == 0
-                    ? CircularStatusAvatar()
-                    : ShoutsPlayerDisplay(),
+                          Center(
+                            child: Container(
+                              width: 144,
+                              height: 144,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                        ]),
+                      )
+                    : viewModel.shoutQueue.length == 0
+                        ? CircularStatusAvatar()
+                        : ShoutsPlayerDisplay(),
       ],
     );
   }
@@ -279,22 +280,22 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
       children: [
         Text(
           viewModel.poked
-          ? "You waved at ${viewModel.yourName}"
-          : viewModel.iAmRecording
-              ? "Recording..."
-              : viewModel.sendingShout
-                  ? "Sending..."
-                  : viewModel.showPlayer()
-                      ? viewModel.totalShouts == 1
-                          ? "${viewModel.yourName} sent a Tape!"
-                          : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.totalShouts.toString()}"
-                      : viewModel.showClear()
-                          ? "Hold to record, release to send!"
-                          : viewModel.showSent()
-                              ? "You sent a Tape!"
-                              : viewModel.showShoutPlayed()
-                                  ? "${viewModel.yourName} played your Tape!"
-                                  : "Hold to record, and release to send!",
+              ? "You waved at ${viewModel.yourName}"
+              : viewModel.iAmRecording
+                  ? "Recording..."
+                  : viewModel.sendingShout
+                      ? "Sending..."
+                      : viewModel.showPlayer()
+                          ? viewModel.totalShouts == 1
+                              ? "${viewModel.yourName} sent a Tape!"
+                              : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.totalShouts.toString()}"
+                          : viewModel.showClear()
+                              ? "Hold to record, release to send!"
+                              : viewModel.showSent()
+                                  ? "You sent a Tape!"
+                                  : viewModel.showShoutPlayed()
+                                      ? "${viewModel.yourName} played your Tape!"
+                                      : "Hold to record, and release to send!",
           style: TextStyle(
             fontSize: 16,
           ),
@@ -304,7 +305,10 @@ class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
           height: 4,
         ),
         Text(
-          viewModel.iAmRecording || viewModel.poked || viewModel.sendingShout || viewModel.showClear()
+          viewModel.iAmRecording ||
+                  viewModel.poked ||
+                  viewModel.sendingShout ||
+                  viewModel.showClear()
               ? ""
               : viewModel.getTime(),
           style: TextStyle(fontSize: 16, color: Colors.grey),

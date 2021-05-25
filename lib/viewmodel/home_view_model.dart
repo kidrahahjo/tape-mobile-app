@@ -277,7 +277,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.inactive) {
       _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     } else if (state == AppLifecycleState.resumed) {
       _firestoreService.saveUserInfo(myUID, {"isOnline": true});
@@ -440,7 +442,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     if (myState == 'Received') {
       return Icon(
         PhosphorIcons.playFill,
-        color: Colors.orange,
+        color: Colors.deepPurpleAccent,
       );
     } else if ((myState == null || myState == 'Played') && yourState == null) {
       return null;
