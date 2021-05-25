@@ -4,6 +4,8 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/viewmodel/chat_view_model.dart';
 
+import 'package:flutter_svg/flutter_svg.dart';
+
 class ChatPageView extends StatelessWidget {
   final String yourUID;
   final String yourName;
@@ -152,6 +154,7 @@ class PokeButton extends ViewModelWidget<ChatViewModel> {
 
 class RecordButton extends ViewModelWidget<ChatViewModel> {
   RecordButton() : super(reactive: true);
+  final String tapeIcon = 'assets/icon/tape_icon.svg';
 
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
@@ -172,7 +175,12 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
             shape: CircleBorder(),
             fillColor: Theme.of(context).accentColor,
             onPressed: null,
-            child: Icon(PhosphorIcons.voicemail, size: 36, color: Colors.white),
+            child: SvgPicture.asset(
+              tapeIcon,
+              semanticsLabel: 'Tape Logo',
+              height: 56,
+              width: 56,
+            ),
           ),
         ));
   }

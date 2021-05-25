@@ -47,6 +47,7 @@ dependencies:
   shared_preferences: ^2.0.5
   stacked: ^2.1.4
   uuid: ^3.0.4
+  flutter_svg: ^0.22.0
 
 dev_dependencies:
   flutter_launcher_icons: ^0.9.0
@@ -63,6 +64,8 @@ flutter_icons:
 # following page: https://dart.dev/tools/pub/pubspec
 # The following section is specific to Flutter.
 flutter:
+  assets:
+    - assets/icon/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

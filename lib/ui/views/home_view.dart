@@ -17,28 +17,28 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async {
-        SystemNavigator.pop();
-        return true;
-      },
-    child: ViewModelBuilder<HomeViewModel>.nonReactive(
-      viewModelBuilder: () => HomeViewModel(userUID, phoneNumber),
-      builder: (context, model, child) {
-        return Scaffold(
-          floatingActionButton: ContactsButton(),
-          body: CustomScrollView(
-            slivers: <Widget>[
-              CustomSliverAppBar(),
-              SliverToBoxAdapter(
-                  child: Divider(
-                height: 1,
-              )),
-              AllChatsView(),
-            ],
-          ),
-        );
-      },
-    ));
+        onWillPop: () async {
+          SystemNavigator.pop();
+          return true;
+        },
+        child: ViewModelBuilder<HomeViewModel>.nonReactive(
+          viewModelBuilder: () => HomeViewModel(userUID, phoneNumber),
+          builder: (context, model, child) {
+            return Scaffold(
+              floatingActionButton: ContactsButton(),
+              body: CustomScrollView(
+                slivers: <Widget>[
+                  CustomSliverAppBar(),
+                  SliverToBoxAdapter(
+                      child: Divider(
+                    height: 1,
+                  )),
+                  AllChatsView(),
+                ],
+              ),
+            );
+          },
+        ));
   }
 }
 

@@ -38,6 +38,8 @@ void main() async {
       ),
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
+        primaryColor: Colors.deepPurpleAccent,
+        accentColor: Colors.deepPurpleAccent,
         primaryTextTheme:
             TextTheme(headline6: TextStyle(color: Color(0xff212121))),
         primaryIconTheme: IconThemeData(color: Color(0xff212121)),

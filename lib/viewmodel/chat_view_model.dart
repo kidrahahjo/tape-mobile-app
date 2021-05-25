@@ -173,7 +173,9 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.inactive) {
       _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
           {"isOnline": false, "chattingWith": null});
     } else if (state == AppLifecycleState.resumed) {
@@ -186,8 +188,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
-          {"chattingWith": null});
+    _firestoreService.saveUserInfo(
+        _authenticationService.currentUser.uid, {"chattingWith": null});
 
     yourDocumentStreamSubscription?.cancel();
     _chatService.cancelSubscriptions();
