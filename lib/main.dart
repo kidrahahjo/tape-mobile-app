@@ -14,7 +14,8 @@ void main() async {
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   setupLocator();
-  final bgColor = Color(0xfff5f5f5);
+  final bgColor = Color(0xffeeeeee);
+  final bgDark = Color(0xff000000);
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -25,9 +26,12 @@ void main() async {
       darkTheme: ThemeData(
         primarySwatch: Colors.orange,
         primaryColorDark: Color(0xff444444),
+        primaryColorLight: Color(0xff222222),
+        scaffoldBackgroundColor: bgDark,
+        backgroundColor: bgDark,
+        bottomSheetTheme: BottomSheetThemeData(backgroundColor: bgDark),
         accentColor: Colors.orange,
-        appBarTheme:
-            AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
+        appBarTheme: AppBarTheme(backgroundColor: bgDark, elevation: 0),
         brightness: Brightness.dark,
         fontFamily: 'DMSans',
         floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
@@ -36,6 +40,7 @@ void main() async {
         primarySwatch: Colors.orange,
         primaryColorLight: Color(0xffffffff),
         scaffoldBackgroundColor: bgColor,
+        bottomSheetTheme: BottomSheetThemeData(backgroundColor: bgColor),
         appBarTheme: AppBarTheme(backgroundColor: bgColor, elevation: 0),
         brightness: Brightness.light,
         fontFamily: 'DMSans',
