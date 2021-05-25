@@ -401,17 +401,18 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }
   }
 
-  void goToContactScreen(String uid, {bool fromContacts: false}) async {
-    bool microphonePermission = await getMicrophonePermission();
-    bool storagePermission = await getStoragePermission();
-    if (microphonePermission && storagePermission) {
-      if (fromContacts) {
-        _navigationService.goBack();
-      }
-      _navigationService.navigateTo(routes.ChatViewRoute,
-          arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
-    }
-  }
+  // void goToContactScreen(String uid, {bool fromContacts: false}) async {
+  //   bool microphonePermission = await getMicrophonePermission();
+  //   bool storagePermission = await getStoragePermission();
+  //   if (microphonePermission && storagePermission) {
+  //     if (fromContacts) {
+  //       _navigationService.goBack();
+  //     }
+
+  //     _navigationService.navigateTo(routes.ChatViewRoute,
+  //         arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
+  //   }
+  // }
 
   String getPhoneNumber(String uid) {
     return userUIDNumberMapping[uid];

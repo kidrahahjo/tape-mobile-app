@@ -4,6 +4,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/permissions.dart';
+import 'package:tapemobileapp/ui/views/chatpage_view.dart';
 import 'package:tapemobileapp/viewmodel/home_view_model.dart';
 
 class HomeView extends StatelessWidget {
@@ -189,6 +190,31 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
   }
 }
 
+void openChatSheet(BuildContext context, String uid, String yourName,
+    {bool fromContacts: false}) async {
+  bool microphonePermission = await getMicrophonePermission();
+  bool storagePermission = await getStoragePermission();
+  if (microphonePermission && storagePermission) {
+    final myModel = Provider.of<HomeViewModel>(context, listen: false);
+    showModalBottomSheet<void>(
+        isScrollControlled: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        context: context,
+        enableDrag: true,
+        builder: (BuildContext context) {
+          return ListenableProvider.value(
+            value: myModel,
+            child: ChatPageView(uid, yourName),
+          );
+        });
+  } else {
+    final ScaffoldMessengerState scaffoldMessenger =
+        ScaffoldMessenger.of(context);
+    scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text("Please grant microphone and storage permission.")));
+  }
+}
+
 class ContactTile extends ViewModelWidget<HomeViewModel> {
   final String yourUID;
 
@@ -196,9 +222,10 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
+    final String yourName = viewModel.getUserName(yourUID);
     return GestureDetector(
         onTap: () async {
-          viewModel.goToContactScreen(yourUID);
+          openChatSheet(context, yourUID, yourName);
         },
         child: ListTile(
           trailing: viewModel.showChatState(yourUID),
@@ -273,7 +300,7 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        height: 640,
+        height: 480,
         child: Scaffold(
           appBar: AppBar(
             elevation: 0,
@@ -321,10 +348,12 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
       itemCount: viewModel.contactsMap.length,
       itemBuilder: (BuildContext context, int index) {
         String uid = viewModel.contactsMap.elementAt(index);
+        String yourName = viewModel.getUserName(uid);
         return Column(children: [
           ListTile(
             onTap: () {
-              viewModel.goToContactScreen(uid, fromContacts: true);
+              openChatSheet(context, uid, yourName);
+              Navigator.pop(context);
             },
             leading: CircleAvatar(
               child: Icon(
