@@ -215,7 +215,17 @@ class CenterImageDisplay extends ViewModelWidget<ChatViewModel> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        viewModel.iAmRecording
+        viewModel.poked
+          ? CircleAvatar(
+              backgroundColor: Colors.transparent,
+              radius: 72,
+              child: Icon(
+                PhosphorIcons.handWavingThin,
+                size: 60,
+                color: Theme.of(context).accentColor,
+              ),
+            )
+          : viewModel.iAmRecording
             ? RecordingDisplay()
             : viewModel.sendingShout
                 ? CircleAvatar(

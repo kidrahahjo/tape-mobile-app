@@ -51,6 +51,9 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   // player related variables
   bool autoplay = false;
 
+  // poke related variables
+  bool poked = false;
+
   // Streams
   Stream<DocumentSnapshot> yourDocumentStream;
   StreamSubscription<DocumentSnapshot> yourDocumentStreamSubscription;
@@ -321,7 +324,12 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void poke() {
+    poked = true;
     _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
+    Future.delayed(Duration(seconds: 1), () {
+      poked = false;
+      notifyListeners();
+    });
   }
 
   bool showPlayer() {
