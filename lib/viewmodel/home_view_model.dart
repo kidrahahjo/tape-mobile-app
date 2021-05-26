@@ -454,9 +454,12 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     } else if ((myState == null || myState == 'Played') && yourState == null) {
       return null;
     } else if (yourState == 'Received') {
-      return Icon(PhosphorIcons.paperPlane);
+      return Icon(
+        PhosphorIcons.paperPlane,
+        color: Colors.grey,
+      );
     } else if (yourState == 'Played') {
-      return Icon(PhosphorIcons.speakerSimpleHigh);
+      return Icon(PhosphorIcons.speakerSimpleHigh, color: Colors.grey);
     }
     return null;
   }
