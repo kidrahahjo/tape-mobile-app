@@ -343,7 +343,10 @@ class ShoutsPlayerDisplay extends ViewModelWidget<ChatViewModel> {
           : IconButton(
               iconSize: 64,
               icon: viewModel.iAmListening
-                  ? Icon(PhosphorIcons.stopFill)
+                  ? Icon(
+                      PhosphorIcons.stopFill,
+                      color: Theme.of(context).iconTheme.color,
+                    )
                   : Icon(
                       PhosphorIcons.playFill,
                       color: Theme.of(context).accentColor,
