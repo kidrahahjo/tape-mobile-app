@@ -165,6 +165,9 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
         onTapUp: (details) {
           viewModel.stopRecording();
         },
+        onVerticalDragEnd: (value) {
+          viewModel.stopRecording();
+        },
         onHorizontalDragEnd: (value) {
           viewModel.stopRecording();
         },
