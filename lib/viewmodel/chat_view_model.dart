@@ -225,6 +225,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       shoutQueue = new Queue();
       currentShoutPlaying = 1;
     } else {
+      _chatService.stopPlaying();
       playNextShout();
     }
   }
