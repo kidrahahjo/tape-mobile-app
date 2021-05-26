@@ -49,7 +49,7 @@ class MobileFormWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "enter your phone number to start shouting!",
+                  "Enter your phone number to start Taping!",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 24,
@@ -78,7 +78,7 @@ class MobileFormWidget extends StatelessWidget {
               height: 48,
               child: ElevatedButton(
                 child: Text(
-                  "get secret code",
+                  "Get secret code",
                 ),
                 style: ElevatedButton.styleFrom(
                     elevation: 0,
@@ -125,7 +125,7 @@ class OTPFormWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "shh.. we sent a secret code to ${model.refactoredNumber}",
+                    "Shh... we sent a secret code to ${model.refactoredNumber}",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 24,
@@ -156,7 +156,7 @@ class OTPFormWidget extends StatelessWidget {
                     height: 48,
                     child: ElevatedButton(
                       child: Text(
-                        "didn't receive? resend code",
+                        "Didn't receive? Resend code",
                       ),
                       style: ElevatedButton.styleFrom(
                           elevation: 0,
@@ -172,7 +172,7 @@ class OTPFormWidget extends StatelessWidget {
                     height: 48,
                     child: ElevatedButton(
                       child: Text(
-                        "login",
+                        "Login",
                       ),
                       style: ElevatedButton.styleFrom(
                           elevation: 0,

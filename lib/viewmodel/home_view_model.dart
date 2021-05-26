@@ -101,7 +101,14 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     await initialise_cache();
     initialiseStatusStream();
     initialiseChatsStream();
-    if (contactsMap.length == 0) {
+
+    bool contactPermission = false;
+    try {
+      contactPermission = await getContactPermission();
+    } catch (err) {
+      contactPermission = false;
+    }
+    if (contactsMap.length == 0 && contactPermission) {
       fetchAllContacts();
     }
   }

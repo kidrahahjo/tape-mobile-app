@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.INTERNET" />
    <application
         android:label="Tape"
         android:icon="@mipmap/launcher_icon"
@@ -49,7 +50,7 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-            <meta-data
+        <meta-data
           android:name="com.google.firebase.messaging.default_notification_icon"
           android:resource="@mipmap/ic_stat_icon" />
     </application>

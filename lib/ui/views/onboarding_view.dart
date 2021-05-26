@@ -55,7 +55,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "what do your friends call you?",
+                  "What do your friends call you?",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 24,
@@ -80,7 +80,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
               height: 48,
               child: ElevatedButton(
                 child: Text(
-                  "let's shout!",
+                  "Let's Tape!",
                 ),
                 style: ElevatedButton.styleFrom(
                     elevation: 0,
