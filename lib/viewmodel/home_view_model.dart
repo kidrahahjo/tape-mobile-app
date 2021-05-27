@@ -11,7 +11,7 @@ import 'package:tapemobileapp/permissions.dart';
 import 'package:tapemobileapp/routing_constants.dart' as routes;
 import 'package:tapemobileapp/locator.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
-import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:flutter_cache/flutter_cache.dart' as cache;
@@ -43,21 +43,30 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Map<String, String> userUIDStatusMapping = {};
   Map<String, bool> userUIDRecordingState = {};
 
+  // document related variables
+  Stream<DocumentSnapshot> myDocumentStream;
+  StreamSubscription<DocumentSnapshot> myDocumentStreamSubscription;
+  String myDisplayName;
+
   // contact related variables
   List<String> contactsMap = [];
   bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
   Map<String, String> userUIDContactNameMapping = {};
+  Map<String, String> userUIDContactImageMapping = {};
+
   // status related variables
   String currentStatus;
   Queue<String> allStatuses = new Queue();
   Queue<String> allStatusesMessages = new Queue();
   Map<String, String> statusesUIDStatusTextMap = {};
   Map<String, bool> userUIDOnlineMapping = {};
+  Map<String, String> userUIDProfilePicMapping = {};
   Stream<QuerySnapshot> myStatusStream;
   StreamSubscription<QuerySnapshot> myStatusStreamSubscription;
   bool updateStatus = false;
   String textToShow;
+  String myProfilePic;
   bool onHome = true;
 
   final TextEditingController statusTextController =
@@ -96,9 +105,11 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         : userUIDRecordingState[userUID];
   }
 
-  initialise() async {
+  void initialise() async {
+    notifyListeners();
     _pushNotification.initialise(this.myUID);
-    await initialise_cache();
+    await initialiseCache();
+    initialiseMyDocumentStream();
     initialiseStatusStream();
     initialiseChatsStream();
 
@@ -113,7 +124,17 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }
   }
 
-  initialise_cache() async {
+  initialiseCache() async {
+    try {
+      myProfilePic = await cache.load('myProfilePic');
+    } catch (e) {
+      myProfilePic = null;
+    }
+    try {
+      myDisplayName = await cache.load('myDisplayName');
+    } catch (e) {
+      myDisplayName = null;
+    }
     try {
       contactsMap = List<String>.from(await cache.load('contactsMap'));
       if (chatsList == null) {
@@ -135,6 +156,24 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     } catch (e) {
       userUIDContactNameMapping = {};
     }
+  }
+
+  initialiseMyDocumentStream() {
+    myDocumentStream = _firestoreService.getUserDataStream(myUID);
+    myDocumentStreamSubscription = myDocumentStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        myProfilePic = data['displayImageURL'];
+        myDisplayName = data['displayName'];
+        if (myProfilePic != null) {
+          cache.write('myProfilePic', myProfilePic);
+        }
+        if (myDisplayName != null) {
+          cache.write('myDisplayName', myDisplayName);
+        }
+        notifyListeners();
+      }
+    });
   }
 
   initialiseStatusStream() async {
@@ -247,6 +286,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         userUIDNumberMapping[uid] = data['phoneNumber'];
         userUIDStatusMapping[uid] = data['currentStatus'];
         userUIDOnlineMapping[uid] = data['isOnline'];
+        userUIDProfilePicMapping[uid] = data['displayImageURL'];
         notifyListeners();
       }
     }));
@@ -271,7 +311,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     chatStreamSubscription?.cancel();
     myStatusStreamSubscription?.cancel();
-    print('here');
     _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     for (var stream in usersDocumentsSubscriptions) {
       stream?.cancel;
@@ -280,6 +319,11 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       stream?.cancel;
     }
     super.dispose();
+  }
+
+  String getProfilePic(String uid) {
+    String downloadURL = userUIDProfilePicMapping[uid];
+    return downloadURL;
   }
 
   @override
@@ -350,6 +394,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
             contactsData.add(userUID);
             userUIDContactNameMapping[userUID] =
                 userNumberContactNameMapping[data['phoneNumber']];
+            userUIDContactImageMapping[userUID] = "";
           }
         });
       });
@@ -412,21 +457,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }
   }
 
-  // void goToContactScreen(String uid, {bool fromContacts: false}) async {
-  //   bool microphonePermission = await getMicrophonePermission();
-  //   bool storagePermission = await getStoragePermission();
-  //   if (microphonePermission && storagePermission) {
-  //     if (fromContacts) {
-  //       _navigationService.goBack();
-  //     }
-
-  //     _navigationService.navigateTo(routes.ChatViewRoute,
-  //         arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
-  //   }
-  // }
-
   String getPhoneNumber(String uid) {
-    return userUIDNumberMapping[uid];
+    return userUIDNumberMapping[uid] != null ? userUIDNumberMapping[uid] : "";
   }
 
   popIt() {
@@ -462,5 +494,10 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       return Icon(PhosphorIcons.speakerSimpleHigh, color: Colors.grey);
     }
     return null;
+  }
+
+  void goToProfileView() {
+    _navigationService.navigateTo(routes.ProfileViewRoute,
+        arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});
   }
 }

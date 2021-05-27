@@ -21,8 +21,10 @@ class HomeView extends StatelessWidget {
           SystemNavigator.pop();
           return true;
         },
-        child: ViewModelBuilder<HomeViewModel>.nonReactive(
+        child: ViewModelBuilder<HomeViewModel>.reactive(
           viewModelBuilder: () => HomeViewModel(userUID, phoneNumber),
+          fireOnModelReadyOnce: false,
+          onModelReady: (viewModel) => viewModel.initialise(),
           builder: (context, model, child) {
             return Scaffold(
               floatingActionButton: ContactsButton(),
@@ -43,7 +45,7 @@ class HomeView extends StatelessWidget {
 }
 
 class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
-  CustomSliverAppBar() : super(reactive: false);
+  CustomSliverAppBar() : super(reactive: true);
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
@@ -67,6 +69,27 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
       stretch: true,
       actions: <Widget>[
         StatusChip(),
+        SizedBox(width: 8),
+        GestureDetector(
+          onTap: viewModel.goToProfileView,
+          child: CircleAvatar(
+            backgroundImage: viewModel.myProfilePic != null
+                ? NetworkImage(viewModel.myProfilePic)
+                : null,
+            radius: 24,
+            child: viewModel.myProfilePic == null
+                ? Text(
+                    viewModel.myDisplayName != null
+                        ? viewModel.myDisplayName[0]
+                        : "",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                : null,
+          ),
+        ),
         SizedBox(width: 16),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -231,6 +254,7 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
     final String yourName = viewModel.getUserName(yourUID);
+    final String yourProfilePic = viewModel.getProfilePic(yourUID);
     return GestureDetector(
         onTap: () async {
           openChatSheet(context, yourUID, yourName);
@@ -238,9 +262,19 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
         child: ListTile(
           trailing: viewModel.showChatState(yourUID),
           leading: CircleAvatar(
-              child: Icon(
-            PhosphorIcons.user,
-          )),
+            backgroundImage:
+                yourProfilePic != null ? NetworkImage(yourProfilePic) : null,
+            radius: 24,
+            child: yourProfilePic == null
+                ? Text(
+                    '${yourName[0]}'.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                : null,
+          ),
           title: Wrap(
               crossAxisAlignment: WrapCrossAlignment.center,
               spacing: 8,

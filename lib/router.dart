@@ -5,6 +5,7 @@ import 'package:tapemobileapp/ui/views/authenticate_view.dart';
 import 'package:tapemobileapp/ui/views/chatpage_view.dart';
 import 'package:tapemobileapp/ui/views/home_view.dart';
 import 'package:tapemobileapp/ui/views/onboarding_view.dart';
+import 'package:tapemobileapp/ui/views/profile_view.dart';
 import 'package:tapemobileapp/ui/views/startup_view.dart';
 
 Route<dynamic> generateRoute(RouteSettings settings) {
@@ -18,6 +19,11 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(
           builder: (context) =>
               HomeView(arguments['userUID'], arguments['phoneNumber']));
+    case ProfileViewRoute:
+      Map<String, String> arguments = settings.arguments as Map<String, String>;
+      return MaterialPageRoute(
+          builder: (context) =>
+              ProfileView(arguments['downloadURL'], arguments['displayName']));
     case OnboardingViewRoute:
       Map<String, String> arguments = settings.arguments as Map<String, String>;
       return MaterialPageRoute(
