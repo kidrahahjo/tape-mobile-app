@@ -11,7 +11,8 @@ import 'package:tapemobileapp/permissions.dart';
 import 'package:tapemobileapp/routing_constants.dart' as routes;
 import 'package:tapemobileapp/locator.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
-import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/firestore_service.dart';
+import 'package:tapemobileapp/services/firebase_storage_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:flutter_cache/flutter_cache.dart' as cache;
@@ -22,6 +23,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
+
+  final FirebaseStorageService _firebaseStorageService =
+      locator<FirebaseStorageService>();
   final NavigationService _navigationService = locator<NavigationService>();
   final PushNotification _pushNotification = locator<PushNotification>();
 
@@ -54,10 +58,12 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Queue<String> allStatusesMessages = new Queue();
   Map<String, String> statusesUIDStatusTextMap = {};
   Map<String, bool> userUIDOnlineMapping = {};
+  Map<String, String> userUIDProfilePicMapping = {};
   Stream<QuerySnapshot> myStatusStream;
   StreamSubscription<QuerySnapshot> myStatusStreamSubscription;
   bool updateStatus = false;
   String textToShow;
+  String myProfilePic;
   bool onHome = true;
 
   final TextEditingController statusTextController =
@@ -96,9 +102,10 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         : userUIDRecordingState[userUID];
   }
 
-  initialise() async {
+  void initialise() async {
+    notifyListeners();
     _pushNotification.initialise(this.myUID);
-    await initialise_cache();
+    await initialiseCache();
     initialiseStatusStream();
     initialiseChatsStream();
 
@@ -113,7 +120,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }
   }
 
-  initialise_cache() async {
+  initialiseCache() async {
     try {
       contactsMap = List<String>.from(await cache.load('contactsMap'));
       if (chatsList == null) {
@@ -247,6 +254,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         userUIDNumberMapping[uid] = data['phoneNumber'];
         userUIDStatusMapping[uid] = data['currentStatus'];
         userUIDOnlineMapping[uid] = data['isOnline'];
+        userUIDProfilePicMapping[uid] = data['displayImageURL'];
         notifyListeners();
       }
     }));
@@ -280,6 +288,15 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       stream?.cancel;
     }
     super.dispose();
+  }
+
+  String getProfilePic(String uid) {
+    String downloadURL = userUIDProfilePicMapping[uid];
+    return downloadURL;
+  }
+
+  getMyProfilePic() {
+    //some code :3
   }
 
   @override
@@ -462,5 +479,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       return Icon(PhosphorIcons.speakerSimpleHigh, color: Colors.grey);
     }
     return null;
+  }
+
+  void goToProfileView() {
+    _navigationService.navigateTo(routes.ProfileViewRoute);
   }
 }

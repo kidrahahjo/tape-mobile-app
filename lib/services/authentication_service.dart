@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tapemobileapp/locator.dart';
-import 'package:tapemobileapp/services/firstore_service.dart';
+import 'package:tapemobileapp/services/firestore_service.dart';
 
 class AuthenticationService {
   final FirebaseAuth auth = FirebaseAuth.instance;
