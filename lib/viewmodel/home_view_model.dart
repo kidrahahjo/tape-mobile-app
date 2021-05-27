@@ -310,7 +310,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     chatStreamSubscription?.cancel();
     myStatusStreamSubscription?.cancel();
-    print('here');
     _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     for (var stream in usersDocumentsSubscriptions) {
       stream?.cancel;
@@ -457,7 +456,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   }
 
   String getPhoneNumber(String uid) {
-    return userUIDNumberMapping[uid];
+    return userUIDNumberMapping[uid] != null ? userUIDNumberMapping[uid] : "";
   }
 
   popIt() {
