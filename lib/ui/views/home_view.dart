@@ -76,9 +76,12 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
             backgroundImage: viewModel.myProfilePic != null
                 ? NetworkImage(viewModel.myProfilePic)
                 : null,
+            radius: 24,
             child: viewModel.myProfilePic == null
                 ? Text(
-                    viewModel.myDisplayName != null ? viewModel.myDisplayName[0] : "",
+                    viewModel.myDisplayName != null
+                        ? viewModel.myDisplayName[0]
+                        : "",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -261,6 +264,7 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
           leading: CircleAvatar(
             backgroundImage:
                 yourProfilePic != null ? NetworkImage(yourProfilePic) : null,
+            radius: 24,
             child: yourProfilePic == null
                 ? Text(
                     '${yourName[0]}'.toUpperCase(),

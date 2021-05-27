@@ -53,6 +53,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
   Map<String, String> userUIDContactNameMapping = {};
+  Map<String, String> userUIDContactImageMapping = {};
 
   // status related variables
   String currentStatus;
@@ -393,6 +394,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
             contactsData.add(userUID);
             userUIDContactNameMapping[userUID] =
                 userNumberContactNameMapping[data['phoneNumber']];
+            userUIDContactImageMapping[userUID] = "";
           }
         });
       });
@@ -495,6 +497,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   }
 
   void goToProfileView() {
-    _navigationService.navigateTo(routes.ProfileViewRoute, arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});
+    _navigationService.navigateTo(routes.ProfileViewRoute,
+        arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});
   }
 }

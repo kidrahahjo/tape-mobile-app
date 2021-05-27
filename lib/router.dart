@@ -21,7 +21,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
               HomeView(arguments['userUID'], arguments['phoneNumber']));
     case ProfileViewRoute:
       Map<String, String> arguments = settings.arguments as Map<String, String>;
-      return MaterialPageRoute(builder: (context) => ProfileView(arguments['downloadURL'], arguments['displayName']));
+      return MaterialPageRoute(
+          builder: (context) =>
+              ProfileView(arguments['downloadURL'], arguments['displayName']));
     case OnboardingViewRoute:
       Map<String, String> arguments = settings.arguments as Map<String, String>;
       return MaterialPageRoute(

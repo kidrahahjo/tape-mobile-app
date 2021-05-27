@@ -36,20 +36,24 @@ class ProfileView extends StatelessWidget {
                       backgroundImage: model.downloadURL != null
                           ? NetworkImage(model.downloadURL)
                           : null,
-                      radius: 80,
+                      radius: 64,
                       child: model.uploadingProfilePic
-                      ? Center(
-                        child: CircularProgressIndicator(color: Colors.white,),
-                      )
-                      : model.downloadURL == null
-                          ? Text(
-                              displayName != null ? displayName[0] : "Profile Pic",
-                              style: TextStyle(
-                                fontSize: 56,
-                                fontWeight: FontWeight.bold,
+                          ? Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
                               ),
                             )
-                          : null,
+                          : model.downloadURL == null
+                              ? Text(
+                                  displayName != null
+                                      ? displayName[0]
+                                      : "Profile Pic",
+                                  style: TextStyle(
+                                    fontSize: 56,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : null,
                     ),
                   ),
                 ],

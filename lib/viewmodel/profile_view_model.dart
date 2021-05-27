@@ -8,9 +8,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:crop/crop.dart';
-
-import 'package:uuid/uuid.dart';
-
 import 'package:image/image.dart' as ImageCompress;
 import '../locator.dart';
 
@@ -37,8 +34,7 @@ class ProfileViewModel extends BaseModel {
   String get myUID => _authenticationService.currentUser.uid;
 
   Future getImage(BuildContext context) async {
-    final pickedFile =
-        await picker.getImage(source: ImageSource.gallery);
+    final pickedFile = await picker.getImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       selectedPic = File(pickedFile.path);
       showCropView(context);
@@ -137,7 +133,7 @@ class ProfileViewModel extends BaseModel {
     final image =
         ImageCompress.decodeImage(File(profilePicPath).readAsBytesSync());
 
-    final thumbnail = ImageCompress.copyResize(image, width: 400);
+    final thumbnail = ImageCompress.copyResize(image, width: 200);
 
     File(profilePicPath).writeAsBytesSync(ImageCompress.encodeJpg(thumbnail));
 
