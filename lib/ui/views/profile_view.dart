@@ -4,10 +4,15 @@ import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/viewmodel/profile_view_model.dart';
 
 class ProfileView extends StatelessWidget {
+  final String downloadURL;
+  final String displayName;
+
+  ProfileView(this.downloadURL, this.displayName);
+
   @override
   Widget build(BuildContext context) {
     return ViewModelBuilder<ProfileViewModel>.reactive(
-        viewModelBuilder: () => ProfileViewModel(),
+        viewModelBuilder: () => ProfileViewModel(downloadURL),
         builder: (context, model, child) {
           return Scaffold(
             appBar: AppBar(
@@ -32,9 +37,13 @@ class ProfileView extends StatelessWidget {
                           ? NetworkImage(model.downloadURL)
                           : null,
                       radius: 80,
-                      child: model.downloadURL == null
+                      child: model.uploadingProfilePic
+                      ? Center(
+                        child: CircularProgressIndicator(color: Colors.white,),
+                      )
+                      : model.downloadURL == null
                           ? Text(
-                              "G",
+                              displayName != null ? displayName[0] : "Profile Pic",
                               style: TextStyle(
                                 fontSize: 56,
                                 fontWeight: FontWeight.bold,

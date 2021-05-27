@@ -12,7 +12,6 @@ import 'package:tapemobileapp/routing_constants.dart' as routes;
 import 'package:tapemobileapp/locator.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
-import 'package:tapemobileapp/services/firebase_storage_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:flutter_cache/flutter_cache.dart' as cache;
@@ -23,9 +22,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
-
-  final FirebaseStorageService _firebaseStorageService =
-      locator<FirebaseStorageService>();
   final NavigationService _navigationService = locator<NavigationService>();
   final PushNotification _pushNotification = locator<PushNotification>();
 
@@ -47,11 +43,17 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Map<String, String> userUIDStatusMapping = {};
   Map<String, bool> userUIDRecordingState = {};
 
+  // document related variables
+  Stream<DocumentSnapshot> myDocumentStream;
+  StreamSubscription<DocumentSnapshot> myDocumentStreamSubscription;
+  String myDisplayName;
+
   // contact related variables
   List<String> contactsMap = [];
   bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
   Map<String, String> userUIDContactNameMapping = {};
+
   // status related variables
   String currentStatus;
   Queue<String> allStatuses = new Queue();
@@ -106,6 +108,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     notifyListeners();
     _pushNotification.initialise(this.myUID);
     await initialiseCache();
+    initialiseMyDocumentStream();
     initialiseStatusStream();
     initialiseChatsStream();
 
@@ -121,6 +124,16 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   }
 
   initialiseCache() async {
+    try {
+      myProfilePic = await cache.load('myProfilePic');
+    } catch (e) {
+      myProfilePic = null;
+    }
+    try {
+      myDisplayName = await cache.load('myDisplayName');
+    } catch (e) {
+      myDisplayName = null;
+    }
     try {
       contactsMap = List<String>.from(await cache.load('contactsMap'));
       if (chatsList == null) {
@@ -142,6 +155,24 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     } catch (e) {
       userUIDContactNameMapping = {};
     }
+  }
+
+  initialiseMyDocumentStream() {
+    myDocumentStream = _firestoreService.getUserDataStream(myUID);
+    myDocumentStreamSubscription = myDocumentStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        myProfilePic = data['displayImageURL'];
+        myDisplayName = data['displayName'];
+        if (myProfilePic != null) {
+          cache.write('myProfilePic', myProfilePic);
+        }
+        if (myDisplayName != null) {
+          cache.write('myDisplayName', myDisplayName);
+        }
+        notifyListeners();
+      }
+    });
   }
 
   initialiseStatusStream() async {
@@ -295,10 +326,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     return downloadURL;
   }
 
-  getMyProfilePic() {
-    //some code :3
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
@@ -429,19 +456,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }
   }
 
-  // void goToContactScreen(String uid, {bool fromContacts: false}) async {
-  //   bool microphonePermission = await getMicrophonePermission();
-  //   bool storagePermission = await getStoragePermission();
-  //   if (microphonePermission && storagePermission) {
-  //     if (fromContacts) {
-  //       _navigationService.goBack();
-  //     }
-
-  //     _navigationService.navigateTo(routes.ChatViewRoute,
-  //         arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
-  //   }
-  // }
-
   String getPhoneNumber(String uid) {
     return userUIDNumberMapping[uid];
   }
@@ -482,6 +496,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   }
 
   void goToProfileView() {
-    _navigationService.navigateTo(routes.ProfileViewRoute);
+    _navigationService.navigateTo(routes.ProfileViewRoute, arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});
   }
 }

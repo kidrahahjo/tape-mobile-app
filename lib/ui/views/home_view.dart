@@ -49,7 +49,6 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
-    print(viewModel.getMyProfilePic());
     return SliverAppBar(
       leading: GestureDetector(
         onLongPressStart: (details) async {
@@ -74,12 +73,12 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
         GestureDetector(
           onTap: viewModel.goToProfileView,
           child: CircleAvatar(
-            backgroundImage: viewModel.getMyProfilePic() != null
-                ? NetworkImage(viewModel.getMyProfilePic())
+            backgroundImage: viewModel.myProfilePic != null
+                ? NetworkImage(viewModel.myProfilePic)
                 : null,
-            child: viewModel.getMyProfilePic() == null
+            child: viewModel.myProfilePic == null
                 ? Text(
-                    "G",
+                    viewModel.myDisplayName != null ? viewModel.myDisplayName[0] : "",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

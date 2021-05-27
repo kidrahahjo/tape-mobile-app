@@ -23,15 +23,22 @@ class ProfileViewModel extends BaseModel {
 
   File selectedPic;
   String downloadURL;
+  bool uploadingProfilePic = false;
+
   final picker = ImagePicker();
   final cropController = new CropController(
     aspectRatio: 1,
   );
+
+  ProfileViewModel(String downloadURL) {
+    this.downloadURL = downloadURL;
+  }
+
   String get myUID => _authenticationService.currentUser.uid;
 
   Future getImage(BuildContext context) async {
     final pickedFile =
-        await picker.getImage(source: ImageSource.gallery, imageQuality: 5);
+        await picker.getImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       selectedPic = File(pickedFile.path);
       showCropView(context);
@@ -117,6 +124,8 @@ class ProfileViewModel extends BaseModel {
   }
 
   Future cropImage(BuildContext context) async {
+    uploadingProfilePic = true;
+    notifyListeners();
     var tempDir = await getTemporaryDirectory();
     String profilePicPath = '${tempDir.path}/$myUID.jpg';
     final pixelRatio = MediaQuery.of(context).devicePixelRatio;
@@ -138,15 +147,15 @@ class ProfileViewModel extends BaseModel {
 
   _uploadProfilePic(String filePath) async {
     File file = File(filePath);
-    String picID = Uuid().v4().replaceAll("-", "");
     await _firebaseStorageService
-        .getProfilePicLocationReference(picID)
+        .getProfilePicLocationReference(myUID)
         .putFile(file)
         .whenComplete(() async {
       downloadURL = await _firebaseStorageService
-          .getProfilePicLocationReference(picID)
+          .getProfilePicLocationReference(myUID)
           .getDownloadURL();
       _firestoreService.saveUserInfo(myUID, {"displayImageURL": downloadURL});
+      uploadingProfilePic = false;
       notifyListeners();
     });
   }
