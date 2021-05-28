@@ -68,7 +68,6 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
       pinned: true,
       stretch: true,
       actions: <Widget>[
-        StatusChip(),
         SizedBox(width: 8),
         GestureDetector(
           onTap: viewModel.goToProfileView,
@@ -203,7 +202,7 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
         (BuildContext context, int index) {
           String uid = viewModel.chatsList.elementAt(index);
           return Column(children: [
-            ContactTile(
+            ChatTile(
               uid,
             ),
             Divider(
@@ -219,37 +218,10 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
   }
 }
 
-void openChatSheet(BuildContext context, String uid, String yourName,
-    {bool fromContacts: false}) async {
-  bool microphonePermission = await getMicrophonePermission();
-  bool storagePermission = await getStoragePermission();
-  if (microphonePermission && storagePermission) {
-    final myModel = Provider.of<HomeViewModel>(context, listen: false);
-    showModalBottomSheet<void>(
-        isScrollControlled: true,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16), topRight: Radius.circular(16))),
-        context: context,
-        enableDrag: true,
-        builder: (BuildContext context) {
-          return ListenableProvider.value(
-            value: myModel,
-            child: ChatPageView(uid, yourName),
-          );
-        });
-  } else {
-    final ScaffoldMessengerState scaffoldMessenger =
-        ScaffoldMessenger.of(context);
-    scaffoldMessenger.showSnackBar(SnackBar(
-        content: Text("Please grant microphone and storage permission.")));
-  }
-}
-
-class ContactTile extends ViewModelWidget<HomeViewModel> {
+class ChatTile extends ViewModelWidget<HomeViewModel> {
   final String yourUID;
 
-  ContactTile(this.yourUID) : super(reactive: true);
+  ChatTile(this.yourUID) : super(reactive: true);
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
@@ -257,7 +229,7 @@ class ContactTile extends ViewModelWidget<HomeViewModel> {
     final String yourProfilePic = viewModel.getProfilePic(yourUID);
     return GestureDetector(
         onTap: () async {
-          openChatSheet(context, yourUID, yourName);
+          viewModel.goToContactScreen(yourUID);
         },
         child: ListTile(
           trailing: viewModel.showChatState(yourUID),
@@ -394,7 +366,7 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
         return Column(children: [
           ListTile(
             onTap: () {
-              openChatSheet(context, uid, yourName);
+              viewModel.goToContactScreen(uid);
               Navigator.pop(context);
             },
             leading: CircleAvatar(

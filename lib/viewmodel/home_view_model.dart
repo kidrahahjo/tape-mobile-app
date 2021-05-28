@@ -496,6 +496,18 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     return null;
   }
 
+  void goToContactScreen(String uid, {bool fromContacts: false}) async {
+    bool microphonePermission = await getMicrophonePermission();
+    bool storagePermission = await getStoragePermission();
+    if (microphonePermission && storagePermission) {
+      if (fromContacts) {
+        _navigationService.goBack();
+      }
+      _navigationService.navigateTo(routes.ChatViewRoute,
+          arguments: {'yourUID': uid, 'yourName': getUserName(uid)});
+    }
+  }
+
   void goToProfileView() {
     _navigationService.navigateTo(routes.ProfileViewRoute,
         arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});

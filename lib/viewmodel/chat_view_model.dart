@@ -54,6 +54,12 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   // poke related variables
   bool poked = false;
 
+  //new chat related variables
+
+  Queue<Map<String, bool>> tapeList = new Queue<Map<String, bool>>();
+
+  ScrollController scrollController = new ScrollController();
+
   // Streams
   Stream<DocumentSnapshot> yourDocumentStream;
   StreamSubscription<DocumentSnapshot> yourDocumentStreamSubscription;
@@ -124,6 +130,12 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       event.docs.forEach((element) {
         if (!shoutQueue.contains(element.id)) {
           shoutQueue.add(element.id);
+          tapeList.add({element.id: false});
+          notifyListeners();
+          scrollController.animateTo(scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOut);
+
           Map<String, dynamic> data = element.data();
           shoutsToTimeStamp[element.id] = convertToDateTime(data['sentAt']);
           notifyListeners();
@@ -252,8 +264,15 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       try {
         _sendingShout = true;
         notifyListeners();
+
         List<String> audioVariables = await _chatService.stopRecording();
+
         _uploadAudio(audioVariables[0], audioVariables[1]);
+        tapeList.add({audioVariables[1]: true});
+
+        notifyListeners();
+        scrollController.animateTo(scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 500), curve: Curves.easeOut);
       } catch (e) {
         _sendingShout = false;
         notifyListeners();
@@ -271,6 +290,22 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         .whenComplete(() {
       _sendingShout = false;
     });
+  }
+
+  void playMyTape(audioUID) async {
+    String downloadURL = await _firebaseStorageService
+        .getLocationReference(chatForYouUID, audioUID)
+        .getDownloadURL();
+
+    _chatService.startPlaying(downloadURL, whenFinished, audioUID);
+  }
+
+  void playYourTape(audioUID) async {
+    String downloadURL = await _firebaseStorageService
+        .getLocationReference(chatForMeUID, audioUID)
+        .getDownloadURL();
+
+    _chatService.startPlaying(downloadURL, whenFinished, audioUID);
   }
 
   void startPlaying() async {
