@@ -258,7 +258,10 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     tapePlayerState[audioUID] = "Playing";
     notifyListeners();
     _chatService.startPlaying(
-        downloadURL, yourTape ? whenFinished : () {}, audioUID);
+        downloadURL, yourTape ? whenFinished : (audioUID) {
+          tapePlayerState[audioUID] = null;
+          notifyListeners();
+        }, audioUID);
   }
 
   void stopTape(audioUID) {
