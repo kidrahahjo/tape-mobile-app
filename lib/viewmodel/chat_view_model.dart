@@ -289,6 +289,15 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           tapePlayerState[audioUID] = null;
           notifyListeners();
         }, audioUID);
+    _firestoreService.updateYourShoutState(
+      chatForMeUID,
+      audioUID,
+      {
+        "isListened": true,
+        "listenedAt": DateTime.now(),
+        "count": FieldValue.increment(1),
+      },
+    );
   }
 
   void stopTape(audioUID) {
@@ -298,17 +307,10 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void whenFinished(String audioUID) {
+    currentTapePlaying = null;
     tapePlayerState[audioUID] = "Played";
     notifyListeners();
     // update message and chat state
-    _firestoreService.updateYourShoutState(
-      chatForMeUID,
-      audioUID,
-      {
-        "isListened": true,
-        "listenedAt": DateTime.now(),
-      },
-    );
     if (audioUID == yourTapes.last) {
       _firestoreService.updateChatState(chatForYouUID,
           {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
@@ -334,7 +336,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     String playerState = tapePlayerState[tapeUID];
     return GestureDetector(
       onTap: () {
-        if (playerState == null) {
+        if (playerState == null || playerState == "Played") {
           playTape(tapeUID);
         } else if (playerState == "Playing") {
           stopTape(tapeUID);
