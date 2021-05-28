@@ -18,32 +18,49 @@ class ChatPageView extends StatelessWidget {
       viewModelBuilder: () => ChatViewModel(yourUID, yourName),
       builder: (context, model, child) {
         return Scaffold(
-          bottomNavigationBar: BottomAppBar(
-            color: Colors.grey.shade900,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: RecordButton(),
-            ),
-          ),
-          body: CustomScrollView(
-            controller: model.scrollController,
-            slivers: [
-              SliverAppBar(
-                actions: [PokeButton()],
-                leading: IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(PhosphorIcons.caretLeft)),
-                pinned: true,
-                stretch: true,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(yourName),
-                ),
+          body: Column(children: [
+            Expanded(
+              child: CustomScrollView(
+                controller: model.scrollController,
+                slivers: [
+                  SliverAppBar(
+                    actions: [PokeButton()],
+                    leading: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(PhosphorIcons.caretLeft)),
+                    pinned: true,
+                    stretch: true,
+                    flexibleSpace: FlexibleSpaceBar(
+                      title: Text(yourName),
+                    ),
+                  ),
+                  TapeArea(),
+                ],
               ),
-              TapeArea(),
-            ],
-          ),
+            ),
+            Footer(),
+          ]),
         );
       },
+    );
+  }
+}
+
+class Footer extends ViewModelWidget<ChatViewModel> {
+  @override
+  Widget build(BuildContext context, ChatViewModel viewModel) {
+    return Container(
+      color: Colors.amber,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [RecordButton()],
+          ),
+        ),
+      ),
     );
   }
 }
