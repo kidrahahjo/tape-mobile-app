@@ -15,47 +15,59 @@ import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:flutter_cache/flutter_cache.dart' as cache;
 
 class HomeViewModel extends BaseModel with WidgetsBindingObserver {
+  // variables related to me
   final String myUID;
   final String myPhoneNumber;
+  String myDisplayName;
+  String myProfilePic;
+
+
+  // streams related to me
+  Stream<DocumentSnapshot> myDocumentStream;
+  StreamSubscription<DocumentSnapshot> myDocumentStreamSubscription;
+
+  // services
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
   final NavigationService _navigationService = locator<NavigationService>();
   final PushNotification _pushNotification = locator<PushNotification>();
 
-  // chat related variables
-  List<String> chatsList = [];
-  List<String> userUIDs = [];
-  List<Stream<DocumentSnapshot>> usersChatStateStream = [];
-  List<StreamSubscription<DocumentSnapshot>> usersChatStateStreamSubscription =
-      [];
-  List<Stream<DocumentSnapshot>> usersDocuments = [];
-  List<StreamSubscription<DocumentSnapshot>> usersDocumentsSubscriptions = [];
-  Map<String, String> userUIDDYourChatStateMapping = {};
-  Map<String, String> userUIDDMyChatStateMapping = {};
-
-  Stream<QuerySnapshot> chatsStream;
-  StreamSubscription<QuerySnapshot> chatStreamSubscription;
+  // variables related to users
   Map<String, String> userUIDDisplayNameMapping = {};
   Map<String, String> userUIDNumberMapping = {};
+  Map<String, bool> userUIDOnlineMapping = {};
+  Map<String, String> userUIDProfilePicMapping = {};
+
+  // streams related to users
+  List<Stream<DocumentSnapshot>> usersDocuments = [];
+  List<StreamSubscription<DocumentSnapshot>> usersDocumentsSubscriptions = [];
+
+  // variables related to chat
+  List<String> chatsList = [];
+  List<String> userUIDs = [];
+  Map<String, String> userUIDDYourChatStateMapping = {};
+  Map<String, String> userUIDDMyChatStateMapping = {};
   Map<String, bool> userUIDRecordingState = {};
+  Map<String, int> userUIDReceivedTapesMapping = {};
+  Map<String, String> userUIDLastSentTapeStateMapping = {};
 
-  // document related variables
-  Stream<DocumentSnapshot> myDocumentStream;
-  StreamSubscription<DocumentSnapshot> myDocumentStreamSubscription;
-  String myDisplayName;
+  // streams related to chat
+  Stream<QuerySnapshot> chatsStream;
+  StreamSubscription<QuerySnapshot> chatStreamSubscription;
+  List<Stream<QuerySnapshot>> usersChatForMeStreams = [];
+  List<StreamSubscription<QuerySnapshot>> usersChatForMeStreamSubscriptions =
+      [];
+  List<Stream<QuerySnapshot>> usersChatForYouStreams = [];
+  List<StreamSubscription<QuerySnapshot>> usersChatForYouStreamSubscriptions =
+      [];
 
-  // contact related variables
+  // variables related to contacts
   List<String> contactsMap = [];
   bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
   Map<String, String> userUIDContactNameMapping = {};
-  Map<String, String> userUIDContactImageMapping = {};
 
-  // status related variables
-  Map<String, bool> userUIDOnlineMapping = {};
-  Map<String, String> userUIDProfilePicMapping = {};
-  String myProfilePic;
 
   HomeViewModel(this.myUID, this.myPhoneNumber) {
     WidgetsBinding.instance.addObserver(this);
@@ -153,8 +165,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
             userUIDs.add(uid);
             userDocumentStream(uid);
             userChatStateStream(uid);
+            initialiseUsersChatForMeStream(uid);
+            initialiseUsersChatForYouStream(uid);
           }
-          userUIDDMyChatStateMapping[uid] = data['chatState'];
           await _firestoreService.getUserData(uid).then((value) {});
         }
         chatsList.clear();
@@ -162,6 +175,35 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         notifyListeners();
       }
     });
+  }
+
+  initialiseUsersChatForMeStream(String uid) {
+    Stream<QuerySnapshot> chatForMeStream =
+        _firestoreService.fetchReceivedTapesFromDatabase(uid + "_" + myUID);
+    usersChatForMeStreams.add(chatForMeStream);
+    usersChatForMeStreamSubscriptions.add(chatForMeStream.listen((event) {
+      userUIDReceivedTapesMapping[uid] = event.docs.length;
+    }));
+  }
+
+  initialiseUsersChatForYouStream(String uid) {
+    Stream<QuerySnapshot> chatForYouStream =
+        _firestoreService.getLastTapeStateStream(myUID + "_" + uid);
+    usersChatForYouStreams.add(chatForYouStream);
+    usersChatForYouStreamSubscriptions.add(chatForYouStream.listen((event) {
+      if (event.docs.length == 0) {
+        userUIDLastSentTapeStateMapping[uid] = "Empty";
+      } else {
+        Map<String, dynamic> data = event.docs.first.data();
+        if (data['isListened'] == true && data['isExpired'] == true) {
+          userUIDLastSentTapeStateMapping[uid] = "Reply";
+        } else if (data['isListened'] == true) {
+          userUIDLastSentTapeStateMapping[uid] = "Played";
+        } else {
+          userUIDLastSentTapeStateMapping[uid] = "Sent";
+        }
+      }
+    }));
   }
 
   userDocumentStream(String uid) {
@@ -187,7 +229,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     usersDocumentsSubscriptions.add(chatState.listen((event) {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
-        userUIDDYourChatStateMapping[data['sender']] = data['chatState'];
         userUIDRecordingState[data['sender']] = data['isRecording'];
         notifyListeners();
       }
@@ -202,7 +243,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     for (var stream in usersDocumentsSubscriptions) {
       stream?.cancel;
     }
-    for (var stream in usersChatStateStreamSubscription) {
+    for (var stream in usersChatForMeStreamSubscriptions) {
       stream?.cancel;
     }
     super.dispose();
@@ -215,8 +256,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached ||
+    print(state);
+    if (state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
       _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     } else if (state == AppLifecycleState.resumed) {
@@ -281,7 +322,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
             contactsData.add(userUID);
             userUIDContactNameMapping[userUID] =
                 userNumberContactNameMapping[data['phoneNumber']];
-            userUIDContactImageMapping[userUID] = "";
           }
         });
       });
@@ -376,5 +416,19 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   void goToProfileView() {
     _navigationService.navigateTo(routes.ProfileViewRoute,
         arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});
+  }
+
+  Widget getSubtitle(String yourUID) {
+    int receivedTapes = userUIDReceivedTapesMapping[yourUID] == null ? 0 : userUIDReceivedTapesMapping[yourUID];
+    String lastSentTapeState = userUIDLastSentTapeStateMapping[yourUID] == null ? "Empty" : userUIDLastSentTapeStateMapping[yourUID];
+    return Text(
+      receivedTapes > 0
+       ? "Tapes Received"
+       : lastSentTapeState == "Sent"
+        ? "Sent"
+        : lastSentTapeState == "Played"
+          ? "Played"
+          : "Tap to Tape"
+    );
   }
 }

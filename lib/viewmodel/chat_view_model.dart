@@ -43,6 +43,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   Map<String, String> tapePlayerState = {};
   Map<String, bool> tapePlayedState = {};
   Set<String> yourTapes = {};
+  Set<String> playedTapes = {};
   Queue<String> allTapes = new Queue();
 
   // recording related variables
@@ -203,8 +204,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached ||
+    if (state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
       _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
           {"isOnline": false, "chattingWith": null});
@@ -287,7 +287,11 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   void playTape(audioUID) async {
     if (currentTapePlaying != null) {
-      stopTape(currentTapePlaying);
+      if (playedTapes.contains(currentTapePlaying)) {
+        tapePlayerState[currentTapePlaying] = "Played";
+      } else {
+        tapePlayerState[currentTapePlaying] = null;
+      }
     }
     currentTapePlaying = audioUID;
     tapePlayerState[audioUID] = "Loading";
@@ -319,12 +323,17 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void stopTape(audioUID) {
-    tapePlayerState[audioUID] = null;
+    if (playedTapes.contains(currentTapePlaying)) {
+      tapePlayerState[currentTapePlaying] = "Played";
+    } else {
+      tapePlayerState[currentTapePlaying] = null;
+    }
     notifyListeners();
     _chatService.stopPlaying();
   }
 
   void whenFinished(String audioUID) {
+    playedTapes.add(audioUID);
     currentTapePlaying = null;
     tapePlayerState[audioUID] = "Played";
     notifyListeners();

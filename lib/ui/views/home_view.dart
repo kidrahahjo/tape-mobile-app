@@ -144,7 +144,6 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
           viewModel.goToContactScreen(yourUID);
         },
         child: ListTile(
-          trailing: viewModel.showChatState(yourUID),
           leading: CircleAvatar(
             backgroundImage:
                 yourProfilePic != null ? NetworkImage(yourProfilePic) : null,
@@ -182,7 +181,7 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
                       color: Theme.of(context).accentColor,
                       fontWeight: FontWeight.bold),
                 )
-              : null,
+              : viewModel.getSubtitle(yourUID),
         ));
   }
 }
