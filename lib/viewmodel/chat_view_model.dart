@@ -5,7 +5,9 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
+import 'package:tapemobileapp/utils/time_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapemobileapp/locator.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
@@ -28,34 +30,26 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       locator<FirebaseStorageService>();
 
   // shout related variables
-  Queue<String> shoutQueue = new Queue<String>();
-  int currentShoutPlaying = 1;
-  Map<String, DateTime> shoutsToTimeStamp = {};
-
-  // status related variables
-  String yourStatus;
   bool youAreOnline = false;
+  String yourChatState;
 
   // current state related variables
   bool youAreRecording = false;
   bool hasPlayed = false;
-  String myChatState;
-  String yourChatState;
-  DateTime lastSentTime;
-  DateTime lastPlayedTime;
+
+  Map<String, String> tapeState = {};
+  Map<String, DateTime> tapesByDateTime = {};
+  Map<String, String> tapePlayerState = {};
+  Set<String> yourTapes = {};
+  Queue<String> allTapes = new Queue();
 
   // recording related variables
   bool _record = false;
-  bool _sendingShout = false;
 
   // player related variables
   bool autoplay = false;
 
-  // poke related variables
-  bool poked = false;
-
   //new chat related variables
-
   Queue<Map<String, bool>> tapeList = new Queue<Map<String, bool>>();
 
   ScrollController scrollController = new ScrollController();
@@ -63,8 +57,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   // Streams
   Stream<DocumentSnapshot> yourDocumentStream;
   StreamSubscription<DocumentSnapshot> yourDocumentStreamSubscription;
-  Stream<QuerySnapshot> shoutsStream;
-  StreamSubscription<QuerySnapshot> shoutsStreamSubscription;
+  Stream<QuerySnapshot> tapesForMeStream;
+  StreamSubscription<QuerySnapshot> tapesForMeStreamSubscription;
   Stream<DocumentSnapshot> chatStateStream;
   StreamSubscription<DocumentSnapshot> chatStateStreamSubscription;
   Stream<DocumentSnapshot> myShoutsSentStateStream;
@@ -74,10 +68,14 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": yourUID});
+    initialiseStreams();
+  }
+
+  initialiseStreams() async {
+    await getInitialChatData();
     enableYourDocumentStream();
-    enableShoutsStream();
+    enableTapesForMeStream();
     enableChatForMeStateStream();
-    enableChatForYouStateStream();
   }
 
   @override
@@ -97,52 +95,55 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   bool get iAmRecording => _chatService.isRecordingShout;
 
-  bool get sendingShout => _sendingShout;
-
-  int get totalShouts => shoutQueue.length;
-
-  String get status => yourStatus == null ? "" : yourStatus;
+  getInitialChatData() async {
+    await _firestoreService.getRequestedChats(chatForMeUID).then((value) {
+      value.docs.forEach((element) {
+        Map<String, dynamic> data = element.data();
+        yourTapes.add(element.id);
+        tapesByDateTime[element.id] =
+            convertTimestampToDateTime(data['sentAt']);
+      });
+    });
+    await _firestoreService.getRequestedChats(chatForYouUID).then((value) {
+      value.docs.forEach((element) {
+        print(element.id);
+        Map<String, dynamic> data = element.data();
+        tapesByDateTime[element.id] =
+            convertTimestampToDateTime(data['sentAt']);
+      });
+    });
+    List<String> sortedKeys = tapesByDateTime.keys.toList(growable: false)
+      ..sort((k1, k2) =>
+          compareDateTimeGreaterThan(tapesByDateTime[k1], tapesByDateTime[k2]));
+    allTapes.addAll(List<String>.from(sortedKeys));
+  }
 
   enableYourDocumentStream() {
     yourDocumentStream = _firestoreService.getUserDataStream(yourUID);
     yourDocumentStreamSubscription = yourDocumentStream.listen((event) {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
-        yourStatus = data['currentStatus'];
         youAreOnline = data['isOnline'] == null ? false : data['isOnline'];
         notifyListeners();
       }
     });
   }
 
-  convertToDateTime(Timestamp time) {
-    if (time == null) {
-      return null;
-    } else {
-      return DateTime.fromMicrosecondsSinceEpoch(time.microsecondsSinceEpoch);
-    }
-  }
-
-  enableShoutsStream() {
-    shoutsStream =
+  enableTapesForMeStream() {
+    tapesForMeStream =
         _firestoreService.fetchEndToEndShoutsFromDatabase(chatForMeUID);
-    shoutsStreamSubscription = shoutsStream.listen((event) {
+    tapesForMeStreamSubscription = tapesForMeStream.listen((event) {
       event.docs.forEach((element) {
-        if (!shoutQueue.contains(element.id)) {
-          shoutQueue.add(element.id);
-          tapeList.add({element.id: false});
+        if (!allTapes.contains(element.id)) {
+          allTapes.add(element.id);
+          yourTapes.add(element.id);
+          Map<String, dynamic> data = element.data();
+          tapesByDateTime[element.id] =
+              convertTimestampToDateTime(data['sentAt']);
           notifyListeners();
           scrollController.animateTo(scrollController.position.maxScrollExtent,
               duration: const Duration(milliseconds: 500),
               curve: Curves.easeOut);
-
-          Map<String, dynamic> data = element.data();
-          shoutsToTimeStamp[element.id] = convertToDateTime(data['sentAt']);
-          notifyListeners();
-          if (shoutQueue.length == 1 && autoplay) {
-            currentShoutPlaying = 1;
-            startPlaying();
-          }
         }
       });
     });
@@ -156,22 +157,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         this.youAreRecording =
             data['isRecording'] != null ? data['isRecording'] : false;
         this.yourChatState = data['chatState'];
-        this.lastPlayedTime = convertToDateTime(data['lastListenedAt']);
         notifyListeners();
       }
-    });
-  }
-
-  enableChatForYouStateStream() {
-    myShoutsSentStateStream = _firestoreService.getChatState(chatForYouUID);
-    myShoutsSentStateStreamSubscription =
-        myShoutsSentStateStream.listen((event) {
-      if (event.exists) {
-        Map<String, dynamic> data = event.data();
-        this.myChatState = data['chatState'];
-        this.lastSentTime = convertToDateTime(data['lastSentAt']);
-      }
-      notifyListeners();
     });
   }
 
@@ -205,41 +192,10 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
     yourDocumentStreamSubscription?.cancel();
     _chatService.cancelSubscriptions();
-    shoutsStreamSubscription?.cancel();
+    tapesForMeStreamSubscription?.cancel();
     chatStateStreamSubscription?.cancel();
     myShoutsSentStateStreamSubscription?.cancel();
     super.dispose();
-  }
-
-  void playNextShout() {
-    currentShoutPlaying += 1;
-    notifyListeners();
-    if (autoplay) {
-      startPlaying();
-    }
-  }
-
-  void skip() {
-    _firestoreService.updateYourShoutState(
-      chatForMeUID,
-      shoutQueue.elementAt(currentShoutPlaying - 1),
-      {
-        "isListened": true,
-        "listenedAt": DateTime.now(),
-      },
-    );
-    if (currentShoutPlaying == shoutQueue.length) {
-      _firestoreService.updateChatState(chatForYouUID,
-          {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
-      if (yourChatState == 'Played') {
-        _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
-      }
-      shoutQueue = new Queue();
-      currentShoutPlaying = 1;
-    } else {
-      _chatService.stopPlaying();
-      playNextShout();
-    }
   }
 
   void startRecording() async {
@@ -256,25 +212,24 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   void stopRecording() async {
     _record = false;
+    String audioUID, audioPath;
     if (_chatService.recordingTime == "" ||
         _chatService.recordingTime == "0s") {
       await _chatService.stopRecording();
       // show snackbar
     } else {
       try {
-        _sendingShout = true;
-        notifyListeners();
-
         List<String> audioVariables = await _chatService.stopRecording();
-
-        _uploadAudio(audioVariables[0], audioVariables[1]);
-        tapeList.add({audioVariables[1]: true});
-
+        audioPath = audioVariables[0];
+        audioUID = audioVariables[1];
+        allTapes.add(audioUID);
+        tapeState[audioUID] = "Sending";
         notifyListeners();
+        _uploadAudio(audioPath, audioUID);
         scrollController.animateTo(scrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 500), curve: Curves.easeOut);
       } catch (e) {
-        _sendingShout = false;
+        tapeState[audioUID] = "Some Error Occured";
         notifyListeners();
         // show failed to send snackbar
       }
@@ -288,56 +243,33 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         .getLocationReference(chatForYouUID, currentAudioUID)
         .putFile(file)
         .whenComplete(() {
-      _sendingShout = false;
+      tapeState[currentAudioUID] = "Sent";
+      notifyListeners();
     });
   }
 
-  void playMyTape(audioUID) async {
+  void playTape(audioUID) async {
+    tapePlayerState[audioUID] = "Loading";
+    notifyListeners();
+    bool yourTape = yourTapes.contains(audioUID);
     String downloadURL = await _firebaseStorageService
-        .getLocationReference(chatForYouUID, audioUID)
+        .getLocationReference(yourTape ? chatForMeUID : chatForYouUID, audioUID)
         .getDownloadURL();
-
-    _chatService.startPlaying(downloadURL, whenFinished, audioUID);
+    tapePlayerState[audioUID] = "Playing";
+    notifyListeners();
+    _chatService.startPlaying(
+        downloadURL, yourTape ? whenFinished : () {}, audioUID);
   }
 
-  void playYourTape(audioUID) async {
-    String downloadURL = await _firebaseStorageService
-        .getLocationReference(chatForMeUID, audioUID)
-        .getDownloadURL();
-
-    _chatService.startPlaying(downloadURL, whenFinished, audioUID);
-  }
-
-  void startPlaying() async {
-    autoplay = true;
-    int current = currentShoutPlaying;
-    if (current > shoutQueue.length) {
-      currentShoutPlaying = shoutQueue.length;
-      notifyListeners();
-    } else {
-      try {
-        notifyListeners();
-        String thisAudioUID = shoutQueue.elementAt(current - 1);
-        String downloadURL = await _firebaseStorageService
-            .getLocationReference(chatForMeUID, thisAudioUID)
-            .getDownloadURL();
-        if (current == currentShoutPlaying) {
-          _chatService.startPlaying(downloadURL, whenFinished, thisAudioUID);
-        }
-      } catch (e) {
-        notifyListeners();
-        _chatService.stopPlaying();
-      }
-    }
-  }
-
-  void stopPlaying() {
-    autoplay = false;
+  void stopTape(audioUID) {
+    tapePlayerState[audioUID] = null;
     notifyListeners();
     _chatService.stopPlaying();
   }
 
   void whenFinished(String audioUID) {
+    tapePlayerState[audioUID] = null;
+    notifyListeners();
     // update message and chat state
     _firestoreService.updateYourShoutState(
       chatForMeUID,
@@ -347,77 +279,82 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         "listenedAt": DateTime.now(),
       },
     );
-    if (currentShoutPlaying == shoutQueue.length) {
+    if (audioUID == yourTapes.last) {
       _firestoreService.updateChatState(chatForYouUID,
           {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
       if (yourChatState == 'Played') {
         _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
       }
-      shoutQueue = new Queue();
-      currentShoutPlaying = 1;
-      autoplay = false;
-    } else {
-      playNextShout();
+    }
+    int index = allTapes.toList().indexOf(audioUID);
+    for (int i = index + 1; i < allTapes.length; i ++) {
+      String uid = allTapes.elementAt(i);
+      if (yourTapes.contains(uid)) {
+        playTape(uid);
+        break;
+      }
     }
   }
 
   void poke() {
-    poked = true;
-    notifyListeners();
     _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
-    Future.delayed(Duration(milliseconds: 1400), () {
-      poked = false;
-      notifyListeners();
-    });
   }
 
-  bool showPlayer() {
-    return totalShouts > 0;
+  Widget playerButton(String tapeUID, String playerState) {
+    return playerState == null
+        ? IconButton(
+            onPressed: () {
+              playTape(tapeUID);
+            },
+            icon: Icon(PhosphorIcons.playFill))
+        : playerState == "Playing"
+            ? IconButton(
+                onPressed: () {
+                  stopTape(tapeUID);
+                },
+                icon: Icon(PhosphorIcons.stopFill))
+            : Center(
+                child: CircularProgressIndicator(),
+              );
   }
 
-  bool showClear() {
-    return (myChatState == null || myChatState == 'Played') &&
-        yourChatState == null;
-  }
-
-  bool showSent() {
-    return yourChatState == 'Received';
-  }
-
-  bool showShoutPlayed() {
-    return yourChatState == 'Played';
-  }
-
-  String convertTime(DateTime dateTime) {
-    Duration difference = DateTime.now().difference(dateTime);
-    int day = difference.inDays;
-    int hours = difference.inHours;
-    int minutes = difference.inMinutes;
-    int seconds = difference.inSeconds;
-    if (day != 0) {
-      return day.toString() + 'd ago';
-    } else if (hours != 0) {
-      return hours.toString() + 'h ago';
-    } else if (minutes != 0) {
-      return minutes.toString() + 'm ago';
-    } else if (seconds >= 20) {
-      return seconds.toString() + 's ago';
-    } else {
-      return 'Just now';
-    }
-  }
-
-  String getTime() {
-    if (showPlayer()) {
-      DateTime time =
-          shoutsToTimeStamp[shoutQueue.elementAt(currentShoutPlaying - 1)];
-      return time == null ? "" : convertTime(time);
-    } else if (showSent()) {
-      return lastSentTime == null ? "" : convertTime(lastSentTime);
-    } else if (showShoutPlayed()) {
-      return lastPlayedTime == null ? "" : convertTime(lastPlayedTime);
-    } else {
-      return "";
-    }
+  Widget showTape(int index, BuildContext context) {
+    String tapeUID = allTapes.elementAt(index);
+    String playerState = tapePlayerState[tapeUID];
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: !yourTapes.contains(tapeUID)
+            ? Theme.of(context).accentColor
+            : Colors.grey.shade900,
+      ),
+      padding: EdgeInsets.all(12),
+      child: !yourTapes.contains(tapeUID)
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                playerButton(tapeUID, playerState),
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 24,
+                  child: tapeState[tapeUID] == "Sending"
+                      ? Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : null,
+                ),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 24,
+                ),
+                playerButton(tapeUID, playerState),
+              ],
+            ),
+    );
   }
 }

@@ -47,6 +47,15 @@ class FirestoreService {
         .snapshots();
   }
 
+  Future<QuerySnapshot> getRequestedChats(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .where("isListened", isEqualTo: false)
+        .orderBy("sentAt", descending: false)
+        .get();
+  }
+
   Stream<DocumentSnapshot> getChatState(String chatUID) {
     // Get the current state of chat to see what the other
     // person is doing

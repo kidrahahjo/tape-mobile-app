@@ -59,89 +59,13 @@ class TapeArea extends ViewModelWidget<ChatViewModel> {
           (BuildContext context, int index) {
             return Column(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    color:
-                        viewModel.tapeList.elementAt(index).containsValue(true)
-                            ? Theme.of(context).accentColor
-                            : Colors.grey.shade900,
-                  ),
-                  padding: EdgeInsets.all(12),
-                  child: viewModel.tapeList.elementAt(index).containsValue(true)
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                                onPressed: () {
-                                  viewModel.playMyTape(viewModel.tapeList
-                                      .elementAt(index)
-                                      .keys
-                                      .first);
-                                },
-                                icon: Icon(PhosphorIcons.playFill)),
-                            CircleAvatar(
-                              backgroundColor: Colors.white,
-                              radius: 24,
-                            ),
-                          ],
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.white,
-                              radius: 24,
-                            ),
-                            IconButton(
-                                onPressed: () {
-                                  viewModel.playYourTape(viewModel.tapeList
-                                      .elementAt(index)
-                                      .keys
-                                      .first);
-                                },
-                                icon: Icon(PhosphorIcons.playFill)),
-                          ],
-                        ),
-                ),
+                viewModel.showTape(index, context),
                 SizedBox(height: 8),
               ],
             );
           },
-          childCount:
-              viewModel.tapeList == null ? 0 : viewModel.tapeList.length,
+          childCount: viewModel.allTapes.length,
         ),
-      ),
-    );
-  }
-}
-
-class CurrentStatus extends ViewModelWidget<ChatViewModel> {
-  CurrentStatus() : super(reactive: true);
-
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return viewModel.youAreRecording
-        ? Text(
-            "Recording...",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).accentColor,
-            ),
-          )
-        : YourStatus();
-  }
-}
-
-class YourStatus extends ViewModelWidget<ChatViewModel> {
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Text(
-      viewModel.status,
-      textAlign: TextAlign.left,
-      style: TextStyle(
-        fontSize: 16,
       ),
     );
   }
@@ -175,7 +99,7 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Hold to talk',
+          viewModel.iAmRecording ? "Recording" : 'Hold to talk',
           style: TextStyle(color: Colors.grey),
         ),
         SizedBox(height: 12),
@@ -188,12 +112,9 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
             },
             onVerticalDragEnd: (value) {
               viewModel.stopRecording();
-              print("vertical");
             },
             onHorizontalDragEnd: (value) {
               viewModel.stopRecording();
-
-              print("horizontal");
             },
             child: SizedBox(
               height: 64,
@@ -211,24 +132,6 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
               ),
             )),
       ],
-    );
-  }
-}
-
-class RecordingDisplay extends ViewModelWidget<ChatViewModel> {
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return CircleAvatar(
-      backgroundColor: Colors.transparent,
-      radius: 72,
-      child: Text(
-        viewModel.recordingTimer,
-        style: TextStyle(
-          fontSize: 48,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).accentColor,
-        ),
-      ),
     );
   }
 }

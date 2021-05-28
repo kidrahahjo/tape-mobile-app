@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:stacked/stacked.dart';
 
@@ -11,7 +13,7 @@ class ChatService with ReactiveServiceMixin {
 
   // player related variables;
   FlutterSoundPlayer _flutterSoundPlayer = new FlutterSoundPlayer();
-  var _flutterSoundPlayerSubscription;
+  StreamSubscription _flutterSoundPlayerSubscription;
   ReactiveValue<bool> _loadingShout = ReactiveValue<bool>(false);
   ReactiveValue<bool> _playingShout = ReactiveValue<bool>(false);
   ReactiveValue<bool> _recordingShout = ReactiveValue<bool>(false);
@@ -72,18 +74,9 @@ class ChatService with ReactiveServiceMixin {
   Future startPlaying(
       String downloadURL, Function whenFinished, String thisAudioUID) async {
     await suspendPlaying();
-    _loadingShout.value = true;
     await _flutterSoundPlayer.openAudioSession();
     _flutterSoundPlayerSubscription =
-        _flutterSoundPlayer.onProgress.listen((event) {
-      if (_flutterSoundPlayer.isPlaying) {
-        _loadingShout.value = false;
-        _playingShout.value = true;
-      } else {
-        _loadingShout.value = true;
-        _playingShout.value = false;
-      }
-    });
+        _flutterSoundPlayer.onProgress.listen((event) {});
     await _flutterSoundPlayer
         .setSubscriptionDuration(Duration(milliseconds: 500));
     await _flutterSoundPlayer.startPlayer(

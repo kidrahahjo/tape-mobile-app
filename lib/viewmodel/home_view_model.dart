@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:collection';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tapemobileapp/services/push_notification_service.dart';
-import 'package:uuid/uuid.dart';
 import 'package:tapemobileapp/permissions.dart';
 import 'package:tapemobileapp/routing_constants.dart' as routes;
 import 'package:tapemobileapp/locator.dart';
@@ -40,7 +38,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   StreamSubscription<QuerySnapshot> chatStreamSubscription;
   Map<String, String> userUIDDisplayNameMapping = {};
   Map<String, String> userUIDNumberMapping = {};
-  Map<String, String> userUIDStatusMapping = {};
   Map<String, bool> userUIDRecordingState = {};
 
   // document related variables
@@ -56,47 +53,14 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Map<String, String> userUIDContactImageMapping = {};
 
   // status related variables
-  String currentStatus;
-  Queue<String> allStatuses = new Queue();
-  Queue<String> allStatusesMessages = new Queue();
-  Map<String, String> statusesUIDStatusTextMap = {};
   Map<String, bool> userUIDOnlineMapping = {};
   Map<String, String> userUIDProfilePicMapping = {};
-  Stream<QuerySnapshot> myStatusStream;
-  StreamSubscription<QuerySnapshot> myStatusStreamSubscription;
-  bool updateStatus = false;
-  String textToShow;
   String myProfilePic;
-  bool onHome = true;
-
-  final TextEditingController statusTextController =
-      new TextEditingController();
 
   HomeViewModel(this.myUID, this.myPhoneNumber) {
     WidgetsBinding.instance.addObserver(this);
     _firestoreService.saveUserInfo(myUID, {"isOnline": true});
     initialise();
-    statusTextController.addListener(() {
-      textToShow = statusTextController.text.trim();
-      if (onHome) {
-        textToShow = null;
-      }
-      notifyListeners();
-    });
-  }
-
-  String realStatus() {
-    return currentStatus == null
-        ? "What's happening?"
-        : statusesUIDStatusTextMap[currentStatus];
-  }
-
-  String get status {
-    return textToShow != null
-        ? textToShow.length == 0
-            ? "What's happening?"
-            : textToShow
-        : realStatus();
   }
 
   bool isRecording(String userUID) {
@@ -110,7 +74,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     _pushNotification.initialise(this.myUID);
     await initialiseCache();
     initialiseMyDocumentStream();
-    initialiseStatusStream();
     initialiseChatsStream();
 
     bool contactPermission = false;
@@ -176,80 +139,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     });
   }
 
-  initialiseStatusStream() async {
-    myStatusStream = _firestoreService.getStatuses(myUID);
-    myStatusStreamSubscription = myStatusStream.listen((event) {
-      allStatuses.clear();
-      allStatusesMessages.clear();
-      int i = 0;
-      if (event.docs.length == 0) {
-        currentStatus = null;
-        allStatuses.clear();
-        allStatusesMessages.clear();
-        notifyListeners();
-      }
-      event.docs.forEach((element) {
-        Map<String, dynamic> data = element.data();
-        statusesUIDStatusTextMap[element.id] = data['message'];
-        allStatuses.add(element.id);
-        allStatusesMessages.add(data['message']);
-        if (i == 0) {
-          currentStatus = element.id;
-        }
-        i += 1;
-        notifyListeners();
-      });
-    });
-  }
-
-  deleteStatus(String statusUID) {
-    _firestoreService.updateStatusState(myUID, statusUID,
-        {"isDeleted": true, "lastModifiedAt": DateTime.now()});
-    if (currentStatus == statusUID) {
-      _firestoreService.saveUserInfo(myUID, {"currentStatus": null});
-      updateStatus = false;
-      statusTextController.text = "";
-    }
-  }
-
-  resetTempVars() {
-    onHome = true;
-    textToShow = null;
-    notifyListeners();
-  }
-
-  addNewStatus() {
-    String message = statusTextController.text.trim();
-    if (allStatusesMessages.contains(message)) {
-      int index = allStatusesMessages.toList().indexOf(message);
-      String uid = allStatuses.elementAt(index);
-      setStatusWithUID(uid);
-    } else if (message == null || message.length == 0) {
-      // do nothing
-    } else {
-      String statusUID = Uuid().v4().replaceAll("-", "");
-      statusesUIDStatusTextMap[statusUID] = message;
-      _firestoreService.updateStatusState(myUID, statusUID, {
-        "message": message,
-        "isDeleted": false,
-        "lastModifiedAt": DateTime.now()
-      });
-      _firestoreService.saveUserInfo(myUID, {"currentStatus": message});
-    }
-  }
-
-  setStatusWithUID(String statusUID) {
-    updateStatus = false;
-    statusTextController.text = statusesUIDStatusTextMap[statusUID];
-    if (currentStatus != statusUID) {
-      _firestoreService.updateStatusState(myUID, statusUID,
-          {"isDeleted": false, "lastModifiedAt": DateTime.now()});
-      _firestoreService.saveUserInfo(
-          myUID, {"currentStatus": statusesUIDStatusTextMap[statusUID]});
-    }
-    // update this status
-  }
-
   initialiseChatsStream() async {
     chatsStream = _firestoreService.getUserChats(myUID);
     chatStreamSubscription = chatsStream.listen((event) async {
@@ -284,7 +173,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         Map<String, dynamic> data = event.data();
         userUIDDisplayNameMapping[uid] = data['displayName'];
         userUIDNumberMapping[uid] = data['phoneNumber'];
-        userUIDStatusMapping[uid] = data['currentStatus'];
         userUIDOnlineMapping[uid] = data['isOnline'];
         userUIDProfilePicMapping[uid] = data['displayImageURL'];
         notifyListeners();
@@ -310,7 +198,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     chatStreamSubscription?.cancel();
-    myStatusStreamSubscription?.cancel();
     _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     for (var stream in usersDocumentsSubscriptions) {
       stream?.cancel;
@@ -420,18 +307,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }
   }
 
-  String getUserStatus(String uid) {
-    return userUIDStatusMapping[uid] == null
-        ? "Tap to Tape"
-        : userUIDStatusMapping[uid];
-  }
-
-  String getStatusFromUID(String statusUID) {
-    return statusesUIDStatusTextMap[statusUID] == null
-        ? ""
-        : statusesUIDStatusTextMap[statusUID];
-  }
-
   bool getUserOnlineState(String uid) {
     return userUIDOnlineMapping[uid] == null
         ? false
@@ -462,16 +337,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   }
 
   popIt() {
-    _navigationService.goBack();
-  }
-
-  void submit() {
-    if (textToShow == null ||
-        textToShow == userUIDStatusMapping[currentStatus]) {
-      updateStatus = false;
-    } else {
-      updateStatus = true;
-    }
     _navigationService.goBack();
   }
 
