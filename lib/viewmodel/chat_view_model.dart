@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/utils/time_utils.dart';
 import 'package:uuid/uuid.dart';
@@ -54,8 +55,9 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   //new chat related variables
   Queue<Map<String, bool>> tapeList = new Queue<Map<String, bool>>();
-
   ScrollController scrollController = new ScrollController();
+  String lastTapeSource = "your";
+  bool lastTapeSourceWasSame = false;
 
   // Streams
   Stream<DocumentSnapshot> yourDocumentStream;
@@ -359,30 +361,55 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
   }
 
-  Widget playerButton(String tapeUID) {
+  Widget playerButton(String tapeUID, BuildContext context) {
     String playerState = tapePlayerState[tapeUID];
     return GestureDetector(
-      onTap: () {
-        if (playerState == null || playerState == "Played") {
-          playTape(tapeUID);
-        } else if (playerState == "Playing") {
-          stopTape(tapeUID);
-        }
-      },
-      child: Text(
-        playerState == "Played"
-            ? "Played, tap to replay"
-            : playerState == null
-                ? "Tap to play"
-                : playerState == "Playing"
-                    ? "Playing, tap to Stop"
-                    : "Loading",
-        style: TextStyle(fontSize: 18),
-      ),
-    );
+        onTap: () {
+          if (playerState == null || playerState == "Played") {
+            playTape(tapeUID);
+          } else if (playerState == "Playing") {
+            stopTape(tapeUID);
+          }
+        },
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: playerState == null
+                  ? Theme.of(context).accentColor
+                  : Colors.grey.shade900),
+          padding: EdgeInsets.all(16),
+          child: playerState == "Played"
+              ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+                  Icon(PhosphorIcons.arrowCounterClockwiseBold, size: 20),
+                  SizedBox(width: 12),
+                  Text("Tap to replay")
+                ])
+              : playerState == null
+                  ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+                      Icon(PhosphorIcons.playFill, size: 20),
+                      SizedBox(width: 12),
+                      Text("Tap to play")
+                    ])
+                  : playerState == "Playing"
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                              Icon(PhosphorIcons.stopFill, size: 20),
+                              SizedBox(width: 12),
+                              Text("Playing...")
+                            ])
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                              Icon(PhosphorIcons.stopFill, size: 20),
+                              SizedBox(width: 12),
+                              Text("Loading...")
+                            ]),
+        ));
   }
 
-  Widget senderButton(String tapeUID) {
+  Widget senderButton(String tapeUID, BuildContext context) {
     String recorderState = tapeRecorderState[tapeUID];
     bool playedState =
         tapePlayedState[tapeUID] == null ? false : tapePlayedState[tapeUID];
@@ -390,74 +417,89 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         onTap: () {
           // TODO: code for resend
         },
-        child: Text(
-            playedState
-                ? "Played"
+        child: Container(
+            height: 56,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: playedState
+                    ? Colors.grey.shade900
+                    : Theme.of(context).accentColor),
+            padding: EdgeInsets.symmetric(horizontal: 14),
+            child: playedState
+                ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+                    Icon(
+                      PhosphorIcons.speakerSimpleHighFill,
+                      color: Colors.grey,
+                      size: 20,
+                    ),
+                    SizedBox(width: 14),
+                    Text(
+                      "Played",
+                      style: TextStyle(color: Colors.grey),
+                    )
+                  ])
                 : recorderState == "Sending"
-                    ? "Sending"
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                            Icon(PhosphorIcons.paperPlane, size: 20),
+                            SizedBox(width: 14),
+                            Text("Sending...")
+                          ])
                     : recorderState == "Some Error Occured"
-                        ? "Error occured, Resend"
-                        : "Delivered",
-            style: TextStyle(fontSize: 20)));
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                                Icon(PhosphorIcons.warningFill, size: 20),
+                                SizedBox(width: 14),
+                                Text("Not delivered. Try again.")
+                              ])
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                                Icon(PhosphorIcons.paperPlaneFill, size: 20),
+                                SizedBox(width: 14),
+                                Text("Delivered")
+                              ])));
   }
 
   Widget showTape(int index, BuildContext context) {
     String tapeUID = allTapes.elementAt(index);
-    return !yourTapes.contains(tapeUID)
-        ? Row(
-            children: [
-              Expanded(
-                flex: 1,
-                child: Container(),
-              ),
-              Expanded(
-                flex: 4,
-                child: Container(
-                  height: 64,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Theme.of(context).accentColor),
-                  padding: EdgeInsets.all(12),
-                  child: !yourTapes.contains(tapeUID)
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            senderButton(tapeUID),
-                          ],
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            playerButton(tapeUID),
-                          ],
-                        ),
-                ),
-              ),
-            ],
-          )
-        : Row(
-            children: [
-              Expanded(
-                flex: 4,
-                child: Container(
-                  height: 64,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.grey.shade900),
-                  padding: EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      playerButton(tapeUID),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Container(),
-              ),
-            ],
-          );
+    if (!yourTapes.contains(tapeUID)) {
+      if (lastTapeSource == "mine") {
+        lastTapeSourceWasSame = true;
+      } else {
+        lastTapeSourceWasSame = false;
+      }
+      lastTapeSource = "mine";
+      return Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+          Expanded(flex: 3, child: senderButton(tapeUID, context)),
+        ],
+      );
+    } else {
+      if (lastTapeSource == "your") {
+        lastTapeSourceWasSame = true;
+      } else {
+        lastTapeSourceWasSame = false;
+      }
+      lastTapeSource = "your";
+      return Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: playerButton(tapeUID, context),
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+        ],
+      );
+    }
   }
 }
