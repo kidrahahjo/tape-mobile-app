@@ -50,7 +50,7 @@ class Footer extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return Container(
-      color: Colors.amber,
+      color: Colors.black,
       child: SafeArea(
         top: false,
         child: Padding(

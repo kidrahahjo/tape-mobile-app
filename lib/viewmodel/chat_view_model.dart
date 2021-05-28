@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/utils/time_utils.dart';
@@ -114,7 +115,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         tapeRecorderState[element.id] = "Sent";
         if (data['isListened'] == true) {
           tapePlayedState[element.id] = data['isListened'];
-          _firestoreService.updateYourShoutState(chatForYouUID, element.id, {"isExpired": true});
+          _firestoreService.updateYourShoutState(
+              chatForYouUID, element.id, {"isExpired": true});
         }
       });
     });
@@ -147,9 +149,13 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           tapesByDateTime[element.id] =
               convertTimestampToDateTime(data['sentAt']);
           notifyListeners();
-          scrollController.animateTo(scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOut);
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            scrollController.animateTo(
+              scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          });
         }
       });
     });
@@ -173,12 +179,14 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         _firestoreService.fetchSentTapesFromDatabase(chatForYouUID);
     myTapesSentStateStreamSubscription = myTapesSentStateStream.listen((event) {
       event.docs.forEach((element) {
-        if (allTapes.contains(element.id) && (tapePlayedState[element.id] == null)) {
+        if (allTapes.contains(element.id) &&
+            (tapePlayedState[element.id] == null)) {
           Map<String, dynamic> data = element.data();
           if (data['isListened'] == true) {
             tapePlayedState[element.id] = data['isListened'];
             notifyListeners();
-            _firestoreService.updateYourShoutState(chatForYouUID, element.id, {"isExpired": true});
+            _firestoreService.updateYourShoutState(
+                chatForYouUID, element.id, {"isExpired": true});
           }
         }
       });
@@ -248,9 +256,15 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         allTapes.add(audioUID);
         tapeRecorderState[audioUID] = "Sending";
         notifyListeners();
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          print(scrollController.position.maxScrollExtent);
+          scrollController.animateTo(
+            scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        });
         _uploadAudio(audioPath, audioUID);
-        scrollController.animateTo(scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 500), curve: Curves.easeOut);
       } catch (e) {
         tapeRecorderState[audioUID] = "Some Error Occured";
         notifyListeners();
@@ -285,10 +299,14 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     tapePlayerState[audioUID] = "Playing";
     notifyListeners();
     _chatService.startPlaying(
-        downloadURL, yourTape ? whenFinished : (audioUID) {
-          tapePlayerState[audioUID] = null;
-          notifyListeners();
-        }, audioUID);
+        downloadURL,
+        yourTape
+            ? whenFinished
+            : (audioUID) {
+                tapePlayerState[audioUID] = null;
+                notifyListeners();
+              },
+        audioUID);
     _firestoreService.updateYourShoutState(
       chatForMeUID,
       audioUID,
@@ -319,7 +337,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       }
     }
     int index = allTapes.toList().indexOf(audioUID);
-    for (int i = index + 1; i < allTapes.length; i ++) {
+    for (int i = index + 1; i < allTapes.length; i++) {
       String uid = allTapes.elementAt(i);
       if (yourTapes.contains(uid)) {
         playTape(uid);
@@ -344,12 +362,12 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       },
       child: Text(
         playerState == "Played"
-        ? "Played, tap to replay"
-        : playerState == null
-          ? "Tap to play"
-          : playerState == "Playing"
-            ? "Playing, tap to Stop"
-            : "Loading",
+            ? "Played, tap to replay"
+            : playerState == null
+                ? "Tap to play"
+                : playerState == "Playing"
+                    ? "Playing, tap to Stop"
+                    : "Loading",
         style: TextStyle(fontSize: 18),
       ),
     );
@@ -357,48 +375,80 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   Widget senderButton(String tapeUID) {
     String recorderState = tapeRecorderState[tapeUID];
-    bool playedState = tapePlayedState[tapeUID] == null ? false : tapePlayedState[tapeUID];
+    bool playedState =
+        tapePlayedState[tapeUID] == null ? false : tapePlayedState[tapeUID];
     return GestureDetector(
-      onTap: () {
-        // TODO: code for resend
-      },
-      child: Text(
-        playedState
-          ? "Played"
-          : recorderState == "Sending"
-            ? "Sending"
-            : recorderState == "Some Error Occured"
-              ? "Error occured, Resend"
-              : "Delivered",
-        style: TextStyle(fontSize: 20)
-      )
-    );
+        onTap: () {
+          // TODO: code for resend
+        },
+        child: Text(
+            playedState
+                ? "Played"
+                : recorderState == "Sending"
+                    ? "Sending"
+                    : recorderState == "Some Error Occured"
+                        ? "Error occured, Resend"
+                        : "Delivered",
+            style: TextStyle(fontSize: 20)));
   }
 
   Widget showTape(int index, BuildContext context) {
     String tapeUID = allTapes.elementAt(index);
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: !yourTapes.contains(tapeUID)
-            ? Theme.of(context).accentColor
-            : Colors.grey.shade900,
-      ),
-      padding: EdgeInsets.all(12),
-      child: !yourTapes.contains(tapeUID)
-          ? Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                senderButton(tapeUID),
-              ],
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                playerButton(tapeUID),
-              ],
-            ),
-    );
+    return !yourTapes.contains(tapeUID)
+        ? Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: Container(),
+              ),
+              Expanded(
+                flex: 4,
+                child: Container(
+                  height: 64,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Theme.of(context).accentColor),
+                  padding: EdgeInsets.all(12),
+                  child: !yourTapes.contains(tapeUID)
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            senderButton(tapeUID),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            playerButton(tapeUID),
+                          ],
+                        ),
+                ),
+              ),
+            ],
+          )
+        : Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Container(
+                  height: 64,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey.shade900),
+                  padding: EdgeInsets.all(12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      playerButton(tapeUID),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Container(),
+              ),
+            ],
+          );
   }
 }
