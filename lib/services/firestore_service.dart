@@ -37,7 +37,7 @@ class FirestoreService {
         .get();
   }
 
-  Stream<QuerySnapshot> fetchEndToEndShoutsFromDatabase(String chatUID) {
+  Stream<QuerySnapshot> fetchReceivedTapesFromDatabase(String chatUID) {
     // Get the shouts in the current chat
     return _chatsCollectionReference
         .doc(chatUID)
@@ -47,11 +47,28 @@ class FirestoreService {
         .snapshots();
   }
 
-  Future<QuerySnapshot> getRequestedChats(String chatUID) {
+  Future<QuerySnapshot> getChatsForMe(String chatUID) {
     return _chatsCollectionReference
         .doc(chatUID)
         .collection("messages")
         .where("isListened", isEqualTo: false)
+        .orderBy("sentAt", descending: false)
+        .get();
+  }
+
+  Stream<QuerySnapshot> fetchSentTapesFromDatabase(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .where("isExpired", isEqualTo: false)
+        .snapshots();
+  }
+
+  Future<QuerySnapshot> getChatsForYou(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .where("isExpired", isEqualTo: false)
         .orderBy("sentAt", descending: false)
         .get();
   }

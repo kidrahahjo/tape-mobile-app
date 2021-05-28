@@ -52,7 +52,7 @@ class ChatService with ReactiveServiceMixin {
   startRecording(String audioUID, String audioPath) async {
     this.audioUID = audioUID;
     this.audioPath = audioPath;
-    await _flutterSoundRecorder.openAudioSession();
+    _flutterSoundRecorder = await FlutterSoundRecorder().openAudioSession();
     _recordingShout.value = true;
     _flutterSoundRecorderSubscription =
         _flutterSoundRecorder.onProgress.listen((event) {

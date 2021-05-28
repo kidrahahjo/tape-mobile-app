@@ -50,6 +50,7 @@ class ChatPageView extends StatelessWidget {
 
 class TapeArea extends ViewModelWidget<ChatViewModel> {
   TapeArea() : super(reactive: true);
+
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return SliverPadding(

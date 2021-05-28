@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/utils/time_utils.dart';
 import 'package:uuid/uuid.dart';
@@ -36,10 +35,12 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   // current state related variables
   bool youAreRecording = false;
   bool hasPlayed = false;
+  String currentTapePlaying;
 
-  Map<String, String> tapeState = {};
+  Map<String, String> tapeRecorderState = {};
   Map<String, DateTime> tapesByDateTime = {};
   Map<String, String> tapePlayerState = {};
+  Map<String, bool> tapePlayedState = {};
   Set<String> yourTapes = {};
   Queue<String> allTapes = new Queue();
 
@@ -61,8 +62,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   StreamSubscription<QuerySnapshot> tapesForMeStreamSubscription;
   Stream<DocumentSnapshot> chatStateStream;
   StreamSubscription<DocumentSnapshot> chatStateStreamSubscription;
-  Stream<DocumentSnapshot> myShoutsSentStateStream;
-  StreamSubscription<DocumentSnapshot> myShoutsSentStateStreamSubscription;
+  Stream<QuerySnapshot> myTapesSentStateStream;
+  StreamSubscription<QuerySnapshot> myTapesSentStateStreamSubscription;
 
   ChatViewModel(this.yourUID, this.yourName) {
     WidgetsBinding.instance.addObserver(this);
@@ -76,6 +77,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     enableYourDocumentStream();
     enableTapesForMeStream();
     enableChatForMeStateStream();
+    enableTapesSentStateSream();
   }
 
   @override
@@ -96,7 +98,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   bool get iAmRecording => _chatService.isRecordingShout;
 
   getInitialChatData() async {
-    await _firestoreService.getRequestedChats(chatForMeUID).then((value) {
+    await _firestoreService.getChatsForMe(chatForMeUID).then((value) {
       value.docs.forEach((element) {
         Map<String, dynamic> data = element.data();
         yourTapes.add(element.id);
@@ -104,12 +106,16 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
             convertTimestampToDateTime(data['sentAt']);
       });
     });
-    await _firestoreService.getRequestedChats(chatForYouUID).then((value) {
+    await _firestoreService.getChatsForYou(chatForYouUID).then((value) {
       value.docs.forEach((element) {
-        print(element.id);
         Map<String, dynamic> data = element.data();
         tapesByDateTime[element.id] =
             convertTimestampToDateTime(data['sentAt']);
+        tapeRecorderState[element.id] = "Sent";
+        if (data['isListened'] == true) {
+          tapePlayedState[element.id] = data['isListened'];
+          _firestoreService.updateYourShoutState(chatForYouUID, element.id, {"isExpired": true});
+        }
       });
     });
     List<String> sortedKeys = tapesByDateTime.keys.toList(growable: false)
@@ -131,7 +137,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   enableTapesForMeStream() {
     tapesForMeStream =
-        _firestoreService.fetchEndToEndShoutsFromDatabase(chatForMeUID);
+        _firestoreService.fetchReceivedTapesFromDatabase(chatForMeUID);
     tapesForMeStreamSubscription = tapesForMeStream.listen((event) {
       event.docs.forEach((element) {
         if (!allTapes.contains(element.id)) {
@@ -159,6 +165,23 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         this.yourChatState = data['chatState'];
         notifyListeners();
       }
+    });
+  }
+
+  enableTapesSentStateSream() {
+    myTapesSentStateStream =
+        _firestoreService.fetchSentTapesFromDatabase(chatForYouUID);
+    myTapesSentStateStreamSubscription = myTapesSentStateStream.listen((event) {
+      event.docs.forEach((element) {
+        if (allTapes.contains(element.id) && (tapePlayedState[element.id] == null)) {
+          Map<String, dynamic> data = element.data();
+          if (data['isListened'] == true) {
+            tapePlayedState[element.id] = data['isListened'];
+            notifyListeners();
+            _firestoreService.updateYourShoutState(chatForYouUID, element.id, {"isExpired": true});
+          }
+        }
+      });
     });
   }
 
@@ -194,7 +217,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     _chatService.cancelSubscriptions();
     tapesForMeStreamSubscription?.cancel();
     chatStateStreamSubscription?.cancel();
-    myShoutsSentStateStreamSubscription?.cancel();
+    myTapesSentStateStreamSubscription?.cancel();
     super.dispose();
   }
 
@@ -223,13 +246,13 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         audioPath = audioVariables[0];
         audioUID = audioVariables[1];
         allTapes.add(audioUID);
-        tapeState[audioUID] = "Sending";
+        tapeRecorderState[audioUID] = "Sending";
         notifyListeners();
         _uploadAudio(audioPath, audioUID);
         scrollController.animateTo(scrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 500), curve: Curves.easeOut);
       } catch (e) {
-        tapeState[audioUID] = "Some Error Occured";
+        tapeRecorderState[audioUID] = "Some Error Occured";
         notifyListeners();
         // show failed to send snackbar
       }
@@ -243,12 +266,16 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         .getLocationReference(chatForYouUID, currentAudioUID)
         .putFile(file)
         .whenComplete(() {
-      tapeState[currentAudioUID] = "Sent";
+      tapeRecorderState[currentAudioUID] = "Sent";
       notifyListeners();
     });
   }
 
   void playTape(audioUID) async {
+    if (currentTapePlaying != null) {
+      stopTape(currentTapePlaying);
+    }
+    currentTapePlaying = audioUID;
     tapePlayerState[audioUID] = "Loading";
     notifyListeners();
     bool yourTape = yourTapes.contains(audioUID);
@@ -271,7 +298,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void whenFinished(String audioUID) {
-    tapePlayerState[audioUID] = null;
+    tapePlayerState[audioUID] = "Played";
     notifyListeners();
     // update message and chat state
     _firestoreService.updateYourShoutState(
@@ -303,28 +330,53 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
   }
 
-  Widget playerButton(String tapeUID, String playerState) {
-    return playerState == null
-        ? IconButton(
-            onPressed: () {
-              playTape(tapeUID);
-            },
-            icon: Icon(PhosphorIcons.playFill))
-        : playerState == "Playing"
-            ? IconButton(
-                onPressed: () {
-                  stopTape(tapeUID);
-                },
-                icon: Icon(PhosphorIcons.stopFill))
-            : Center(
-                child: CircularProgressIndicator(),
-              );
+  Widget playerButton(String tapeUID) {
+    String playerState = tapePlayerState[tapeUID];
+    return GestureDetector(
+      onTap: () {
+        if (playerState == null) {
+          playTape(tapeUID);
+        } else if (playerState == "Playing") {
+          stopTape(tapeUID);
+        }
+      },
+      child: Text(
+        playerState == "Played"
+        ? "Played, tap to replay"
+        : playerState == null
+          ? "Tap to play"
+          : playerState == "Playing"
+            ? "Playing, tap to Stop"
+            : "Loading",
+        style: TextStyle(fontSize: 18),
+      ),
+    );
+  }
+
+  Widget senderButton(String tapeUID) {
+    String recorderState = tapeRecorderState[tapeUID];
+    bool playedState = tapePlayedState[tapeUID] == null ? false : tapePlayedState[tapeUID];
+    return GestureDetector(
+      onTap: () {
+        // TODO: code for resend
+      },
+      child: Text(
+        playedState
+          ? "Played"
+          : recorderState == "Sending"
+            ? "Sending"
+            : recorderState == "Some Error Occured"
+              ? "Error occured, Resend"
+              : "Delivered",
+        style: TextStyle(fontSize: 20)
+      )
+    );
   }
 
   Widget showTape(int index, BuildContext context) {
     String tapeUID = allTapes.elementAt(index);
-    String playerState = tapePlayerState[tapeUID];
     return Container(
+      height: 64,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: !yourTapes.contains(tapeUID)
@@ -334,28 +386,15 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       padding: EdgeInsets.all(12),
       child: !yourTapes.contains(tapeUID)
           ? Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                playerButton(tapeUID, playerState),
-                CircleAvatar(
-                  backgroundColor: Colors.white,
-                  radius: 24,
-                  child: tapeState[tapeUID] == "Sending"
-                      ? Center(
-                          child: CircularProgressIndicator(),
-                        )
-                      : null,
-                ),
+                senderButton(tapeUID),
               ],
             )
           : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  backgroundColor: Colors.white,
-                  radius: 24,
-                ),
-                playerButton(tapeUID, playerState),
+                playerButton(tapeUID),
               ],
             ),
     );
