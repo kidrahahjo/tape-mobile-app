@@ -50,7 +50,7 @@ class Footer extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return Container(
-      color: Colors.black,
+      color: Colors.grey.shade900,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -71,14 +71,14 @@ class TapeArea extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (BuildContext context, int index) {
             return Column(
               children: [
                 viewModel.showTape(index, context),
-                SizedBox(height: 8),
+                SizedBox(height: 4),
               ],
             );
           },
@@ -116,10 +116,14 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          viewModel.iAmRecording ? "Recording" : 'Hold to talk',
-          style: TextStyle(color: Colors.grey),
-        ),
+        viewModel.iAmRecording
+            ? Text(
+                "Recording...",
+                style: TextStyle(
+                    color: Theme.of(context).accentColor,
+                    fontWeight: FontWeight.bold),
+              )
+            : Text('Hold to talk', style: TextStyle(color: Colors.grey)),
         SizedBox(height: 12),
         GestureDetector(
             onTapDown: (details) {
