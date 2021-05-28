@@ -131,6 +131,17 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     } catch (e) {
       userUIDContactNameMapping = {};
     }
+    try {
+      userUIDNumberMapping = Map<String, String>.from(
+          await cache.load('userUIDNumberMapping'));
+      if (userUIDNumberMapping == null) {
+        userUIDNumberMapping = {};
+      } else {
+        notifyListeners();
+      }
+    } catch (e) {
+      userUIDNumberMapping = {};
+    }
   }
 
   initialiseMyDocumentStream() {
@@ -322,12 +333,16 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
             contactsData.add(userUID);
             userUIDContactNameMapping[userUID] =
                 userNumberContactNameMapping[data['phoneNumber']];
+            if (!userUIDNumberMapping.containsKey(userUID)) {
+              userUIDNumberMapping[userUID] = data['phoneNumber'];
+            }
           }
         });
       });
     }
 
     await cache.write('userUIDContactNameMapping', userUIDContactNameMapping);
+    await cache.write('userUIDNumberMapping', userUIDNumberMapping);
     contactsMap.clear();
     contactsMap.addAll(contactsData);
     await cache.write('contactsMap', contactsMap);
