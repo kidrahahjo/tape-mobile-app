@@ -28,5 +28,10 @@ convertTimestampToDateTime(Timestamp time) {
 }
 
 int compareDateTimeGreaterThan(DateTime d1, DateTime d2) {
+  if (d1 == null) {
+    return 0;
+  } else if (d2 == null) {
+    return 1;
+  }
   return d1.isAfter(d2) ? 1 : 0;
 }

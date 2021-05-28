@@ -77,8 +77,8 @@ class TapeArea extends ViewModelWidget<ChatViewModel> {
           (BuildContext context, int index) {
             return Column(
               children: [
+                SizedBox(height: viewModel.getGap(index)),
                 viewModel.showTape(index, context),
-                SizedBox(height: 4),
               ],
             );
           },

@@ -52,10 +52,12 @@ class ChatService with ReactiveServiceMixin {
   startRecording(String audioUID, String audioPath) async {
     this.audioUID = audioUID;
     this.audioPath = audioPath;
+    try {
     _flutterSoundRecorder = await FlutterSoundRecorder().openAudioSession();
     _recordingShout.value = true;
     _flutterSoundRecorderSubscription =
         _flutterSoundRecorder.onProgress.listen((event) {
+          print(event.duration.inSeconds);
       _recordingTime.value = event.duration.inSeconds.toString() + 's';
     });
     await _flutterSoundRecorder
@@ -64,6 +66,10 @@ class ChatService with ReactiveServiceMixin {
       toFile: audioPath,
       codec: Codec.aacADTS,
     );
+    } catch (e) {
+      print(e);
+      // code for toast
+    }
   }
 
   Future<List<String>> stopRecording() async {

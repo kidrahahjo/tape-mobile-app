@@ -13,6 +13,7 @@ import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:flutter_cache/flutter_cache.dart' as cache;
+import 'package:tapemobileapp/utils/time_utils.dart';
 
 class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   // variables related to me
@@ -50,7 +51,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Map<String, String> userUIDDMyChatStateMapping = {};
   Map<String, bool> userUIDRecordingState = {};
   Map<String, int> userUIDReceivedTapesMapping = {};
+  Map<String, DateTime> userUIDReceivedTapesTimeMapping = {};
   Map<String, String> userUIDLastSentTapeStateMapping = {};
+  Map<String, DateTime> userUIDLastSentTapeTimeMapping = {};
 
   // streams related to chat
   Stream<QuerySnapshot> chatsStream;
@@ -192,8 +195,16 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     Stream<QuerySnapshot> chatForMeStream =
         _firestoreService.fetchReceivedTapesFromDatabase(uid + "_" + myUID);
     usersChatForMeStreams.add(chatForMeStream);
-    usersChatForMeStreamSubscriptions.add(chatForMeStream.listen((event) {
+    usersChatForMeStreamSubscriptions.add(chatForMeStream.listen((event) async {
       userUIDReceivedTapesMapping[uid] = event.docs.length;
+      await _firestoreService.getLastTapeListenedDoc(uid + "_" + myUID).then((value) {
+        if (value.docs.length == 0) {
+          userUIDReceivedTapesTimeMapping[uid] =  null;
+        } else {
+          Map<String, dynamic> data = value.docs.first.data();
+          userUIDReceivedTapesTimeMapping[uid] =  convertTimestampToDateTime(data['sentAt']);
+        }
+      });
     }));
   }
 
@@ -206,12 +217,16 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         userUIDLastSentTapeStateMapping[uid] = "Empty";
       } else {
         Map<String, dynamic> data = event.docs.first.data();
+        print(data);
         if (data['isListened'] == true && data['isExpired'] == true) {
           userUIDLastSentTapeStateMapping[uid] = "Reply";
+          userUIDLastSentTapeTimeMapping[uid] = convertTimestampToDateTime(data['listenedAt']);
         } else if (data['isListened'] == true) {
           userUIDLastSentTapeStateMapping[uid] = "Played";
+          userUIDLastSentTapeTimeMapping[uid] = convertTimestampToDateTime(data['listenedAt']);
         } else {
           userUIDLastSentTapeStateMapping[uid] = "Sent";
+          userUIDLastSentTapeTimeMapping[uid] = convertTimestampToDateTime(data['sentAt']);
         }
       }
     }));
@@ -267,7 +282,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    print(state);
     if (state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
       _firestoreService.saveUserInfo(myUID, {"isOnline": false});
@@ -436,12 +450,16 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Widget getSubtitle(String yourUID) {
     int receivedTapes = userUIDReceivedTapesMapping[yourUID] == null ? 0 : userUIDReceivedTapesMapping[yourUID];
     String lastSentTapeState = userUIDLastSentTapeStateMapping[yourUID] == null ? "Empty" : userUIDLastSentTapeStateMapping[yourUID];
+    DateTime lastSentTime = userUIDLastSentTapeTimeMapping[yourUID];
+    DateTime lastReceivedTime = userUIDReceivedTapesTimeMapping[yourUID];
     return Text(
       receivedTapes > 0
-       ? "Tapes Received"
-       : lastSentTapeState == "Sent"
-        ? "Sent"
-        : lastSentTapeState == "Played"
+       ? "New Tape"
+       : compareDateTimeGreaterThan(lastReceivedTime, lastSentTime) == 1
+        ? "Received"
+        :lastSentTapeState == "Sent"
+        ? "Delivered"
+        : lastSentTapeState == "Played" || lastSentTapeState == "Reply"
           ? "Played"
           : "Tap to Tape"
     );

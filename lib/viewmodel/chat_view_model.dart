@@ -30,7 +30,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final FirebaseStorageService _firebaseStorageService =
       locator<FirebaseStorageService>();
 
-  // shout related variables
+  // Tape related variables
   bool youAreOnline = false;
   String yourChatState;
 
@@ -58,6 +58,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   ScrollController scrollController = new ScrollController();
   String lastTapeSource = "your";
   bool lastTapeSourceWasSame = false;
+  Map<String, double> gapBetweenShouts = {};
 
   // Streams
   Stream<DocumentSnapshot> yourDocumentStream;
@@ -127,6 +128,26 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       ..sort((k1, k2) =>
           compareDateTimeGreaterThan(tapesByDateTime[k1], tapesByDateTime[k2]));
     allTapes.addAll(List<String>.from(sortedKeys));
+
+    for (int i = 0; i < allTapes.length; i ++) {
+      if (i == 0) {
+        gapBetweenShouts[allTapes.elementAt(i)] = 4;
+      } else {
+        String last = allTapes.elementAt(i - 1);
+        String curr = allTapes.elementAt(i);
+        if (yourTapes.contains(last) && yourTapes.contains(curr)) {
+          gapBetweenShouts[allTapes.elementAt(i)] = 4;
+        } else if (!yourTapes.contains(last) && !yourTapes.contains(curr)) {
+          gapBetweenShouts[allTapes.elementAt(i)] = 4;
+        } else {
+          gapBetweenShouts[allTapes.elementAt(i)] = 16;
+        }
+      }
+    }
+  }
+
+  double getGap(int index) {
+    return gapBetweenShouts[allTapes.elementAt(index)] == null ? 4 : gapBetweenShouts[allTapes.elementAt(index)];
   }
 
   enableYourDocumentStream() {
@@ -146,6 +167,15 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     tapesForMeStreamSubscription = tapesForMeStream.listen((event) {
       event.docs.forEach((element) {
         if (!allTapes.contains(element.id)) {
+          if (allTapes.length == 0) {
+            gapBetweenShouts[element.id] = 4;
+          } else {
+            if (yourTapes.contains(allTapes.last)) {
+              gapBetweenShouts[element.id] = 4;
+            } else {
+              gapBetweenShouts[element.id] = 16;
+            }
+          }
           allTapes.add(element.id);
           yourTapes.add(element.id);
           Map<String, dynamic> data = element.data();
@@ -255,11 +285,20 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         List<String> audioVariables = await _chatService.stopRecording();
         audioPath = audioVariables[0];
         audioUID = audioVariables[1];
+        if (allTapes.length == 0) {
+          gapBetweenShouts[audioUID] = 4;
+        } else {
+          String lastTape = allTapes.last;
+          if (yourTapes.contains(lastTape)) {
+            gapBetweenShouts[audioUID] = 16;
+          } else {
+            gapBetweenShouts[audioUID] = 4;
+          }
+        }
         allTapes.add(audioUID);
         tapeRecorderState[audioUID] = "Sending";
         notifyListeners();
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          print(scrollController.position.maxScrollExtent);
           scrollController.animateTo(
             scrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 300),
@@ -268,6 +307,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         });
         _uploadAudio(audioPath, audioUID);
       } catch (e) {
+        print(e);
         tapeRecorderState[audioUID] = "Some Error Occured";
         notifyListeners();
         // show failed to send snackbar
@@ -288,6 +328,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void playTape(audioUID) async {
+    playedTapes.add(audioUID);
     if (currentTapePlaying != null) {
       if (playedTapes.contains(currentTapePlaying)) {
         tapePlayerState[currentTapePlaying] = "Played";
@@ -351,8 +392,11 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     for (int i = index + 1; i < allTapes.length; i++) {
       String uid = allTapes.elementAt(i);
       if (yourTapes.contains(uid)) {
-        playTape(uid);
+        if (!playedTapes.contains(uid)) {
+          playTape(uid);
+        }
         break;
+
       }
     }
   }
@@ -466,12 +510,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   Widget showTape(int index, BuildContext context) {
     String tapeUID = allTapes.elementAt(index);
     if (!yourTapes.contains(tapeUID)) {
-      if (lastTapeSource == "mine") {
-        lastTapeSourceWasSame = true;
-      } else {
-        lastTapeSourceWasSame = false;
-      }
-      lastTapeSource = "mine";
       return Row(
         children: [
           Expanded(
@@ -482,12 +520,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         ],
       );
     } else {
-      if (lastTapeSource == "your") {
-        lastTapeSourceWasSame = true;
-      } else {
-        lastTapeSourceWasSame = false;
-      }
-      lastTapeSource = "your";
       return Row(
         children: [
           Expanded(
