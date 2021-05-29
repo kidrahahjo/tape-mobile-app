@@ -28,7 +28,7 @@ class ChatPageView extends StatelessWidget {
                     expandedHeight: 360,
                     actions: [PokeButton()],
                     leading: IconButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => model.backToHome(),
                         icon: Icon(PhosphorIcons.caretLeft)),
                     pinned: true,
                     stretch: true,

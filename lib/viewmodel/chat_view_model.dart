@@ -132,7 +132,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       ..sort((k1, k2) =>
           compareDateTimeGreaterThan(tapesByDateTime[k1], tapesByDateTime[k2]));
     allTapes.addAll(List<String>.from(sortedKeys));
-
     for (int i = 0; i < allTapes.length; i++) {
       if (i == 0) {
         gapBetweenShouts[allTapes.elementAt(i)] = 4;
@@ -152,6 +151,15 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         }
       }
     }
+    notifyListeners();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      print('here');
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   double getGap(int index) {
@@ -314,8 +322,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           String lastTape = allTapes.last;
           if (yourTapes.contains(lastTape)) {
             gapBetweenShouts[audioUID] = 16;
-
-            bubbleTail[allTapes.last] = 32;
           } else {
             gapBetweenShouts[audioUID] = 4;
 
