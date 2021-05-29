@@ -32,32 +32,36 @@ class ChatPageView extends StatelessWidget {
                         icon: Icon(PhosphorIcons.caretLeft)),
                     pinned: true,
                     stretch: true,
-                    flexibleSpace: FlexibleSpaceBar(
-                      collapseMode: CollapseMode.pin,
-                      centerTitle: true,
-                      background: Padding(
-                        padding: EdgeInsets.fromLTRB(80, 0, 80, 0),
-                        child: ProfilePic(yourName),
-                      ),
-                      title: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                              children: [
-                                Icon(
-                                  PhosphorIcons.circleFill,
-                                  color: Colors.transparent,
-                                  size: 12,
-                                ),
-                                Text(
-                                  yourName,
-                                  style: TextStyle(fontWeight: FontWeight.bold)
-                                ),
-                                Icon(
-                                  PhosphorIcons.circleFill,
-                                  color: model.youAreOnline ? Colors.green : Colors.transparent,
-                                  size: 12,
-                                )
-                              ],
+                    flexibleSpace: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: FlexibleSpaceBar(
+                        collapseMode: CollapseMode.pin,
+                        stretchModes: [StretchMode.fadeTitle, StretchMode.zoomBackground],
+                        centerTitle: true,
+                        background: Padding(
+                          padding: EdgeInsets.fromLTRB(0, 64, 0, 64),
+                          child: ProfilePic(yourName),
+                        ),
+                        title: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                                children: [
+                                  Icon(
+                                    PhosphorIcons.circleFill,
+                                    color: Colors.transparent,
+                                    size: 12,
+                                  ),
+                                  Text(
+                                    yourName,
+                                    style: TextStyle(fontWeight: FontWeight.bold)
+                                  ),
+                                  Icon(
+                                    PhosphorIcons.circleFill,
+                                    color: model.youAreOnline ? Colors.green : Colors.transparent,
+                                    size: 12,
+                                  )
+                                ],
+                        ),
                       ),
                     ),
                   ),
