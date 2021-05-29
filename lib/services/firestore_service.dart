@@ -56,7 +56,8 @@ class FirestoreService {
         .get();
   }
 
-  Stream<QuerySnapshot> fetchSentTapesFromDatabase(String chatUID, {bool descending = false}) {
+  Stream<QuerySnapshot> fetchSentTapesFromDatabase(String chatUID,
+      {bool descending = false}) {
     return _chatsCollectionReference
         .doc(chatUID)
         .collection("messages")
@@ -87,7 +88,7 @@ class FirestoreService {
     return _chatsCollectionReference
         .doc(chatUID)
         .collection("messages")
-        .orderBy("listenedAt", descending: true)
+        .orderBy("sentAt", descending: true)
         .limit(1)
         .get();
   }

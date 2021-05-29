@@ -27,15 +27,22 @@ class HomeView extends StatelessWidget {
           builder: (context, model, child) {
             return Scaffold(
               floatingActionButton: ContactsButton(),
-              body: CustomScrollView(
-                slivers: <Widget>[
-                  CustomSliverAppBar(),
-                  SliverToBoxAdapter(
-                      child: Divider(
-                    height: 1,
-                  )),
-                  AllChatsView(),
-                ],
+              body: RefreshIndicator(
+                onRefresh: () async {
+                  model.refreshPage();
+                  return;
+                },
+                child: CustomScrollView(
+                  physics: BouncingScrollPhysics(),
+                  slivers: <Widget>[
+                    CustomSliverAppBar(),
+                    SliverToBoxAdapter(
+                        child: Divider(
+                      height: 1,
+                    )),
+                    AllChatsView(),
+                  ],
+                ),
               ),
             );
           },
@@ -74,7 +81,7 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
             backgroundImage: viewModel.myProfilePic != null
                 ? NetworkImage(viewModel.myProfilePic)
                 : null,
-            radius: 24,
+            radius: 20,
             child: viewModel.myProfilePic == null
                 ? Text(
                     viewModel.myDisplayName != null

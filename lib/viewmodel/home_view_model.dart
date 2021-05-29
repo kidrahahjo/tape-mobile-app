@@ -202,12 +202,13 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
           userUIDReceivedTapesTimeMapping[uid] = null;
         } else {
           Map<String, dynamic> data = value.docs.first.data();
+          print(data);
           if (data['isListened']) {
             userUIDReceivedTapesTimeMapping[uid] =
-              convertTimestampToDateTime(data['listenedAt']);
+                convertTimestampToDateTime(data['listenedAt']);
           } else {
             userUIDReceivedTapesTimeMapping[uid] =
-              convertTimestampToDateTime(data['sentAt']);
+                convertTimestampToDateTime(data['sentAt']);
           }
         }
       });
@@ -223,6 +224,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         userUIDLastSentTapeStateMapping[uid] = "Empty";
       } else {
         Map<String, dynamic> data = event.docs.first.data();
+        print(data);
         if (data['isListened'] == true && data['isExpired'] == true) {
           userUIDLastSentTapeStateMapping[uid] = "Reply";
           userUIDLastSentTapeTimeMapping[uid] =
@@ -455,6 +457,10 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});
   }
 
+  refreshPage() {
+    notifyListeners();
+  }
+
   Widget getSubtitle(String yourUID, BuildContext context) {
     int receivedTapes = userUIDReceivedTapesMapping[yourUID] == null
         ? 0
@@ -466,54 +472,83 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     DateTime lastReceivedTime = userUIDReceivedTapesTimeMapping[yourUID];
     return receivedTapes > 0
         ? Wrap(
-            crossAxisAlignment: WrapCrossAlignment.start,
-            spacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
             children: [
+              Icon(
+                PhosphorIcons.chatTeardropFill,
+                size: 16,
+                color: Theme.of(context).accentColor,
+              ),
               Text(
                 "New Tape",
                 style: TextStyle(
                     color: Theme.of(context).accentColor,
                     fontWeight: FontWeight.bold),
               ),
-              Icon(
-                PhosphorIcons.voicemailBold,
-                size: 18,
-                color: Theme.of(context).accentColor,
-              ),
+              Text(
+                "• ${getTimeDifference(userUIDReceivedTapesTimeMapping[yourUID])}",
+                style: TextStyle(color: Colors.grey.shade700),
+              )
             ],
           )
         : lastSentTapeState == "Sent"
-          ? Wrap(
+            ? Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                children: [
+                  Icon(
+                    PhosphorIcons.paperPlaneRightFill,
+                    size: 16,
+                    color: Theme.of(context).accentColor,
+                  ),
+                  Text(
+                    "Delivered",
+                    style: TextStyle(),
+                  ),
+                  Text(
+                    "• ${getTimeDifference(userUIDLastSentTapeTimeMapping[yourUID])}",
+                    style: TextStyle(color: Colors.grey.shade700),
+                  )
+                ],
+              )
+            : compareDateTimeGreaterThan(lastReceivedTime, lastSentTime) == 1
+                ? Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
+                    spacing: 6,
                     children: [
-                      Text(
-                        "Delivered",
-                        style: TextStyle(),
-                      ),
                       Icon(
-                        PhosphorIcons.paperPlane,
+                        PhosphorIcons.chatTeardropFill,
                         size: 16,
-                        color: Colors.grey,
+                        color: Colors.grey.shade700,
                       ),
+                      Text(
+                        "Received",
+                      ),
+                      Text(
+                        "• ${getTimeDifference(userUIDReceivedTapesTimeMapping[yourUID])}",
+                        style: TextStyle(color: Colors.grey.shade700),
+                      )
                     ],
                   )
-          : compareDateTimeGreaterThan(lastReceivedTime, lastSentTime) == 1
-            ? Text("Received")
-            : lastSentTapeState == "Played" || lastSentTapeState == "Reply"
+                : lastSentTapeState == "Played" || lastSentTapeState == "Reply"
                     ? Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
+                        spacing: 6,
                         children: [
+                          Icon(
+                            PhosphorIcons.speakerSimpleHighFill,
+                            size: 16,
+                            color: Colors.grey.shade700,
+                          ),
                           Text(
                             "Played",
                             style: TextStyle(),
                           ),
-                          Icon(
-                            PhosphorIcons.speakerSimpleHigh,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
+                          Text(
+                            "• ${getTimeDifference(userUIDLastSentTapeTimeMapping[yourUID])}",
+                            style: TextStyle(color: Colors.grey.shade700),
+                          )
                         ],
                       )
                     : Text("Tap to Tape");

@@ -7,13 +7,13 @@ String getTimeDifference(DateTime dateTime) {
   int minutes = difference.inMinutes;
   int seconds = difference.inSeconds;
   if (day != 0) {
-    return day.toString() + 'd ago';
+    return day.toString() + 'd';
   } else if (hours != 0) {
-    return hours.toString() + 'h ago';
+    return hours.toString() + 'h';
   } else if (minutes != 0) {
-    return minutes.toString() + 'm ago';
-  } else if (seconds >= 20) {
-    return seconds.toString() + 's ago';
+    return minutes.toString() + 'm';
+  } else if (seconds > 0) {
+    return seconds.toString() + 's';
   } else {
     return 'Just now';
   }
