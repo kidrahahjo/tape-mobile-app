@@ -66,6 +66,8 @@ class ChatService with ReactiveServiceMixin {
       codec: Codec.aacADTS,
     );
     } catch (e) {
+      _recordingTime.value = "";
+    _recordingShout.value = false;
       print(e);
       // code for toast
     }
