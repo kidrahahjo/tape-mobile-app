@@ -2,10 +2,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tapemobileapp/locator.dart';
-import 'package:tapemobileapp/routing_constants.dart';
+import 'package:tapemobileapp/app/locator.dart';
+import 'package:tapemobileapp/app/routing_constants.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
-import 'router.dart' as router;
+import 'package:tapemobileapp/app/router.dart' as router;
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
 

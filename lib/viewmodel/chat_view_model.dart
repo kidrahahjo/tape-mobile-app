@@ -10,7 +10,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/utils/time_utils.dart';
 import 'package:uuid/uuid.dart';
-import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/app/locator.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/services/chat_service.dart';
 import 'package:tapemobileapp/services/firebase_storage_service.dart';
@@ -181,11 +181,15 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         if (!allTapes.contains(element.id)) {
           if (allTapes.length == 0) {
             gapBetweenShouts[element.id] = 4;
+            bubbleTail[element.id] = 4;
           } else {
             if (yourTapes.contains(allTapes.last)) {
               gapBetweenShouts[element.id] = 4;
+              bubbleTail[element.id] = 4;
+              bubbleTail[allTapes.last] = 32;
             } else {
               gapBetweenShouts[element.id] = 16;
+              bubbleTail[element.id] = 4;
             }
           }
           allTapes.add(element.id);
@@ -444,7 +448,10 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
                   topLeft: Radius.circular(32),
                   topRight: Radius.circular(32),
                   bottomLeft:
-                      Radius.circular(bubbleTail[allTapes.elementAt(index)]),
+                      Radius.circular(
+                        bubbleTail[allTapes.elementAt(index)] == null
+                          ? 4
+                          : bubbleTail[allTapes.elementAt(index)]),
                   bottomRight: Radius.circular(32)),
               color: playerState == null
                   ? Theme.of(context).accentColor
@@ -493,7 +500,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   Widget senderButton(String tapeUID, BuildContext context, int index) {
-    print(bubbleTail[allTapes.elementAt(index)]);
     String recorderState = tapeRecorderState[tapeUID];
     bool playedState =
         tapePlayedState[tapeUID] == null ? false : tapePlayedState[tapeUID];

@@ -2,9 +2,9 @@ import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
-import '../routing_constants.dart' as routes;
+import 'package:tapemobileapp/app/routing_constants.dart' as routes;
 
-import '../locator.dart';
+import '../app/locator.dart';
 
 class StartupViewModel extends BaseModel {
   final AuthenticationService _authenticationService =

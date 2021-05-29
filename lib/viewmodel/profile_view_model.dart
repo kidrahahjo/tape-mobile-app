@@ -9,7 +9,7 @@ import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:crop/crop.dart';
 import 'package:image/image.dart' as ImageCompress;
-import '../locator.dart';
+import '../app/locator.dart';
 
 class ProfileViewModel extends BaseModel {
   final AuthenticationService _authenticationService =

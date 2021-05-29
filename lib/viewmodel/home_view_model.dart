@@ -5,9 +5,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tapemobileapp/services/push_notification_service.dart';
-import 'package:tapemobileapp/permissions.dart';
-import 'package:tapemobileapp/routing_constants.dart' as routes;
-import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/app/permissions.dart';
+import 'package:tapemobileapp/app/routing_constants.dart' as routes;
+import 'package:tapemobileapp/app/locator.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
@@ -202,8 +202,13 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
           userUIDReceivedTapesTimeMapping[uid] = null;
         } else {
           Map<String, dynamic> data = value.docs.first.data();
-          userUIDReceivedTapesTimeMapping[uid] =
+          if (data['isListened']) {
+            userUIDReceivedTapesTimeMapping[uid] =
+              convertTimestampToDateTime(data['listenedAt']);
+          } else {
+            userUIDReceivedTapesTimeMapping[uid] =
               convertTimestampToDateTime(data['sentAt']);
+          }
         }
       });
     }));
@@ -218,7 +223,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         userUIDLastSentTapeStateMapping[uid] = "Empty";
       } else {
         Map<String, dynamic> data = event.docs.first.data();
-        print(data);
         if (data['isListened'] == true && data['isExpired'] == true) {
           userUIDLastSentTapeStateMapping[uid] = "Reply";
           userUIDLastSentTapeTimeMapping[uid] =
@@ -478,10 +482,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
               ),
             ],
           )
-        : compareDateTimeGreaterThan(lastReceivedTime, lastSentTime) == 1
-            ? Text("Received")
-            : lastSentTapeState == "Sent"
-                ? Wrap(
+        : lastSentTapeState == "Sent"
+          ? Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: 8,
                     children: [
@@ -496,7 +498,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
                       ),
                     ],
                   )
-                : lastSentTapeState == "Played" || lastSentTapeState == "Reply"
+          : compareDateTimeGreaterThan(lastReceivedTime, lastSentTime) == 1
+            ? Text("Received")
+            : lastSentTapeState == "Played" || lastSentTapeState == "Reply"
                     ? Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
                         spacing: 8,

@@ -1,8 +1,8 @@
-import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/app/locator.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
-import 'package:tapemobileapp/routing_constants.dart' as routes;
+import 'package:tapemobileapp/app/routing_constants.dart' as routes;
 
 class AuthenticationViewModel extends BaseModel {
   final AuthenticationService _authenticationService =

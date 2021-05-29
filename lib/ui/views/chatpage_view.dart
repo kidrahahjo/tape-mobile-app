@@ -33,12 +33,31 @@ class ChatPageView extends StatelessWidget {
                     stretch: true,
                     flexibleSpace: FlexibleSpaceBar(
                       collapseMode: CollapseMode.pin,
+                      centerTitle: true,
                       background: Padding(
                         padding: EdgeInsets.fromLTRB(80, 0, 80, 0),
                         child: ProfilePic(yourName),
                       ),
-                      title: Text(yourName,
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      title: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                              children: [
+                                Icon(
+                                  PhosphorIcons.circleFill,
+                                  color: Colors.transparent,
+                                  size: 12,
+                                ),
+                                Text(
+                                  yourName,
+                                  style: TextStyle(fontWeight: FontWeight.bold)
+                                ),
+                                Icon(
+                                  PhosphorIcons.circleFill,
+                                  color: model.youAreOnline ? Colors.green : Colors.transparent,
+                                  size: 12,
+                                )
+                              ],
+                      ),
                     ),
                   ),
                   TapeArea(),
@@ -110,7 +129,7 @@ class Footer extends ViewModelWidget<ChatViewModel> {
                     ),
                     secondChild: Center(
                         child: Text(
-                      "Recording...",
+                      "Recording... ${viewModel.recordingTimer}",
                       style: TextStyle(
                           color: Theme.of(context).accentColor,
                           fontSize: 20,
