@@ -453,9 +453,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
               borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(32),
                   topRight: Radius.circular(32),
-                  bottomLeft:
-                      Radius.circular(
-                        bubbleTail[allTapes.elementAt(index)] == null
+                  bottomLeft: Radius.circular(
+                      bubbleTail[allTapes.elementAt(index)] == null
                           ? 4
                           : bubbleTail[allTapes.elementAt(index)]),
                   bottomRight: Radius.circular(32)),
@@ -543,7 +542,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                            Icon(PhosphorIcons.paperPlane, size: 20),
+                            Icon(PhosphorIcons.paperPlaneFill, size: 20),
                             SizedBox(width: 14),
                             Text("Sending...")
                           ])
@@ -558,7 +557,9 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-                                Icon(PhosphorIcons.paperPlaneFill, size: 20),
+                                Icon(PhosphorIcons.paperPlaneFill,
+                                    color: Theme.of(context).accentColor,
+                                    size: 20),
                                 SizedBox(width: 14),
                                 Text("Delivered")
                               ])));
