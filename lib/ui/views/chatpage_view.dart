@@ -22,7 +22,7 @@ class ChatPageView extends StatelessWidget {
             Expanded(
               child: CustomScrollView(
                 controller: model.scrollController,
-                physics: BouncingScrollPhysics(),
+                physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                 slivers: [
                   SliverAppBar(
                     expandedHeight: 360,

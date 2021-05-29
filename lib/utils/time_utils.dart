@@ -8,9 +8,9 @@ String getTimeDifference(DateTime dateTime) {
   int seconds = difference.inSeconds;
   if (day != 0) {
     return day.toString() + 'd';
-  } else if (hours != 0) {
+  } else if (hours > 0) {
     return hours.toString() + 'h';
-  } else if (minutes != 0) {
+  } else if (minutes > 0) {
     return minutes.toString() + 'm';
   } else if (seconds > 0) {
     return seconds.toString() + 's';
