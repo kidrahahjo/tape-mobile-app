@@ -22,7 +22,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   String myDisplayName;
   String myProfilePic;
 
-
   // streams related to me
   Stream<DocumentSnapshot> myDocumentStream;
   StreamSubscription<DocumentSnapshot> myDocumentStreamSubscription;
@@ -70,7 +69,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   bool isFetchingContacts = false;
   Map<String, String> userNumberContactNameMapping = {};
   Map<String, String> userUIDContactNameMapping = {};
-
 
   HomeViewModel(this.myUID, this.myPhoneNumber) {
     WidgetsBinding.instance.addObserver(this);
@@ -135,8 +133,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       userUIDContactNameMapping = {};
     }
     try {
-      userUIDNumberMapping = Map<String, String>.from(
-          await cache.load('userUIDNumberMapping'));
+      userUIDNumberMapping =
+          Map<String, String>.from(await cache.load('userUIDNumberMapping'));
       if (userUIDNumberMapping == null) {
         userUIDNumberMapping = {};
       } else {
@@ -197,12 +195,15 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     usersChatForMeStreams.add(chatForMeStream);
     usersChatForMeStreamSubscriptions.add(chatForMeStream.listen((event) async {
       userUIDReceivedTapesMapping[uid] = event.docs.length;
-      await _firestoreService.getLastTapeListenedDoc(uid + "_" + myUID).then((value) {
+      await _firestoreService
+          .getLastTapeListenedDoc(uid + "_" + myUID)
+          .then((value) {
         if (value.docs.length == 0) {
-          userUIDReceivedTapesTimeMapping[uid] =  null;
+          userUIDReceivedTapesTimeMapping[uid] = null;
         } else {
           Map<String, dynamic> data = value.docs.first.data();
-          userUIDReceivedTapesTimeMapping[uid] =  convertTimestampToDateTime(data['sentAt']);
+          userUIDReceivedTapesTimeMapping[uid] =
+              convertTimestampToDateTime(data['sentAt']);
         }
       });
     }));
@@ -220,13 +221,16 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         print(data);
         if (data['isListened'] == true && data['isExpired'] == true) {
           userUIDLastSentTapeStateMapping[uid] = "Reply";
-          userUIDLastSentTapeTimeMapping[uid] = convertTimestampToDateTime(data['listenedAt']);
+          userUIDLastSentTapeTimeMapping[uid] =
+              convertTimestampToDateTime(data['listenedAt']);
         } else if (data['isListened'] == true) {
           userUIDLastSentTapeStateMapping[uid] = "Played";
-          userUIDLastSentTapeTimeMapping[uid] = convertTimestampToDateTime(data['listenedAt']);
+          userUIDLastSentTapeTimeMapping[uid] =
+              convertTimestampToDateTime(data['listenedAt']);
         } else {
           userUIDLastSentTapeStateMapping[uid] = "Sent";
-          userUIDLastSentTapeTimeMapping[uid] = convertTimestampToDateTime(data['sentAt']);
+          userUIDLastSentTapeTimeMapping[uid] =
+              convertTimestampToDateTime(data['sentAt']);
         }
       }
     }));
@@ -447,21 +451,67 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});
   }
 
-  Widget getSubtitle(String yourUID) {
-    int receivedTapes = userUIDReceivedTapesMapping[yourUID] == null ? 0 : userUIDReceivedTapesMapping[yourUID];
-    String lastSentTapeState = userUIDLastSentTapeStateMapping[yourUID] == null ? "Empty" : userUIDLastSentTapeStateMapping[yourUID];
+  Widget getSubtitle(String yourUID, BuildContext context) {
+    int receivedTapes = userUIDReceivedTapesMapping[yourUID] == null
+        ? 0
+        : userUIDReceivedTapesMapping[yourUID];
+    String lastSentTapeState = userUIDLastSentTapeStateMapping[yourUID] == null
+        ? "Empty"
+        : userUIDLastSentTapeStateMapping[yourUID];
     DateTime lastSentTime = userUIDLastSentTapeTimeMapping[yourUID];
     DateTime lastReceivedTime = userUIDReceivedTapesTimeMapping[yourUID];
-    return Text(
-      receivedTapes > 0
-       ? "New Tape"
-       : compareDateTimeGreaterThan(lastReceivedTime, lastSentTime) == 1
-        ? "Received"
-        :lastSentTapeState == "Sent"
-        ? "Delivered"
-        : lastSentTapeState == "Played" || lastSentTapeState == "Reply"
-          ? "Played"
-          : "Tap to Tape"
-    );
+    return receivedTapes > 0
+        ? Wrap(
+            crossAxisAlignment: WrapCrossAlignment.start,
+            spacing: 8,
+            children: [
+              Text(
+                "New Tape",
+                style: TextStyle(
+                    color: Theme.of(context).accentColor,
+                    fontWeight: FontWeight.bold),
+              ),
+              Icon(
+                PhosphorIcons.voicemailBold,
+                size: 18,
+                color: Theme.of(context).accentColor,
+              ),
+            ],
+          )
+        : compareDateTimeGreaterThan(lastReceivedTime, lastSentTime) == 1
+            ? Text("Received")
+            : lastSentTapeState == "Sent"
+                ? Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    children: [
+                      Text(
+                        "Delivered",
+                        style: TextStyle(),
+                      ),
+                      Icon(
+                        PhosphorIcons.paperPlane,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                    ],
+                  )
+                : lastSentTapeState == "Played" || lastSentTapeState == "Reply"
+                    ? Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        children: [
+                          Text(
+                            "Played",
+                            style: TextStyle(),
+                          ),
+                          Icon(
+                            PhosphorIcons.speakerSimpleHigh,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      )
+                    : Text("Tap to Tape");
   }
 }

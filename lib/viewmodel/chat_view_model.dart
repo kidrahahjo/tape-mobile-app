@@ -59,6 +59,10 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   String lastTapeSource = "your";
   bool lastTapeSourceWasSame = false;
   Map<String, double> gapBetweenShouts = {};
+  Map<String, double> bubbleTail = {};
+  String profilePic;
+  double drawerHeight = 160;
+  bool drawerOpen = false;
 
   // Streams
   Stream<DocumentSnapshot> yourDocumentStream;
@@ -129,17 +133,21 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           compareDateTimeGreaterThan(tapesByDateTime[k1], tapesByDateTime[k2]));
     allTapes.addAll(List<String>.from(sortedKeys));
 
-    for (int i = 0; i < allTapes.length; i ++) {
+    for (int i = 0; i < allTapes.length; i++) {
       if (i == 0) {
         gapBetweenShouts[allTapes.elementAt(i)] = 4;
+        bubbleTail[allTapes.elementAt(i)] = 4;
       } else {
         String last = allTapes.elementAt(i - 1);
         String curr = allTapes.elementAt(i);
         if (yourTapes.contains(last) && yourTapes.contains(curr)) {
+          bubbleTail[allTapes.elementAt(i - 1)] = 32;
           gapBetweenShouts[allTapes.elementAt(i)] = 4;
         } else if (!yourTapes.contains(last) && !yourTapes.contains(curr)) {
+          bubbleTail[allTapes.elementAt(i - 1)] = 32;
           gapBetweenShouts[allTapes.elementAt(i)] = 4;
         } else {
+          bubbleTail[allTapes.elementAt(i - 1)] = 4;
           gapBetweenShouts[allTapes.elementAt(i)] = 16;
         }
       }
@@ -147,7 +155,9 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   double getGap(int index) {
-    return gapBetweenShouts[allTapes.elementAt(index)] == null ? 4 : gapBetweenShouts[allTapes.elementAt(index)];
+    return gapBetweenShouts[allTapes.elementAt(index)] == null
+        ? 4
+        : gapBetweenShouts[allTapes.elementAt(index)];
   }
 
   enableYourDocumentStream() {
@@ -156,6 +166,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
         youAreOnline = data['isOnline'] == null ? false : data['isOnline'];
+        profilePic =
+            data['displayImageURL'] == null ? null : data['displayImageURL'];
         notifyListeners();
       }
     });
@@ -262,6 +274,10 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void startRecording() async {
+    drawerHeight = 280;
+
+    drawerOpen = true;
+    notifyListeners();
     _record = true;
     bool continueRecording = true;
     String audioUID = Uuid().v4().replaceAll("-", "");
@@ -274,6 +290,9 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void stopRecording() async {
+    drawerHeight = 160;
+    drawerOpen = false;
+    notifyListeners();
     _record = false;
     String audioUID, audioPath;
     if (_chatService.recordingTime == "" ||
@@ -291,8 +310,12 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           String lastTape = allTapes.last;
           if (yourTapes.contains(lastTape)) {
             gapBetweenShouts[audioUID] = 16;
+
+            bubbleTail[allTapes.last] = 32;
           } else {
             gapBetweenShouts[audioUID] = 4;
+
+            bubbleTail[allTapes.last] = 32;
           }
         }
         allTapes.add(audioUID);
@@ -396,7 +419,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           playTape(uid);
         }
         break;
-
       }
     }
   }
@@ -405,7 +427,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
   }
 
-  Widget playerButton(String tapeUID, BuildContext context) {
+  Widget playerButton(String tapeUID, BuildContext context, int index) {
     String playerState = tapePlayerState[tapeUID];
     return GestureDetector(
         onTap: () {
@@ -416,16 +438,25 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           }
         },
         child: Container(
-          height: 56,
+          height: 52,
           decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(32),
+                  topRight: Radius.circular(32),
+                  bottomLeft:
+                      Radius.circular(bubbleTail[allTapes.elementAt(index)]),
+                  bottomRight: Radius.circular(32)),
               color: playerState == null
                   ? Theme.of(context).accentColor
                   : Colors.grey.shade900),
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.symmetric(horizontal: 16),
           child: playerState == "Played"
               ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-                  Icon(PhosphorIcons.arrowCounterClockwiseBold, size: 20),
+                  Icon(
+                    PhosphorIcons.arrowCounterClockwiseBold,
+                    size: 20,
+                    color: Theme.of(context).accentColor,
+                  ),
                   SizedBox(width: 12),
                   Text("Tap to replay")
                 ])
@@ -439,21 +470,30 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
-                              Icon(PhosphorIcons.stopFill, size: 20),
+                              Icon(
+                                PhosphorIcons.stopFill,
+                                size: 20,
+                                color: Theme.of(context).accentColor,
+                              ),
                               SizedBox(width: 12),
                               Text("Playing...")
                             ])
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
-                              Icon(PhosphorIcons.stopFill, size: 20),
+                              Icon(
+                                PhosphorIcons.stopFill,
+                                size: 20,
+                                color: Theme.of(context).accentColor,
+                              ),
                               SizedBox(width: 12),
                               Text("Loading...")
                             ]),
         ));
   }
 
-  Widget senderButton(String tapeUID, BuildContext context) {
+  Widget senderButton(String tapeUID, BuildContext context, int index) {
+    print(bubbleTail[allTapes.elementAt(index)]);
     String recorderState = tapeRecorderState[tapeUID];
     bool playedState =
         tapePlayedState[tapeUID] == null ? false : tapePlayedState[tapeUID];
@@ -462,13 +502,18 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           // TODO: code for resend
         },
         child: Container(
-            height: 56,
+            height: 52,
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: playedState
-                    ? Colors.grey.shade900
-                    : Theme.of(context).accentColor),
-            padding: EdgeInsets.symmetric(horizontal: 14),
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(
+                        bubbleTail[allTapes.elementAt(index)] == null
+                            ? 4
+                            : bubbleTail[allTapes.elementAt(index)])),
+                color: Colors.grey.shade900),
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: playedState
                 ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
                     Icon(
@@ -516,7 +561,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
             flex: 1,
             child: Container(),
           ),
-          Expanded(flex: 3, child: senderButton(tapeUID, context)),
+          Expanded(flex: 3, child: senderButton(tapeUID, context, index)),
         ],
       );
     } else {
@@ -524,7 +569,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         children: [
           Expanded(
             flex: 3,
-            child: playerButton(tapeUID, context),
+            child: playerButton(tapeUID, context, index),
           ),
           Expanded(
             flex: 1,

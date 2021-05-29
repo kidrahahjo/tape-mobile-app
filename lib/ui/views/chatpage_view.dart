@@ -24,6 +24,7 @@ class ChatPageView extends StatelessWidget {
                 controller: model.scrollController,
                 slivers: [
                   SliverAppBar(
+                    expandedHeight: 360,
                     actions: [PokeButton()],
                     leading: IconButton(
                         onPressed: () => Navigator.pop(context),
@@ -31,7 +32,13 @@ class ChatPageView extends StatelessWidget {
                     pinned: true,
                     stretch: true,
                     flexibleSpace: FlexibleSpaceBar(
-                      title: Text(yourName),
+                      collapseMode: CollapseMode.pin,
+                      background: Padding(
+                        padding: EdgeInsets.fromLTRB(80, 0, 80, 0),
+                        child: ProfilePic(yourName),
+                      ),
+                      title: Text(yourName,
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                   TapeArea(),
@@ -46,19 +53,77 @@ class ChatPageView extends StatelessWidget {
   }
 }
 
-class Footer extends ViewModelWidget<ChatViewModel> {
+class ProfilePic extends ViewModelWidget<ChatViewModel> {
+  final String yourName;
+  ProfilePic(this.yourName);
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Container(
-      color: Colors.grey.shade900,
+    return CircleAvatar(
+      child: viewModel.profilePic == null
+          ? Text(
+              '${this.yourName[0]}'.toUpperCase(),
+              style: TextStyle(
+                fontSize: 100,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          : null,
+      backgroundImage: viewModel.profilePic == null
+          ? null
+          : NetworkImage(viewModel.profilePic),
+    );
+  }
+}
+
+class Footer extends ViewModelWidget<ChatViewModel> {
+  Footer() : super(reactive: true);
+  @override
+  Widget build(BuildContext context, ChatViewModel viewModel) {
+    return AnimatedContainer(
+      decoration: BoxDecoration(
+          color: Colors.grey.shade900,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+          )),
+      height: viewModel.drawerHeight,
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
       child: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [RecordButton()],
-          ),
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Expanded(
+                  child: AnimatedCrossFade(
+                    crossFadeState: viewModel.drawerOpen
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    duration: Duration(milliseconds: 300),
+                    sizeCurve: Curves.easeInCubic,
+                    firstChild: Center(
+                      child: Text('Hold to talk',
+                          style: TextStyle(color: Colors.grey)),
+                    ),
+                    secondChild: Center(
+                        child: Text(
+                      "Recording...",
+                      style: TextStyle(
+                          color: Theme.of(context).accentColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                    )),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [RecordButton()],
+                ),
+              ]),
         ),
       ),
     );
@@ -71,7 +136,7 @@ class TapeArea extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (BuildContext context, int index) {
@@ -113,47 +178,33 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
 
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        viewModel.iAmRecording
-            ? Text(
-                "Recording...",
-                style: TextStyle(
-                    color: Theme.of(context).accentColor,
-                    fontWeight: FontWeight.bold),
-              )
-            : Text('Hold to talk', style: TextStyle(color: Colors.grey)),
-        SizedBox(height: 12),
-        GestureDetector(
-            onTapDown: (details) {
-              viewModel.startRecording();
-            },
-            onTapUp: (details) {
-              viewModel.stopRecording();
-            },
-            onVerticalDragEnd: (value) {
-              viewModel.stopRecording();
-            },
-            onHorizontalDragEnd: (value) {
-              viewModel.stopRecording();
-            },
-            child: SizedBox(
-              height: 64,
-              width: 64,
-              child: RawMaterialButton(
-                shape: CircleBorder(),
-                fillColor: Theme.of(context).accentColor,
-                onPressed: null,
-                child: SvgPicture.asset(
-                  tapeIcon,
-                  semanticsLabel: 'Tape Logo',
-                  height: 48,
-                  width: 48,
-                ),
-              ),
-            )),
-      ],
-    );
+    return GestureDetector(
+        onTapDown: (details) {
+          viewModel.startRecording();
+        },
+        onTapUp: (details) {
+          viewModel.stopRecording();
+        },
+        onVerticalDragEnd: (value) {
+          viewModel.stopRecording();
+        },
+        onHorizontalDragEnd: (value) {
+          viewModel.stopRecording();
+        },
+        child: SizedBox(
+          height: 64,
+          width: 64,
+          child: RawMaterialButton(
+            shape: CircleBorder(),
+            fillColor: Theme.of(context).accentColor,
+            onPressed: null,
+            child: SvgPicture.asset(
+              tapeIcon,
+              semanticsLabel: 'Tape Logo',
+              height: 48,
+              width: 48,
+            ),
+          ),
+        ));
   }
 }

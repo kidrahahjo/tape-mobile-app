@@ -133,7 +133,7 @@ class ProfileViewModel extends BaseModel {
     final image =
         ImageCompress.decodeImage(File(profilePicPath).readAsBytesSync());
 
-    final thumbnail = ImageCompress.copyResize(image, width: 200);
+    final thumbnail = ImageCompress.copyResize(image, width: 500);
 
     File(profilePicPath).writeAsBytesSync(ImageCompress.encodeJpg(thumbnail));
 

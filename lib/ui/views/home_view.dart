@@ -181,7 +181,7 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
                       color: Theme.of(context).accentColor,
                       fontWeight: FontWeight.bold),
                 )
-              : viewModel.getSubtitle(yourUID),
+              : viewModel.getSubtitle(yourUID, context),
         ));
   }
 }
