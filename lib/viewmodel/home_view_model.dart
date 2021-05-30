@@ -47,6 +47,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   List<String> chatsList = [];
   List<String> userUIDs = [];
   Map<String, String> userUIDDYourChatStateMapping = {};
+  Map<String, bool> userUIDWaveMapping = {};
   Map<String, String> userUIDDMyChatStateMapping = {};
   Map<String, bool> userUIDRecordingState = {};
   Map<String, String> userUIDMoodState = {};
@@ -56,7 +57,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Map<String, DateTime> userUIDLastSentTapeTimeMapping = {};
 
   // streams related to chat
-
   Stream<QuerySnapshot> chatsStream;
   StreamSubscription<QuerySnapshot> chatStreamSubscription;
   List<Stream<QuerySnapshot>> usersChatForMeStreams = [];
@@ -65,6 +65,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   List<Stream<QuerySnapshot>> usersChatForYouStreams = [];
   List<StreamSubscription<QuerySnapshot>> usersChatForYouStreamSubscriptions =
       [];
+  List<Stream<QuerySnapshot>> usersPokeStreams = [];
+  List<StreamSubscription<QuerySnapshot>> usersPokeStreamsSubscriptions = [];
 
 //variables related to home navigation
 
@@ -209,7 +211,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
           userUIDReceivedTapesTimeMapping[uid] = null;
         } else {
           Map<String, dynamic> data = value.docs.first.data();
-          print(data);
           if (data['isListened']) {
             userUIDReceivedTapesTimeMapping[uid] =
                 convertTimestampToDateTime(data['listenedAt']);
@@ -219,6 +220,18 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
           }
         }
       });
+    }));
+
+    Stream<QuerySnapshot> usersPokeStream =
+        _firestoreService.fetchPokesForMe(uid + "_" + myUID);
+    usersPokeStreams.add(usersPokeStream);
+    usersPokeStreamsSubscriptions.add(usersPokeStream.listen((event) async {
+      if (event.docs.length > 0) {
+        userUIDWaveMapping[uid] = true;
+      } else {
+        userUIDWaveMapping[uid] = false;
+      }
+      notifyListeners();
     }));
   }
 
@@ -231,7 +244,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         userUIDLastSentTapeStateMapping[uid] = "Empty";
       } else {
         Map<String, dynamic> data = event.docs.first.data();
-        print(data);
         if (data['isListened'] == true && data['isExpired'] == true) {
           userUIDLastSentTapeStateMapping[uid] = "Reply";
           userUIDLastSentTapeTimeMapping[uid] =
@@ -564,5 +576,11 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
                         ],
                       )
                     : Text("Tap to Tape");
+  }
+
+  bool showPoke(String yourUID) {
+    return userUIDWaveMapping[yourUID] == null
+        ? false
+        : userUIDWaveMapping[yourUID];
   }
 }

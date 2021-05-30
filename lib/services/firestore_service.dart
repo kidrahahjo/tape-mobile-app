@@ -59,7 +59,7 @@ class FirestoreService {
   expirePoke(String waveID, String chatUID) {
     _chatsCollectionReference
         .doc(chatUID)
-        .collection("messages")
+        .collection("waves")
         .doc(waveID)
         .set({"isExpired": true}, SetOptions(merge: true));
   }

@@ -20,6 +20,7 @@ import 'package:tapemobileapp/services/navigation_service.dart';
 class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final String yourUID;
   final String yourName;
+  final BuildContext context;
 
   // services
   final NavigationService _navigationService = locator<NavigationService>();
@@ -90,7 +91,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   Stream<QuerySnapshot> myTapesSentStateStream;
   StreamSubscription<QuerySnapshot> myTapesSentStateStreamSubscription;
 
-  ChatViewModel(this.yourUID, this.yourName) {
+  ChatViewModel(this.yourUID, this.yourName, this.context) {
     WidgetsBinding.instance.addObserver(this);
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": yourUID});
@@ -195,7 +196,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     }
     notifyListeners();
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      print('here');
       scrollController.animateTo(
         scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 500),
@@ -277,40 +277,34 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     pokesForMeStream = _firestoreService.fetchPokesForMe(chatForMeUID);
     pokesForMeStreamSubscription = pokesForMeStream.listen((event) {
       if (event.docs.length > 0) {
-        newPoke = true;
-        notifyListeners();
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: Duration(seconds: 10),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+            margin: EdgeInsets.fromLTRB(16, 0, 16, 160),
+            backgroundColor: Theme.of(context).accentColor,
+            behavior: SnackBarBehavior.floating,
+            content: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(PhosphorIcons.handWavingFill),
+                SizedBox(width: 8),
+                Text(
+                  "$yourName waved at you!",
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        );
       }
       event.docs.forEach((element) {
         _firestoreService.expirePoke(element.id, chatForMeUID);
       });
     });
-  }
-
-  showPokeSnackBar(BuildContext context) {
-    if (newPoke) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-          margin: EdgeInsets.fromLTRB(16, 0, 16, 160),
-          backgroundColor: Theme.of(context).accentColor,
-          behavior: SnackBarBehavior.floating,
-          content: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(PhosphorIcons.handWavingFill),
-              SizedBox(width: 8),
-              Text(
-                "$yourName waved at you!",
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-      );
-      newPoke = false;
-    }
   }
 
   enableTapesSentStateSream() {
@@ -333,6 +327,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   backToHome() {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": null});
     _chatService.suspendPlaying();
@@ -356,6 +351,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": null});
     pokesForMeStreamSubscription?.cancel();
