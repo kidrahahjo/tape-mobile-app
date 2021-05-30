@@ -59,6 +59,7 @@ class ChatService with ReactiveServiceMixin {
           _flutterSoundRecorder.onProgress.listen((event) {
         _recordingTime.value = event.duration.inSeconds.toString() + 's';
       });
+
       await _flutterSoundRecorder
           .setSubscriptionDuration(Duration(milliseconds: 500));
       await _flutterSoundRecorder.startRecorder(

@@ -66,10 +66,20 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   double buttonSize = 64;
   String myMood, yourMood;
 
+//recording widget related variables
+  double boxLength = 72;
+  bool boxExpanded = false;
+  Widget deleteIcon = SizedBox.shrink();
+  Widget sendIcon = SizedBox.shrink();
+
   // Streams
 
   Stream<DocumentSnapshot> yourMoodStream;
   StreamSubscription<DocumentSnapshot> yourMoodStreamSubscription;
+
+  Stream<QuerySnapshot> pokesForMeStream;
+  StreamSubscription<QuerySnapshot> pokesForMeStreamSubscription;
+  bool newPoke = false;
 
   Stream<DocumentSnapshot> yourDocumentStream;
   StreamSubscription<DocumentSnapshot> yourDocumentStreamSubscription;
@@ -99,6 +109,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     enableTapesForMeStream();
     enableChatForMeStateStream();
     enableTapesSentStateSream();
+    enablePokeStream();
   }
 
   @override
@@ -187,7 +198,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       print('here');
       scrollController.animateTo(
         scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 500),
         curve: Curves.easeOut,
       );
     });
@@ -207,7 +218,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         youAreOnline = data['isOnline'] == null ? false : data['isOnline'];
         profilePic =
             data['displayImageURL'] == null ? null : data['displayImageURL'];
-        yourMood = data['mood'] == null ? null : data['mood'];
         notifyListeners();
       }
     });
@@ -241,7 +251,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           SchedulerBinding.instance.addPostFrameCallback((_) {
             scrollController.animateTo(
               scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 500),
               curve: Curves.easeOut,
             );
           });
@@ -261,6 +271,46 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         notifyListeners();
       }
     });
+  }
+
+  enablePokeStream() {
+    pokesForMeStream = _firestoreService.fetchPokesForMe(chatForMeUID);
+    pokesForMeStreamSubscription = pokesForMeStream.listen((event) {
+      if (event.docs.length > 0) {
+        newPoke = true;
+        notifyListeners();
+      }
+      event.docs.forEach((element) {
+        _firestoreService.expirePoke(element.id, chatForMeUID);
+      });
+    });
+  }
+
+  showPokeSnackBar(BuildContext context) {
+    if (newPoke) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+          margin: EdgeInsets.fromLTRB(16, 0, 16, 160),
+          backgroundColor: Theme.of(context).accentColor,
+          behavior: SnackBarBehavior.floating,
+          content: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(PhosphorIcons.handWavingFill),
+              SizedBox(width: 8),
+              Text(
+                "$yourName waved at you!",
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      );
+      newPoke = false;
+    }
   }
 
   enableTapesSentStateSream() {
@@ -308,7 +358,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": null});
-
+    pokesForMeStreamSubscription?.cancel();
+    yourMoodStreamSubscription?.cancel();
     yourDocumentStreamSubscription?.cancel();
     _chatService.cancelSubscriptions();
     tapesForMeStreamSubscription?.cancel();
@@ -317,27 +368,47 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     super.dispose();
   }
 
-  void startRecording() async {
-    drawerHeight = 280;
-    buttonSize = 80;
-    drawerOpen = true;
+  void expandBox() {
+    boxLength = 280;
     notifyListeners();
+    Future.delayed(Duration(milliseconds: 300), () {
+      boxExpanded = true;
+      notifyListeners();
+    });
+  }
+
+  void contractBox() {
+    boxLength = 72;
+    notifyListeners();
+    Future.delayed(Duration(milliseconds: 300), () {
+      boxExpanded = false;
+      notifyListeners();
+    });
+  }
+
+  void startRecording() async {
     _record = true;
     bool continueRecording = true;
+
+    notifyListeners();
     String audioUID = Uuid().v4().replaceAll("-", "");
     var tempDir = await getTemporaryDirectory();
     String audioPath = '${tempDir.path}/$audioUID.aac';
     if (continueRecording == _record) {
       _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
+
       _chatService.startRecording(audioUID, audioPath);
     }
   }
 
-  void stopRecording() async {
-    buttonSize = 64;
-    drawerHeight = 144;
-    drawerOpen = false;
+  void deleteRecording() async {
+    _record = false;
     notifyListeners();
+    await _chatService.stopRecording();
+    _firestoreService.setRecordingStateToDatabase(chatForYouUID, false);
+  }
+
+  void stopRecording() async {
     _record = false;
     String audioUID, audioPath;
     if (_chatService.recordingTime == "" ||
@@ -365,10 +436,9 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         tapeRecorderState[audioUID] = "Sending";
         notifyListeners();
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          print("wtf");
           scrollController.animateTo(
             scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 800),
+            duration: const Duration(milliseconds: 500),
             curve: Curves.easeOutCubic,
           );
         });
@@ -468,7 +538,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void poke() {
-    _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
+    _firestoreService.sendPoke(
+        this.chatForYouUID, {"sentAt": DateTime.now(), "isExpired": false});
   }
 
   Widget playerButton(String tapeUID, BuildContext context, int index) {
@@ -605,17 +676,17 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       return Row(
         children: [
           Expanded(
-            flex: 1,
+            flex: 2,
             child: Container(),
           ),
-          Expanded(flex: 3, child: senderButton(tapeUID, context, index)),
+          Expanded(flex: 4, child: senderButton(tapeUID, context, index)),
         ],
       );
     } else {
       return Row(
         children: [
           Expanded(
-            flex: 3,
+            flex: 2,
             child: playerButton(tapeUID, context, index),
           ),
           Expanded(

@@ -217,7 +217,7 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
                     ? Icon(
                         PhosphorIcons.circleFill,
                         color: Colors.green,
-                        size: 12,
+                        size: 8,
                       )
                     : SizedBox(),
               ]),
