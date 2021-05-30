@@ -23,7 +23,7 @@ void main() async {
       initialRoute: StartupViewRoute,
       navigatorKey: locator<NavigationService>().navigatorKey,
       title: "Tape",
-      darkTheme: ThemeData(
+      theme: ThemeData(
         primarySwatch: Colors.deepPurple,
         primaryColorDark: Color(0xff444444),
         primaryColorLight: Color(0xff222222),
@@ -33,24 +33,6 @@ void main() async {
         accentColor: Colors.deepPurpleAccent,
         appBarTheme: AppBarTheme(backgroundColor: bgDark, elevation: 0),
         brightness: Brightness.dark,
-        fontFamily: 'DMSans',
-        floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
-      ),
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        primaryColor: Colors.deepPurpleAccent,
-        accentColor: Colors.deepPurpleAccent,
-        primaryTextTheme:
-            TextTheme(headline6: TextStyle(color: Color(0xff212121))),
-        primaryIconTheme: IconThemeData(color: Color(0xff212121)),
-        primaryColorLight: Color(0xffffffff),
-        scaffoldBackgroundColor: bgColor,
-        bottomSheetTheme: BottomSheetThemeData(backgroundColor: bgColor),
-        appBarTheme: AppBarTheme(
-          backgroundColor: bgColor,
-          elevation: 0,
-        ),
-        brightness: Brightness.light,
         fontFamily: 'DMSans',
         floatingActionButtonTheme: FloatingActionButtonThemeData(elevation: 0),
       ),

@@ -7,7 +7,7 @@ import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:crop/crop.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image/image.dart' as ImageCompress;
 import '../app/locator.dart';
 
@@ -21,17 +21,27 @@ class ProfileViewModel extends BaseModel {
   File selectedPic;
   String downloadURL;
   bool uploadingProfilePic = false;
+  String titleName;
 
+  File imageFile;
   final picker = ImagePicker();
-  final cropController = new CropController(
-    aspectRatio: 1,
-  );
 
   ProfileViewModel(String downloadURL) {
     this.downloadURL = downloadURL;
   }
 
   String get myUID => _authenticationService.currentUser.uid;
+
+  Future updateDisplayName(String newName) async {
+    await _firestoreService.saveUserInfo(myUID, {"displayName": newName});
+
+    notifyListeners();
+  }
+
+  updateTitle(name) {
+    titleName = name;
+    notifyListeners();
+  }
 
   Future getImage(BuildContext context) async {
     final pickedFile = await picker.getImage(source: ImageSource.gallery);
@@ -43,97 +53,45 @@ class ProfileViewModel extends BaseModel {
     }
   }
 
-  showCropView(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: Text('Crop Image'),
-            centerTitle: true,
-            actions: <Widget>[
-              TextButton(
-                child: Text(
-                  "Done",
-                  style: TextStyle(
-                      color: Theme.of(context).accentColor, fontSize: 16),
-                ),
-                onPressed: () {
-                  cropImage(context);
-                  Navigator.pop(context);
-                },
-              )
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              children: <Widget>[
-                Expanded(
-                  child: Container(
-                    color: Colors.black,
-                    padding: EdgeInsets.all(8),
-                    child: Crop(
-                      onChanged: (decomposition) {
-                        print(
-                            "Scale : ${decomposition.scale}, Rotation: ${decomposition.rotation}, translation: ${decomposition.translation}");
-                      },
-                      controller: cropController,
-                      shape: BoxShape.rectangle,
-                      child: Image.file(
-                        selectedPic,
-                        fit: BoxFit.cover,
-                      ),
-                      /* It's very important to set `fit: BoxFit.cover`.
-                     Do NOT remove this line.*/
-                      helper: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: <Widget>[
-                    SizedBox(width: 8),
-                    TextButton(
-                      child: Text(
-                        'Reset',
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).iconTheme.color),
-                      ),
-                      onPressed: () {
-                        cropController.rotation = 0;
-                        cropController.scale = 1;
-                        cropController.offset = Offset.zero;
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        fullscreenDialog: true,
-      ),
-    );
+  Future<Null> showCropView(BuildContext context) async {
+    File croppedFile = await ImageCropper.cropImage(
+        compressQuality: 100,
+        sourcePath: selectedPic.path,
+        aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1),
+        androidUiSettings: AndroidUiSettings(
+            cropFrameColor: Colors.white,
+            cropFrameStrokeWidth: 2,
+            showCropGrid: false,
+            toolbarTitle: 'Crop Image',
+            toolbarColor: Colors.black,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            hideBottomControls: true,
+            lockAspectRatio: true),
+        iosUiSettings: IOSUiSettings(
+          rotateClockwiseButtonHidden: true,
+          rotateButtonsHidden: true,
+          resetAspectRatioEnabled: false,
+          aspectRatioLockEnabled: false,
+          minimumAspectRatio: 1,
+          aspectRatioPickerButtonHidden: true,
+          title: 'Crop Image',
+        ));
+
+    if (croppedFile != null) {
+      compressImage(context, croppedFile);
+    }
   }
 
-  Future cropImage(BuildContext context) async {
+  Future compressImage(BuildContext context, File cropped) async {
     uploadingProfilePic = true;
     notifyListeners();
     var tempDir = await getTemporaryDirectory();
     String profilePicPath = '${tempDir.path}/$myUID.jpg';
-    final pixelRatio = MediaQuery.of(context).devicePixelRatio;
-    final cropped = await cropController.crop(pixelRatio: pixelRatio);
+    ImageCompress.Image toResize =
+        ImageCompress.decodeJpg(File(cropped.path).readAsBytesSync());
 
-    var byteData = await cropped.toByteData(format: ui.ImageByteFormat.png);
-    File(profilePicPath).writeAsBytesSync(byteData.buffer.asUint8List());
-
-    final image =
-        ImageCompress.decodeImage(File(profilePicPath).readAsBytesSync());
-
-    final thumbnail = ImageCompress.copyResize(image, width: 500);
+    final thumbnail = ImageCompress.copyResize(toResize, width: 500);
 
     File(profilePicPath).writeAsBytesSync(ImageCompress.encodeJpg(thumbnail));
 

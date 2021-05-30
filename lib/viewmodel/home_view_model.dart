@@ -49,12 +49,14 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Map<String, String> userUIDDYourChatStateMapping = {};
   Map<String, String> userUIDDMyChatStateMapping = {};
   Map<String, bool> userUIDRecordingState = {};
+  Map<String, String> userUIDMoodState = {};
   Map<String, int> userUIDReceivedTapesMapping = {};
   Map<String, DateTime> userUIDReceivedTapesTimeMapping = {};
   Map<String, String> userUIDLastSentTapeStateMapping = {};
   Map<String, DateTime> userUIDLastSentTapeTimeMapping = {};
 
   // streams related to chat
+
   Stream<QuerySnapshot> chatsStream;
   StreamSubscription<QuerySnapshot> chatStreamSubscription;
   List<Stream<QuerySnapshot>> usersChatForMeStreams = [];
@@ -63,6 +65,11 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   List<Stream<QuerySnapshot>> usersChatForYouStreams = [];
   List<StreamSubscription<QuerySnapshot>> usersChatForYouStreamSubscriptions =
       [];
+
+//variables related to home navigation
+
+  int activePage = 0;
+  final pageController = PageController(initialPage: 1);
 
   // variables related to contacts
   List<String> contactsMap = [];
@@ -266,9 +273,14 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
         userUIDRecordingState[data['sender']] = data['isRecording'];
+        userUIDMoodState[data['sender']] = data['mood'];
         notifyListeners();
       }
     }));
+  }
+
+  getUserMood(String uid) {
+    return userUIDMoodState[uid];
   }
 
   @override

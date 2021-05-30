@@ -26,19 +26,20 @@ class HomeView extends StatelessWidget {
           onModelReady: (viewModel) => viewModel.initialise(),
           builder: (context, model, child) {
             return Scaffold(
-              floatingActionButton: ContactsButton(),
+              resizeToAvoidBottomInset: true,
               body: RefreshIndicator(
                 onRefresh: () async {
                   model.refreshPage();
                   return;
                 },
                 child: CustomScrollView(
-                  physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  physics: BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics()),
                   slivers: <Widget>[
                     CustomSliverAppBar(),
                     SliverToBoxAdapter(
                         child: Divider(
-                      height: 1,
+                      height: 16,
                     )),
                     AllChatsView(),
                   ],
@@ -74,25 +75,56 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
       pinned: true,
       stretch: true,
       actions: <Widget>[
-        SizedBox(width: 8),
+        TextButton(
+            onPressed: () async {
+              bool contactPermissionGranted = await getContactPermission();
+              if (contactPermissionGranted) {
+                final myModel =
+                    Provider.of<HomeViewModel>(context, listen: false);
+                showModalBottomSheet<void>(
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    context: context,
+                    enableDrag: true,
+                    builder: (BuildContext context) {
+                      return ListenableProvider.value(
+                        value: myModel,
+                        child: ContactModalSheet(),
+                      );
+                    });
+              } else {
+                final ScaffoldMessengerState scaffoldMessenger =
+                    ScaffoldMessenger.of(context);
+                scaffoldMessenger.showSnackBar(SnackBar(
+                    content: Text("Please grant contact permission.")));
+              }
+            },
+            child: Text(
+              "New Tape",
+              style: TextStyle(fontSize: 16),
+            )),
+        SizedBox(width: 12),
         GestureDetector(
           onTap: viewModel.goToProfileView,
-          child: CircleAvatar(
-            backgroundImage: viewModel.myProfilePic != null
-                ? NetworkImage(viewModel.myProfilePic)
-                : null,
-            radius: 20,
-            child: viewModel.myProfilePic == null
-                ? Text(
-                    viewModel.myDisplayName != null
-                        ? viewModel.myDisplayName[0]
-                        : "",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : null,
+          child: Center(
+            child: CircleAvatar(
+              backgroundImage: viewModel.myProfilePic != null
+                  ? ResizeImage(NetworkImage(viewModel.myProfilePic),
+                      height: 200, width: 200)
+                  : null,
+              radius: 20,
+              child: viewModel.myProfilePic == null
+                  ? Text(
+                      viewModel.myDisplayName != null
+                          ? viewModel.myDisplayName[0]
+                          : "",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+            ),
           ),
         ),
         SizedBox(width: 16),
@@ -125,7 +157,7 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
               uid,
             ),
             Divider(
-              height: 1,
+              height: 16,
               indent: 72,
               endIndent: 16,
             ),
@@ -151,10 +183,18 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
           viewModel.goToContactScreen(yourUID);
         },
         child: ListTile(
+          trailing: Text(
+            viewModel.getUserMood(yourUID) == null
+                ? ""
+                : viewModel.getUserMood(yourUID),
+            style: TextStyle(fontSize: 28),
+          ),
           leading: CircleAvatar(
-            backgroundImage:
-                yourProfilePic != null ? NetworkImage(yourProfilePic) : null,
-            radius: 24,
+            backgroundImage: yourProfilePic != null
+                ? ResizeImage(NetworkImage(yourProfilePic),
+                    width: 200, height: 200)
+                : null,
+            radius: 28,
             child: yourProfilePic == null
                 ? Text(
                     '${yourName[0]}'.toUpperCase(),
@@ -193,39 +233,6 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
   }
 }
 
-class ContactsButton extends ViewModelWidget<HomeViewModel> {
-  ContactsButton() : super(reactive: true);
-
-  @override
-  Widget build(BuildContext context, HomeViewModel viewModel) {
-    return FloatingActionButton(
-      child: Icon(PhosphorIcons.plus),
-      onPressed: () async {
-        bool contactPermissionGranted = await getContactPermission();
-        if (contactPermissionGranted) {
-          final myModel = Provider.of<HomeViewModel>(context, listen: false);
-          showModalBottomSheet<void>(
-              backgroundColor: Colors.transparent,
-              isScrollControlled: true,
-              context: context,
-              enableDrag: true,
-              builder: (BuildContext context) {
-                return ListenableProvider.value(
-                  value: myModel,
-                  child: ContactModalSheet(),
-                );
-              });
-        } else {
-          final ScaffoldMessengerState scaffoldMessenger =
-              ScaffoldMessenger.of(context);
-          scaffoldMessenger.showSnackBar(
-              SnackBar(content: Text("Please grant contact permission.")));
-        }
-      },
-    );
-  }
-}
-
 class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
@@ -246,18 +253,20 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
             ),
             actions: [
               viewModel.isFetchingContacts
-                  ? CircleAvatar(
-                      backgroundColor: Colors.transparent,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ))
+                  ? Center(
+                      child: CircleAvatar(
+                          radius: 12,
+                          backgroundColor: Colors.transparent,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          )),
+                    )
                   : TextButton(
                       onPressed: () {
                         viewModel.refreshContacts();
                       },
                       child: Text("Refresh",
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
                             fontSize: 16,
                           )),
                     ),
