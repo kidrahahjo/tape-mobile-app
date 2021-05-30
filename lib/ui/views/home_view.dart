@@ -225,7 +225,11 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
                         color: Colors.green,
                         size: 8,
                       )
-                    : SizedBox(),
+                    : Icon(
+                        PhosphorIcons.circleFill,
+                        color: Colors.transparent,
+                        size: 8,
+                      ),
               ]),
           subtitle: viewModel.isRecording(yourUID)
               ? Text(
