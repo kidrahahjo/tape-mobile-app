@@ -183,12 +183,18 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
           viewModel.goToContactScreen(yourUID);
         },
         child: ListTile(
-          trailing: Text(
-            viewModel.getUserMood(yourUID) == null
-                ? ""
-                : viewModel.getUserMood(yourUID),
-            style: TextStyle(fontSize: 28),
-          ),
+          trailing: viewModel.showPoke(yourUID)
+              ? Icon(
+                  PhosphorIcons.handWavingFill,
+                  color: Theme.of(context).accentColor,
+                  size: 28,
+                )
+              : Text(
+                  viewModel.getUserMood(yourUID) == null
+                      ? ""
+                      : viewModel.getUserMood(yourUID),
+                  style: TextStyle(fontSize: 28),
+                ),
           leading: CircleAvatar(
             backgroundImage: yourProfilePic != null
                 ? ResizeImage(NetworkImage(yourProfilePic),

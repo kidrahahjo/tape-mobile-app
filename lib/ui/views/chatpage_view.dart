@@ -5,8 +5,6 @@ import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/viewmodel/chat_view_model.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 
-import 'package:flutter_svg/flutter_svg.dart';
-
 class ChatPageView extends StatelessWidget {
   final String yourUID;
   final String yourName;
@@ -16,7 +14,7 @@ class ChatPageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ViewModelBuilder<ChatViewModel>.reactive(
-      viewModelBuilder: () => ChatViewModel(yourUID, yourName),
+      viewModelBuilder: () => ChatViewModel(yourUID, yourName, context),
       builder: (context, model, child) {
         return Scaffold(
           body: Column(children: [
@@ -271,7 +269,6 @@ class MoodButton extends ViewModelWidget<ChatViewModel> {
 class PokeButton extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    viewModel.showPokeSnackBar(context);
     return SizedBox(
         width: 48,
         height: 48,
