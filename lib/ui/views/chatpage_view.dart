@@ -132,19 +132,28 @@ class Footer extends ViewModelWidget<ChatViewModel> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    viewModel.drawerOpen
+                    viewModel.iAmRecording
                         ? Text(
                             "Recording... ${viewModel.recordingTimer}",
                             style: TextStyle(
-                              color: Theme.of(context).accentColor,
-                              fontSize: 14,
+                              color: Colors.white,
                             ),
                           )
                         : Text('Hold to talk',
                             style: TextStyle(color: Colors.grey)),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [PokeButton(), RecordButton(), MoodButton()],
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            PokeButton(),
+                            SizedBox(width: 120),
+                            MoodButton()
+                          ],
+                        ),
+                        RecordButton(),
+                      ],
                     ),
                     SizedBox(height: 0),
                   ],
@@ -219,7 +228,7 @@ class MoodButton extends ViewModelWidget<ChatViewModel> {
                                 emojiSizeMax: 32.0,
                                 verticalSpacing: 0,
                                 horizontalSpacing: 0,
-                                initCategory: Category.SMILEYS,
+                                initCategory: Category.RECENT,
                                 bgColor: Color(0xFF000000),
                                 indicatorColor: Theme.of(context).accentColor,
                                 iconColor: Colors.grey.shade700,
@@ -228,7 +237,7 @@ class MoodButton extends ViewModelWidget<ChatViewModel> {
                                 progressIndicatorColor:
                                     Theme.of(context).accentColor,
                                 showRecentsTab: true,
-                                recentsLimit: 28,
+                                recentsLimit: 48,
                                 noRecentsText: "No Recents",
                                 noRecentsStyle: const TextStyle(
                                     fontSize: 20, color: Colors.grey),
@@ -262,6 +271,7 @@ class MoodButton extends ViewModelWidget<ChatViewModel> {
 class PokeButton extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
+    viewModel.showPokeSnackBar(context);
     return SizedBox(
         width: 48,
         height: 48,
@@ -285,34 +295,111 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
 
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return GestureDetector(
-        onTapDown: (details) {
-          viewModel.startRecording();
-        },
-        onTapUp: (details) {
-          viewModel.stopRecording();
-        },
-        onVerticalDragEnd: (value) {
-          viewModel.stopRecording();
-        },
-        onHorizontalDragEnd: (value) {
-          viewModel.stopRecording();
-        },
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-          height: viewModel.buttonSize,
-          child: RawMaterialButton(
-            shape: CircleBorder(),
-            fillColor: Theme.of(context).accentColor,
-            onPressed: null,
-            child: SvgPicture.asset(
-              tapeIcon,
-              semanticsLabel: 'Tape Logo',
-              height: 44,
-              width: 44,
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      width: viewModel.boxLength,
+      height: 72,
+      decoration: BoxDecoration(
+          color: Colors.grey.shade900,
+          borderRadius: BorderRadius.circular(100)),
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: DragTarget<bool>(onMove: (data) {
+              viewModel.deleteRecording();
+              viewModel.contractBox();
+            }, builder: (context, button, rejects) {
+              return button.length > 0
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: CircleAvatar(
+                          radius: 32,
+                          backgroundColor: Colors.transparent,
+                          child: Icon(
+                            PhosphorIcons.trashFill,
+                            size: 28,
+                            color: Colors.deepOrange,
+                          )),
+                    );
+            }),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: DragTarget<bool>(
+              onMove: (value) {
+                if (viewModel.boxExpanded) {
+                  viewModel.contractBox();
+                  viewModel.stopRecording();
+                }
+              },
+              builder: (context, button, rejects) {
+                return button.length > 0
+                    ? null
+                    : Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: CircleAvatar(
+                            radius: 32,
+                            backgroundColor: Colors.transparent,
+                            child: Icon(
+                              PhosphorIcons.paperPlaneFill,
+                              size: 28,
+                              color: Theme.of(context).accentColor,
+                            )),
+                      );
+              },
             ),
           ),
-        ));
+          Align(
+            alignment: Alignment.center,
+            child: Draggable<bool>(
+              onDragStarted: () {
+                if (!viewModel.boxExpanded) {
+                  viewModel.startRecording();
+                  viewModel.expandBox();
+                }
+              },
+              data: true,
+              axis: Axis.horizontal,
+              feedback: SizedBox(
+                height: 64,
+                width: 64,
+                child: RawMaterialButton(
+                    shape: CircleBorder(),
+                    fillColor: Colors.white,
+                    onPressed: null,
+                    child: Icon(
+                      PhosphorIcons.microphoneFill,
+                      color: Theme.of(context).accentColor,
+                    )),
+              ),
+              child: SizedBox(
+                height: 64,
+                width: 64,
+                child: RawMaterialButton(
+                  shape: CircleBorder(),
+                  fillColor: viewModel.boxExpanded
+                      ? Colors.white
+                      : Theme.of(context).accentColor,
+                  onPressed: null,
+                  child: Icon(
+                    PhosphorIcons.microphoneFill,
+                    color: viewModel.boxExpanded
+                        ? Theme.of(context).accentColor
+                        : Colors.white,
+                  ),
+                ),
+              ),
+              childWhenDragging: CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -47,6 +47,23 @@ class FirestoreService {
         .snapshots();
   }
 
+  Stream<QuerySnapshot> fetchPokesForMe(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("waves")
+        .where("isExpired", isEqualTo: false)
+        .orderBy("sentAt", descending: true)
+        .snapshots();
+  }
+
+  expirePoke(String waveID, String chatUID) {
+    _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .doc(waveID)
+        .set({"isExpired": true}, SetOptions(merge: true));
+  }
+
   Future<QuerySnapshot> getChatsForMe(String chatUID) {
     return _chatsCollectionReference
         .doc(chatUID)
@@ -123,6 +140,6 @@ class FirestoreService {
   }
 
   sendPoke(String chatUID, Map<String, dynamic> data) {
-    _chatsCollectionReference.doc(chatUID).collection("pokes").add(data);
+    _chatsCollectionReference.doc(chatUID).collection("waves").add(data);
   }
 }
