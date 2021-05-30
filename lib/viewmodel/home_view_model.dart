@@ -93,6 +93,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     notifyListeners();
     _pushNotification.initialise(this.myUID);
     await initialiseCache();
+    if (navigateOnStart != null) {
+      goToContactScreen(navigateOnStart);
+    }
     initialiseMyDocumentStream();
     initialiseChatsStream();
 
@@ -149,6 +152,17 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       }
     } catch (e) {
       userUIDNumberMapping = {};
+    }
+    try {
+      userNumberContactNameMapping = Map<String, String>.from(
+          await cache.load('userNumberContactNameMapping'));
+      if (userNumberContactNameMapping == null) {
+        userNumberContactNameMapping = {};
+      } else {
+        notifyListeners();
+      }
+    } catch (e) {
+      userNumberContactNameMapping = {};
     }
   }
 
@@ -209,7 +223,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
           userUIDReceivedTapesTimeMapping[uid] = null;
         } else {
           Map<String, dynamic> data = value.docs.first.data();
-          print(data);
           if (data['isListened']) {
             userUIDReceivedTapesTimeMapping[uid] =
                 convertTimestampToDateTime(data['listenedAt']);
@@ -231,7 +244,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         userUIDLastSentTapeStateMapping[uid] = "Empty";
       } else {
         Map<String, dynamic> data = event.docs.first.data();
-        print(data);
         if (data['isListened'] == true && data['isExpired'] == true) {
           userUIDLastSentTapeStateMapping[uid] = "Reply";
           userUIDLastSentTapeTimeMapping[uid] =
@@ -377,6 +389,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       });
     }
 
+    await cache.write(
+        'userNumberContactNameMapping', userNumberContactNameMapping);
     await cache.write('userUIDContactNameMapping', userUIDContactNameMapping);
     await cache.write('userUIDNumberMapping', userUIDNumberMapping);
     contactsMap.clear();
@@ -388,9 +402,12 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
 
   String getUserName(String uid) {
     String number = userUIDNumberMapping[uid];
-    String contactName = userUIDContactNameMapping[uid];
-    if (contactName != null) {
-      return contactName;
+    String contactNameFromUID = userUIDContactNameMapping[uid];
+    String contactNameFromNumber = userNumberContactNameMapping[number];
+    if (contactNameFromUID != null) {
+      return contactNameFromUID;
+    } else if (contactNameFromNumber != null) {
+      return contactNameFromNumber;
     } else if (number != null) {
       return number;
     } else {

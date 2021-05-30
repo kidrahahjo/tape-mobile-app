@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/services/firebase_storage_service.dart';

@@ -6,15 +6,17 @@ import 'package:tapemobileapp/app/locator.dart';
 import 'package:tapemobileapp/app/routing_constants.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/app/router.dart' as router;
+import 'package:tapemobileapp/utils/notification_utls.dart';
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+Future<void> _onBackgroundMessage(RemoteMessage message) async {
+  await showNotification(message);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
   setupLocator();
-  final bgColor = Color(0xffeeeeee);
   final bgDark = Color(0xff000000);
   runApp(
     MaterialApp(

@@ -15,7 +15,8 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case AuthenticationViewRoute:
       return MaterialPageRoute(builder: (context) => AuthenticationView());
     case HomeViewRoute:
-      Map<String, String> arguments = settings.arguments as Map<String, String>;
+      Map<String, dynamic> arguments =
+          settings.arguments as Map<String, String>;
       return MaterialPageRoute(
           builder: (context) =>
               HomeView(arguments['userUID'], arguments['phoneNumber']));
