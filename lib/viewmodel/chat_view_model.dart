@@ -280,7 +280,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            duration: Duration(seconds: 10),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
             margin: EdgeInsets.fromLTRB(16, 0, 16, 160),

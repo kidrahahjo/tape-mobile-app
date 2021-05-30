@@ -310,6 +310,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     chatStreamSubscription?.cancel();
+    myDocumentStreamSubscription?.cancel();
     _firestoreService.saveUserInfo(myUID, {"isOnline": false});
     for (var stream in usersDocumentsSubscriptions) {
       stream?.cancel;
