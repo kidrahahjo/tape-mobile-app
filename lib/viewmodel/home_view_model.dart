@@ -95,9 +95,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     notifyListeners();
     _pushNotification.initialise(this.myUID);
     await initialiseCache();
-    if (navigateOnStart != null) {
-      goToContactScreen(navigateOnStart);
-    }
     initialiseMyDocumentStream();
     initialiseChatsStream();
 
