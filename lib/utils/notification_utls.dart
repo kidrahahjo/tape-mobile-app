@@ -24,17 +24,12 @@ initialiseChannels() async {
     }
   }
 
-  print(channelsToDelete);
-
   for (String channelID in channelsToDelete) {
     await deleteNotificationChannel(channelID);
   }
   List<String> myChannels = notificationChannels;
-  print(myChannels);
   for (String channelID in myChannels) {
     if (!channelIDs.contains(channelID)) {
-      print(channelID);
-      print(notificationChannelImportanceMapping[channelID].value);
       AndroidNotificationChannel androidNotificationChannel =
           AndroidNotificationChannel(
         channelID,
@@ -77,8 +72,7 @@ Future<void> showNotification(RemoteMessage message) async {
       new IOSInitializationSettings();
   InitializationSettings initializationSettings = new InitializationSettings(
       android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
-  _flutterLocalNotificationsPlugin.initialize(initializationSettings,
-      onSelectNotification: handleOnTap);
+  _flutterLocalNotificationsPlugin.initialize(initializationSettings,);
 
   // Code to send notification
   String channel_id = message.data['notificationChannelID'];
@@ -106,6 +100,7 @@ Future<void> showNotification(RemoteMessage message) async {
           notificationChannelTypeDescriptionMapping[channel_id],
           priority: Priority.max,
           tag: tag,
+          visibility: NotificationVisibility.public,
           groupKey: message.data['notificationTitle'].contains("Tape")
               ? "Tapes"
               : "Waves",
@@ -125,6 +120,9 @@ Future<void> showNotification(RemoteMessage message) async {
     userName = displayName;
   }
 
+  if (userName != null) {
+    userName = userName.split(" ")[0];
+  }
   // push notification
   try {
     _flutterLocalNotificationsPlugin.show(
@@ -140,15 +138,3 @@ Future<void> showNotification(RemoteMessage message) async {
   }
 }
 
-Future<dynamic> handleOnTap(String navigateTo) async {
-  // final NavigationService _navigationService = locator<NavigationService>();
-  // final AuthenticationService _authenticationService = locator<AuthenticationService>();
-  // var payload = jsonDecode(navigateTo);
-  // User currentUser =  _authenticationService.currentUser;
-  // if (currentUser != null) {
-  // if (payload["sendTo"] == "chat") {
-  // code to send to chat screen
-  //_navigationService.navigateReplacementTo(routes.HomeViewRoute, arguments: {"userUID": currentUser.uid, "phoneNumber": currentUser.phoneNumber, "navigateOnStart": payload["data"]["userUID"]});
-  // }
-  // }
-}

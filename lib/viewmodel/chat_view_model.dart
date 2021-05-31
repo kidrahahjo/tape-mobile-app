@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
@@ -31,16 +32,23 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final FirebaseStorageService _firebaseStorageService =
       locator<FirebaseStorageService>();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   //sfx variables
   AudioPlayer player;
   void playSound(String name) async {
-    try {
-      player = AudioPlayer();
-      await player.setAsset('assets/sfx/$name.wav');
-      player.play();
-    } catch (e) {
-      print(e);
+    if (
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.detached ||
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.inactive ||
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.paused) {
+    } else {
+      try {
+        player = AudioPlayer();
+        await player.setAsset('assets/sfx/$name.wav');
+        player.play();
+      } catch (e) {
+        print(e);
+      }
     }
   }
 
@@ -138,6 +146,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
       notifyListeners();
     });
+    flutterLocalNotificationsPlugin.cancel(0, tag: yourUID);
+    flutterLocalNotificationsPlugin.cancel(1, tag: yourUID);
     initialiseStreams();
   }
 
@@ -198,11 +208,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         } else {
           playYourMood = true;
         }
-
-        // Future.delayed(Duration(seconds: 1), () {
-        //   shakeYourMood = false;
-        //   notifyListeners();
-        // });
       }
     });
   }
@@ -415,9 +420,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    player.dispose();
     WidgetsBinding.instance.removeObserver(this);
-
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": null});
     pokesForMeStreamSubscription?.cancel();
@@ -427,6 +430,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     tapesForMeStreamSubscription?.cancel();
     chatStateStreamSubscription?.cancel();
     myTapesSentStateStreamSubscription?.cancel();
+    player?.dispose();
     super.dispose();
   }
 
