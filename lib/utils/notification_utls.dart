@@ -23,12 +23,20 @@ initialiseChannels() async {
       channelsToDelete.add(channel.id);
     }
   }
+
+  print(channelsToDelete);
+  print(channelIDs);
+
   for (String channelID in channelsToDelete) {
+    print(notificationChannels);
     await deleteNotificationChannel(channelID);
   }
-
-  for (String channelID in notificationChannels) {
+  List<String> myChannels = notificationChannels;
+  print(myChannels);
+  for (String channelID in myChannels) {
+    print(channelID);
     if (!channelIDs.contains(channelID)) {
+      print(notificationChannelImportanceMapping[channelID].value);
       AndroidNotificationChannel androidNotificationChannel =
           AndroidNotificationChannel(
         channelID,

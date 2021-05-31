@@ -16,7 +16,7 @@ const Map<String, String> notificationChannelTypeDescriptionMapping = {
 
 const Map<String, Importance> notificationChannelImportanceMapping = {
   "tapes": Importance.max,
-  "waves": Importance.max,
+  "waves": Importance.high,
   "silent": Importance.defaultImportance,
 };
 

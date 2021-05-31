@@ -23,7 +23,6 @@ class HomeView extends StatelessWidget {
         child: ViewModelBuilder<HomeViewModel>.reactive(
           viewModelBuilder: () => HomeViewModel(userUID, phoneNumber),
           fireOnModelReadyOnce: false,
-          onModelReady: (viewModel) => viewModel.initialise(),
           builder: (context, model, child) {
             return Scaffold(
               resizeToAvoidBottomInset: true,

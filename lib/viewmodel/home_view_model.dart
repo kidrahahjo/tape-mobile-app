@@ -104,7 +104,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     } catch (err) {
       contactPermission = false;
     }
-    if (contactsMap.length == 0 && contactPermission) {
+    if (contactPermission) {
       fetchAllContacts();
     }
   }
