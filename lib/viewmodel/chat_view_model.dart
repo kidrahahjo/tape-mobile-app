@@ -134,7 +134,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": yourUID});
     _firestoreService.getChatStateData(chatForYouUID).then((doc) {
-      myMood = doc.get("mood");
+      Map<String, dynamic> data = doc.data();
+      myMood = data["mood"];
 
       notifyListeners();
     });
@@ -182,7 +183,11 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     yourMoodStreamSubscription = yourMoodStream.listen((event) {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
-        yourMood = data["mood"] == null ? null : data["mood"];
+        yourMood = data["mood"] == null
+            ? null
+            : data["mood"] == "heart"
+                ? "❤️"
+                : data["mood"];
 
         // shakeYourMood = true;
         notifyListeners();
@@ -194,7 +199,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
             showGlow = false;
             notifyListeners();
           });
-          playSound(moodEmojiMapping[yourMood]);
+          playSound(moodEmojiMapping[data["mood"]]);
         } else {
           playYourMood = true;
         }

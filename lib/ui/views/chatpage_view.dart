@@ -40,16 +40,25 @@ class ChatPageView extends StatelessWidget {
                           showTwoGlows: true,
                           repeatPauseDuration: Duration(milliseconds: 100),
                           child: Center(
-                            child: model.yourMood == null
-                                ? Icon(
-                                    PhosphorIcons.smiley,
-                                    color: Colors.grey.shade700,
-                                    size: 28,
-                                  )
-                                : Text(
-                                    model.yourMood,
-                                    style: TextStyle(fontSize: 28),
-                                  ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: Colors.black,
+                                  radius: 8,
+                                ),
+                                model.yourMood == null
+                                    ? Icon(
+                                        PhosphorIcons.smiley,
+                                        color: Colors.grey.shade700,
+                                        size: 28,
+                                      )
+                                    : Text(
+                                        model.yourMood,
+                                        style: TextStyle(fontSize: 28),
+                                      ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -63,27 +72,36 @@ class ChatPageView extends StatelessWidget {
                       collapseMode: CollapseMode.pin,
                       centerTitle: true,
                       background: Center(child: ProfilePic(yourName)),
-                      title: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        children: [
-                          Icon(
-                            PhosphorIcons.circleFill,
-                            color: Colors.transparent,
-                            size: 8,
-                          ),
-                          Text(
-                            yourName,
-                            overflow: TextOverflow.fade,
-                          ),
-                          Icon(
-                            PhosphorIcons.circleFill,
-                            color: model.youAreOnline
-                                ? Colors.green
-                                : Colors.transparent,
-                            size: 8,
-                          )
-                        ],
+                      title: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              PhosphorIcons.circleFill,
+                              color: Colors.transparent,
+                              size: 8,
+                            ),
+                            SizedBox(width: 8),
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: Text(
+                                yourName,
+                                maxLines: 1,
+                                overflow: TextOverflow.clip,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(
+                              PhosphorIcons.circleFill,
+                              color: model.youAreOnline
+                                  ? Colors.green
+                                  : Colors.transparent,
+                              size: 8,
+                            )
+                          ],
+                        ),
                       ),
                     ),
                   ),
