@@ -100,7 +100,8 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
             },
             child: Text(
               "New Tape",
-              style: TextStyle(fontSize: 16),
+              style:
+                  TextStyle(fontSize: 16, color: Theme.of(context).accentColor),
             )),
         SizedBox(width: 12),
         GestureDetector(
@@ -130,8 +131,9 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
       ],
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
-          'Chats',
+          'Tapes',
           style: TextStyle(
+            fontSize: 32,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -210,14 +212,21 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
                   )
                 : null,
           ),
-          title: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
+          title: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  viewModel.getUserName(yourUID),
-                  style: TextStyle(),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.75),
+                  child: Text(
+                    viewModel.getUserName(yourUID),
+                    style: TextStyle(),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                SizedBox(width: 8),
                 viewModel.getUserOnlineState(yourUID)
                     ? Icon(
                         PhosphorIcons.circleFill,
@@ -277,6 +286,7 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
                       child: Text("Refresh",
                           style: TextStyle(
                             fontSize: 16,
+                            color: Theme.of(context).accentColor,
                           )),
                     ),
               SizedBox(

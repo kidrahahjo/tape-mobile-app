@@ -177,7 +177,7 @@ class Footer extends ViewModelWidget<ChatViewModel> {
                         : viewModel.pokeSent
                             ? Text('You waved at ${viewModel.yourName}',
                                 style: TextStyle(color: Colors.white))
-                            : Text('Hold to talk',
+                            : Text('Tap to talk',
                                 style: TextStyle(color: Colors.grey)),
                     Stack(
                       alignment: Alignment.center,

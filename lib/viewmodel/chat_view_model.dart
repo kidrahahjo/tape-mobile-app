@@ -18,6 +18,7 @@ import 'package:tapemobileapp/services/firebase_storage_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:progress_indicators/progress_indicators.dart';
 
 class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   // Variables related to services
@@ -310,21 +311,38 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     tapesForMeStreamSubscription = tapesForMeStream.listen((event) {
       event.docs.forEach((element) {
         if (!allTapes.contains(element.id)) {
+          yourTapes.add(element.id);
           if (allTapes.length == 0) {
             gapBetweenShouts[element.id] = 4;
             bubbleTail[element.id] = 4;
           } else {
-            if (yourTapes.contains(allTapes.last)) {
+            String lastTape = allTapes.last;
+            if (lastTape == "Recording") {
+              bubbleTail[element.id] = 32;
+              allTapes.removeLast();
+              gapBetweenShouts["Recording"] = 4;
+              lastTape = allTapes.last;
+              if (yourTapes.contains(lastTape)) {
+                bubbleTail[lastTape] = 32;
+                gapBetweenShouts[element.id] = 4;
+              } else {
+                bubbleTail[lastTape] = 4;
+                gapBetweenShouts[element.id] = 16;
+              }
+              allTapes.add(element.id);
+              allTapes.add("Recording");
+              notifyListeners();
+            } else if (yourTapes.contains(allTapes.last)) {
               gapBetweenShouts[element.id] = 4;
               bubbleTail[element.id] = 4;
               bubbleTail[allTapes.last] = 32;
+              allTapes.add(element.id);
             } else {
               gapBetweenShouts[element.id] = 16;
               bubbleTail[element.id] = 4;
+              allTapes.add(element.id);
             }
           }
-          allTapes.add(element.id);
-          yourTapes.add(element.id);
           Map<String, dynamic> data = element.data();
           tapesByDateTime[element.id] =
               convertTimestampToDateTime(data['sentAt']);
@@ -346,9 +364,34 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     chatStateStreamSubscription = chatStateStream.listen((event) {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
-        this.youAreRecording =
+        bool recording =
             data['isRecording'] != null ? data['isRecording'] : false;
-        notifyListeners();
+        if (recording != youAreRecording) {
+          youAreRecording = recording;
+          if (recording == false) {
+            allTapes.remove("Recording");
+            if (yourTapes.contains(allTapes.last)) {
+              bubbleTail[allTapes.last] = 4;
+            }
+            notifyListeners();
+          } else if (!allTapes.contains("Recording")) {
+            if (yourTapes.contains(allTapes.last)) {
+              gapBetweenShouts["Recording"] = 4;
+              bubbleTail[allTapes.last] = 32;
+            } else {
+              gapBetweenShouts["Recording"] = 16;
+            }
+            allTapes.add("Recording");
+            notifyListeners();
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              scrollController.animateTo(
+                scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+              );
+            });
+          }
+        }
       }
     });
   }
@@ -421,15 +464,28 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           gapBetweenShouts[audioUID] = 4;
         } else {
           String lastTape = allTapes.last;
+          if (lastTape == "Recording") {
+            allTapes.removeLast();
+            gapBetweenShouts["Recording"] = 16;
+            lastTape = allTapes.last;
+            if (yourTapes.contains(allTapes.last)) {
+              bubbleTail[allTapes.last] = 4;
+            } else {
+              bubbleTail[allTapes.last] = 32;
+            }
+            allTapes.add(audioUID);
+            allTapes.add("Recording");
+          } else {
+            allTapes.add(audioUID);
+          }
           if (yourTapes.contains(lastTape)) {
             gapBetweenShouts[audioUID] = 16;
           } else {
             gapBetweenShouts[audioUID] = 4;
-
             bubbleTail[allTapes.last] = 32;
+            bubbleTail[audioUID] = 4;
           }
         }
-        allTapes.add(audioUID);
         tapeRecorderState[audioUID] = "Sending";
         notifyListeners();
         SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -709,19 +765,40 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
                               ])));
   }
 
+  Widget recordingIndicator(BuildContext context) {
+    return Container(
+        height: 52,
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(32),
+                topRight: Radius.circular(32),
+                bottomLeft: Radius.circular(4),
+                bottomRight: Radius.circular(32)),
+            color: Colors.grey.shade900),
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(PhosphorIcons.microphoneFill,
+                  color: Theme.of(context).accentColor, size: 20),
+              SizedBox(width: 12),
+              Text("Recording"),
+              SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: JumpingDotsProgressIndicator(
+                  fontSize: 20,
+                  color: Colors.white,
+                  dotSpacing: 2,
+                ),
+              ),
+            ]));
+  }
+
   Widget showTape(int index, BuildContext context) {
     String tapeUID = allTapes.elementAt(index);
-    if (!yourTapes.contains(tapeUID)) {
-      return Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Container(),
-          ),
-          Expanded(flex: 4, child: senderButton(tapeUID, context, index)),
-        ],
-      );
-    } else {
+    if (yourTapes.contains(tapeUID)) {
       return Row(
         children: [
           Expanded(
@@ -732,6 +809,26 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
             flex: 1,
             child: Container(),
           ),
+        ],
+      );
+    } else if (tapeUID == "Recording") {
+      return Row(
+        children: [
+          Expanded(flex: 2, child: recordingIndicator(context)),
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+        ],
+      );
+    } else {
+      return Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+          Expanded(flex: 2, child: senderButton(tapeUID, context, index)),
         ],
       );
     }
