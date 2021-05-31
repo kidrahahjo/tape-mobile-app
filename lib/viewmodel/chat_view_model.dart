@@ -35,9 +35,13 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   //sfx variables
   AudioPlayer player;
   void playSound(String name) async {
-    player = AudioPlayer();
-    await player.setAsset('assets/sfx/$name.wav');
-    player.play();
+    try {
+      player = AudioPlayer();
+      await player.setAsset('assets/sfx/$name.wav');
+      player.play();
+    } catch (e) {
+      print(e);
+    }
   }
 
   // Tape related variables
@@ -76,9 +80,11 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   double buttonSize = 64;
   String myMood, yourMood;
   bool shakeYourMood = false;
+  bool playYourMood = false;
+  bool showGlow = false;
   Map<dynamic, String> moodEmojiMapping = {
     "😂": "Face With Tears of Joy",
-    "❤️": "Heavy Black Heart",
+    "heart": "Heavy Black Heart",
     "😢": "Crying Face",
     "😱": "Face Screaming in Fear",
     "💋": "Kiss Mark",
@@ -137,7 +143,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   initialiseStreams() async {
     await getInitialChatData();
-    await getMood();
+    await getMyMood();
     enableYourDocumentStream();
     enableYourMoodStream();
     enableTapesForMeStream();
@@ -164,35 +170,49 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   bool get iAmRecording => _chatService.isRecordingShout;
 
   updateMyMood(String emoji) async {
-    await _firestoreService.updateChatState(chatForYouUID, {"mood": emoji});
-    await _firestoreService
-        .getChatStateData(chatForYouUID)
-        .then((doc) => {myMood = doc.get("mood")});
+    await _firestoreService.updateChatState(
+        chatForYouUID, {"mood": emoji, "lastMoodModifiedAt": DateTime.now()});
+    myMood = emoji == "heart" ? "❤️" : emoji;
+    playSound(moodEmojiMapping[emoji]);
     notifyListeners();
   }
 
   enableYourMoodStream() {
     yourMoodStream = _firestoreService.getChatState(chatForMeUID);
     yourMoodStreamSubscription = yourMoodStream.listen((event) {
-      if (event.get("mood") != yourMood) {
+      if (event.exists) {
         Map<String, dynamic> data = event.data();
         yourMood = data["mood"] == null ? null : data["mood"];
 
-        shakeYourMood = true;
+        // shakeYourMood = true;
         notifyListeners();
-        playSound(moodEmojiMapping[yourMood]);
-        Future.delayed(Duration(seconds: 1), () {
-          shakeYourMood = false;
+
+        if (playYourMood == true) {
+          showGlow = true;
           notifyListeners();
-        });
+          Future.delayed(Duration(milliseconds: 1500), () {
+            showGlow = false;
+            notifyListeners();
+          });
+          playSound(moodEmojiMapping[yourMood]);
+        } else {
+          playYourMood = true;
+        }
+
+        // Future.delayed(Duration(seconds: 1), () {
+        //   shakeYourMood = false;
+        //   notifyListeners();
+        // });
       }
     });
   }
 
-  getMood() async {
-    await _firestoreService
-        .getChatStateData(chatForMeUID)
-        .then((value) => yourMood = value.get("mood"));
+  getMyMood() async {
+    await _firestoreService.getChatStateData(chatForYouUID).then((value) {
+      Map<String, dynamic> data = value.data();
+      myMood = data["mood"] == "heart" ? "❤️" : data["mood"];
+      notifyListeners();
+    });
   }
 
   getInitialChatData() async {
@@ -395,6 +415,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    player.dispose();
     WidgetsBinding.instance.removeObserver(this);
 
     _firestoreService.saveUserInfo(

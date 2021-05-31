@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:tapemobileapp/app/locator.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
@@ -18,7 +20,9 @@ class PushNotification {
       sound: true,
     );
 
-     await initialiseChannels();
+    if (Platform.isAndroid) {
+      await initialiseChannels();
+    }
 
     if (setting.authorizationStatus == AuthorizationStatus.authorized) {
       _firebaseMessaging.getToken().then((token) {

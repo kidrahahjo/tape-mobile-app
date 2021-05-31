@@ -25,17 +25,15 @@ initialiseChannels() async {
   }
 
   print(channelsToDelete);
-  print(channelIDs);
 
   for (String channelID in channelsToDelete) {
-    print(notificationChannels);
     await deleteNotificationChannel(channelID);
   }
   List<String> myChannels = notificationChannels;
   print(myChannels);
   for (String channelID in myChannels) {
-    print(channelID);
     if (!channelIDs.contains(channelID)) {
+      print(channelID);
       print(notificationChannelImportanceMapping[channelID].value);
       AndroidNotificationChannel androidNotificationChannel =
           AndroidNotificationChannel(
@@ -108,7 +106,9 @@ Future<void> showNotification(RemoteMessage message) async {
           notificationChannelTypeDescriptionMapping[channel_id],
           priority: Priority.max,
           tag: tag,
-          groupKey: message.data['notificationTitle'].contains("Tape") ? "Tapes" : "Waves",
+          groupKey: message.data['notificationTitle'].contains("Tape")
+              ? "Tapes"
+              : "Waves",
           channelAction: AndroidNotificationChannelAction.createIfNotExists);
   IOSNotificationDetails iosNotificationDetails = new IOSNotificationDetails();
   NotificationDetails notificationDetails = new NotificationDetails(

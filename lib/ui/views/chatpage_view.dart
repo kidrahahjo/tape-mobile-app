@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/viewmodel/chat_view_model.dart';
+import 'package:avatar_glow/avatar_glow.dart';
 
 class ChatPageView extends StatelessWidget {
   final String yourUID;
@@ -26,19 +27,32 @@ class ChatPageView extends StatelessWidget {
                   SliverAppBar(
                     expandedHeight: 250,
                     actions: [
-                      Center(
-                        child: model.yourMood == null
-                            ? Icon(
-                                PhosphorIcons.smiley,
-                                color: Colors.grey.shade700,
-                                size: 28,
-                              )
-                            : Text(
-                                model.yourMood,
-                                style: TextStyle(fontSize: 28),
-                              ),
+                      SizedBox(
+                        height: 64,
+                        width: 64,
+                        child: AvatarGlow(
+                          animate: model.showGlow,
+                          curve: Curves.easeOutCubic,
+                          glowColor: Colors.white,
+                          endRadius: 32.0,
+                          duration: Duration(milliseconds: 1500),
+                          repeat: false,
+                          showTwoGlows: true,
+                          repeatPauseDuration: Duration(milliseconds: 100),
+                          child: Center(
+                            child: model.yourMood == null
+                                ? Icon(
+                                    PhosphorIcons.smiley,
+                                    color: Colors.grey.shade700,
+                                    size: 28,
+                                  )
+                                : Text(
+                                    model.yourMood,
+                                    style: TextStyle(fontSize: 28),
+                                  ),
+                          ),
+                        ),
                       ),
-                      SizedBox(width: 16)
                     ],
                     leading: IconButton(
                         onPressed: () => model.backToHome(),
@@ -236,15 +250,15 @@ class MoodButton extends ViewModelWidget<ChatViewModel> {
                                   viewModel.updateMyMood(viewModel
                                       .moodEmojiMapping.keys
                                       .toList()[index]);
-                                  viewModel.playSound(
-                                      viewModel.moodEmojiMapping[viewModel
-                                          .moodEmojiMapping.keys
-                                          .toList()[index]]);
                                 },
                                 shape: CircleBorder(),
                                 child: Text(
                                   viewModel.moodEmojiMapping.keys
-                                      .toList()[index],
+                                              .toList()[index] ==
+                                          "heart"
+                                      ? "❤️"
+                                      : viewModel.moodEmojiMapping.keys
+                                          .toList()[index],
                                   style: TextStyle(fontSize: 40),
                                 ),
                               );

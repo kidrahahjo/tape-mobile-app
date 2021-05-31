@@ -303,7 +303,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   }
 
   getUserMood(String uid) {
-    return userUIDMoodState[uid];
+    return userUIDMoodState[uid] == "heart" ? "❤️" : userUIDMoodState[uid];
   }
 
   @override
