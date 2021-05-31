@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:progress_indicators/progress_indicators.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/viewmodel/chat_view_model.dart';
 import 'package:avatar_glow/avatar_glow.dart';
@@ -169,7 +170,7 @@ class Footer extends ViewModelWidget<ChatViewModel> {
                   children: [
                     viewModel.iAmRecording
                         ? Text(
-                            "Recording... ${viewModel.recordingTimer}",
+                            "${viewModel.recordingTimer}",
                             style: TextStyle(
                               color: Colors.white,
                             ),
@@ -416,9 +417,13 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
                     shape: CircleBorder(),
                     fillColor: Colors.white,
                     onPressed: null,
-                    child: Icon(
-                      PhosphorIcons.microphoneFill,
-                      color: Theme.of(context).accentColor,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+                      child: JumpingDotsProgressIndicator(
+                        fontSize: 24,
+                        color: Theme.of(context).accentColor,
+                        // dotSpacing: 2,
+                      ),
                     )),
               ),
               child: SizedBox(
@@ -430,12 +435,19 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
                       ? Colors.white
                       : Theme.of(context).accentColor,
                   onPressed: null,
-                  child: Icon(
-                    PhosphorIcons.microphoneFill,
-                    color: viewModel.boxExpanded
-                        ? Theme.of(context).accentColor
-                        : Colors.white,
-                  ),
+                  child: viewModel.boxExpanded
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+                          child: JumpingDotsProgressIndicator(
+                            fontSize: 24,
+                            color: Theme.of(context).accentColor,
+                            // dotSpacing: 2,
+                          ),
+                        )
+                      : Icon(
+                          PhosphorIcons.microphoneFill,
+                          color: Colors.white,
+                        ),
                 ),
               ),
               childWhenDragging: CircleAvatar(
