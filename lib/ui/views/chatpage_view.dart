@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/viewmodel/chat_view_model.dart';
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 
 class ChatPageView extends StatelessWidget {
   final String yourUID;
@@ -204,48 +203,55 @@ class MoodButton extends ViewModelWidget<ChatViewModel> {
                 enableDrag: true,
                 builder: (BuildContext context) {
                   return Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SafeArea(
-                            child: SizedBox(
-                          height: 320,
-                          child: EmojiPicker(
-                            onEmojiSelected: (category, emoji) {
-                              viewModel.updateMyMood(emoji.emoji);
-                              Navigator.pop(context);
-                              // Do something when emoji is tapped
-                            },
-                            // onBackspacePressed: () {
-                            //   // Backspace-Button tapped logic
-                            //   // Remove this line to also remove the button in the UI
-                            // },
-                            config: Config(
-                                columns: 8,
-                                emojiSizeMax: 32.0,
-                                verticalSpacing: 0,
-                                horizontalSpacing: 0,
-                                initCategory: Category.RECENT,
-                                bgColor: Color(0xFF000000),
-                                indicatorColor: Theme.of(context).accentColor,
-                                iconColor: Colors.grey.shade700,
-                                iconColorSelected:
-                                    Theme.of(context).accentColor,
-                                progressIndicatorColor:
-                                    Theme.of(context).accentColor,
-                                showRecentsTab: true,
-                                recentsLimit: 48,
-                                noRecentsText: "No Recents",
-                                noRecentsStyle: const TextStyle(
-                                    fontSize: 20, color: Colors.grey),
-                                categoryIcons: const CategoryIcons(),
-                                buttonMode: ButtonMode.CUPERTINO),
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        AppBar(
+                          automaticallyImplyLeading: false,
+                          centerTitle: false,
+                          title: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 12,
+                            children: [
+                              Text("React with earmojis"),
+                              Icon(
+                                PhosphorIcons.speakerSimpleHighFill,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ],
                           ),
-                        )),
-                      ],
-                    ),
-                  );
+                        ),
+                        Container(
+                          height: 360,
+                          child: GridView.builder(
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: viewModel.moodEmojiMapping.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 5),
+                            itemBuilder: (context, index) {
+                              return RawMaterialButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  viewModel.updateMyMood(viewModel
+                                      .moodEmojiMapping.keys
+                                      .toList()[index]);
+                                  viewModel.playSound(
+                                      viewModel.moodEmojiMapping[viewModel
+                                          .moodEmojiMapping.keys
+                                          .toList()[index]]);
+                                },
+                                shape: CircleBorder(),
+                                child: Text(
+                                  viewModel.moodEmojiMapping.keys
+                                      .toList()[index],
+                                  style: TextStyle(fontSize: 40),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ]));
                 });
           },
           child: CircleAvatar(

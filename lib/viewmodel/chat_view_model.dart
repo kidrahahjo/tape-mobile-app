@@ -16,6 +16,7 @@ import 'package:tapemobileapp/services/chat_service.dart';
 import 'package:tapemobileapp/services/firebase_storage_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
+import 'package:just_audio/just_audio.dart';
 
 class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final String yourUID;
@@ -30,6 +31,14 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final FirebaseStorageService _firebaseStorageService =
       locator<FirebaseStorageService>();
+
+  //sfx variables
+  AudioPlayer player;
+  void playSound(String name) async {
+    player = AudioPlayer();
+    await player.setAsset('assets/sfx/$name.wav');
+    player.play();
+  }
 
   // Tape related variables
   bool youAreOnline = false;
@@ -66,6 +75,29 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   bool drawerOpen = false;
   double buttonSize = 64;
   String myMood, yourMood;
+  bool shakeYourMood = false;
+  Map<String, String> moodEmojiMapping = {
+    "😂": "Face With Tears of Joy",
+    "❤️": "Heavy Black Heart",
+    "😢": "Crying Face",
+    "😱": "Face Screaming in Fear",
+    "💋": "Kiss Mark",
+    "💩": "Pile of Poo",
+    "😘": "Face Throwing a Kiss",
+    "😒": "Unamused Face",
+    "😍": "Smiling Face With Heart-Shaped Eyes",
+    "😡": "Pouting Face",
+    "😳": "Flushed Face",
+    "😐": "Neutral Face",
+    "👌": "OK Hand Sign",
+    "😉": "Winking Face",
+    "😕": "Confused Face",
+    "👍": "Thumbs Up Sign",
+    "😔": "Disappointed Face",
+    "😃": "Smiling Face With Open Mouth",
+    "😎": "Smirking Face",
+    "😄": "Smiling Face With Open Mouth and Smiling Eyes"
+  };
 
 //recording widget related variables
   double boxLength = 72;
@@ -105,6 +137,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   initialiseStreams() async {
     await getInitialChatData();
+    await getMood();
     enableYourDocumentStream();
     enableYourMoodStream();
     enableTapesForMeStream();
@@ -141,12 +174,25 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   enableYourMoodStream() {
     yourMoodStream = _firestoreService.getChatState(chatForMeUID);
     yourMoodStreamSubscription = yourMoodStream.listen((event) {
-      if (event.exists) {
+      if (event.get("mood") != yourMood) {
         Map<String, dynamic> data = event.data();
         yourMood = data["mood"] == null ? null : data["mood"];
+
+        shakeYourMood = true;
         notifyListeners();
+        playSound(moodEmojiMapping[yourMood]);
+        Future.delayed(Duration(seconds: 1), () {
+          shakeYourMood = false;
+          notifyListeners();
+        });
       }
     });
+  }
+
+  getMood() async {
+    await _firestoreService
+        .getChatStateData(chatForMeUID)
+        .then((value) => yourMood = value.get("mood"));
   }
 
   getInitialChatData() async {
