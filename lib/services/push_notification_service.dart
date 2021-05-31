@@ -18,7 +18,7 @@ class PushNotification {
       sound: true,
     );
 
-    //  await initialiseChannels();
+     await initialiseChannels();
 
     if (setting.authorizationStatus == AuthorizationStatus.authorized) {
       _firebaseMessaging.getToken().then((token) {

@@ -108,7 +108,8 @@ Future<void> showNotification(RemoteMessage message) async {
           notificationChannelTypeDescriptionMapping[channel_id],
           priority: Priority.max,
           tag: tag,
-          channelAction: AndroidNotificationChannelAction.update);
+          groupKey: message.data['notificationTitle'].contains("Tape") ? "Tapes" : "Waves",
+          channelAction: AndroidNotificationChannelAction.createIfNotExists);
   IOSNotificationDetails iosNotificationDetails = new IOSNotificationDetails();
   NotificationDetails notificationDetails = new NotificationDetails(
       android: androidNotificationDetails, iOS: iosNotificationDetails);
@@ -123,10 +124,11 @@ Future<void> showNotification(RemoteMessage message) async {
   if (userName == null) {
     userName = displayName;
   }
+
   // push notification
   try {
     _flutterLocalNotificationsPlugin.show(
-      0,
+      message.data['notificationTitle'].contains("Tape") ? 0 : 1,
       userName + " " + message.data['notificationTitle'],
       message.data['notificationBody'],
       notificationDetails,

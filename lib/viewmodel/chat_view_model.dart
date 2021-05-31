@@ -76,7 +76,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   double buttonSize = 64;
   String myMood, yourMood;
   bool shakeYourMood = false;
-  Map<String, String> moodEmojiMapping = {
+  Map<dynamic, String> moodEmojiMapping = {
     "😂": "Face With Tears of Joy",
     "❤️": "Heavy Black Heart",
     "😢": "Crying Face",
