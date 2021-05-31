@@ -323,28 +323,28 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     pokesForMeStream = _firestoreService.fetchPokesForMe(chatForMeUID);
     pokesForMeStreamSubscription = pokesForMeStream.listen((event) {
       if (event.docs.length > 0) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-            margin: EdgeInsets.fromLTRB(16, 0, 16, 160),
-            backgroundColor: Theme.of(context).accentColor,
-            behavior: SnackBarBehavior.floating,
-            content: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(PhosphorIcons.handWavingFill),
-                SizedBox(width: 8),
-                Text(
-                  "$yourName waved at you!",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        );
+        // ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     shape:
+        //         RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        //     margin: EdgeInsets.fromLTRB(16, 0, 16, 160),
+        //     backgroundColor: Theme.of(context).accentColor,
+        //     behavior: SnackBarBehavior.floating,
+        //     content: Row(
+        //       crossAxisAlignment: CrossAxisAlignment.center,
+        //       mainAxisAlignment: MainAxisAlignment.center,
+        //       children: [
+        //         Icon(PhosphorIcons.handWavingFill),
+        //         SizedBox(width: 8),
+        //         Text(
+        //           "$yourName waved at you!",
+        //           style: TextStyle(fontSize: 16, color: Colors.white),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // );
       }
       event.docs.forEach((element) {
         _firestoreService.expirePoke(element.id, chatForMeUID);
@@ -372,7 +372,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   backToHome() {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    // ScaffoldMessenger.of(context).hideCurrentSnackBar();
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": null});
     _chatService.suspendPlaying();
