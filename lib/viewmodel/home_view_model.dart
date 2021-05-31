@@ -34,7 +34,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   final PushNotification _pushNotification = locator<PushNotification>();
 
   // variables related to users
-  Map<String, String> userUIDDisplayNameMapping = {};
   Map<String, String> userUIDNumberMapping = {};
   Map<String, bool> userUIDOnlineMapping = {};
   Map<String, String> userUIDProfilePicMapping = {};
@@ -46,9 +45,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   // variables related to chat
   List<String> chatsList = [];
   List<String> userUIDs = [];
-  Map<String, String> userUIDDYourChatStateMapping = {};
   Map<String, bool> userUIDWaveMapping = {};
-  Map<String, String> userUIDDMyChatStateMapping = {};
   Map<String, bool> userUIDRecordingState = {};
   Map<String, String> userUIDMoodState = {};
   Map<String, int> userUIDReceivedTapesMapping = {};
@@ -68,11 +65,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   List<Stream<QuerySnapshot>> usersPokeStreams = [];
   List<StreamSubscription<QuerySnapshot>> usersPokeStreamsSubscriptions = [];
 
-//variables related to home navigation
-
-  int activePage = 0;
-  final pageController = PageController(initialPage: 1);
-
   // variables related to contacts
   List<String> contactsMap = [];
   bool isFetchingContacts = false;
@@ -85,14 +77,82 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     initialise();
   }
 
+  // Override methods
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    chatStreamSubscription?.cancel();
+    myDocumentStreamSubscription?.cancel();
+    _firestoreService.saveUserInfo(myUID, {"isOnline": false});
+    for (var stream in usersDocumentsSubscriptions) {
+      stream?.cancel;
+    }
+    for (var stream in usersChatForMeStreamSubscriptions) {
+      stream?.cancel;
+    }
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached ||
+        state == AppLifecycleState.inactive) {
+      _firestoreService.saveUserInfo(myUID, {"isOnline": false});
+    } else if (state == AppLifecycleState.resumed) {
+      _firestoreService.saveUserInfo(myUID, {"isOnline": true});
+    }
+    super.didChangeAppLifecycleState(state);
+  }
+
+  // Getters
   bool isRecording(String userUID) {
     return userUIDRecordingState[userUID] == null
         ? false
         : userUIDRecordingState[userUID];
   }
 
+  String getUserMood(String uid) {
+    return userUIDMoodState[uid] == "heart" ? "❤️" : userUIDMoodState[uid];
+  }
+
+  String getProfilePic(String uid) {
+    String downloadURL = userUIDProfilePicMapping[uid];
+    return downloadURL;
+  }
+
+  String getUserName(String uid) {
+    String number = userUIDNumberMapping[uid];
+    String contactNameFromUID = userUIDContactNameMapping[uid];
+    String contactNameFromNumber = userNumberContactNameMapping[number];
+    if (contactNameFromUID != null) {
+      return contactNameFromUID;
+    } else if (contactNameFromNumber != null) {
+      return contactNameFromNumber;
+    } else if (number != null) {
+      return number;
+    } else {
+      return "";
+    }
+  }
+
+  bool getUserOnlineState(String uid) {
+    return userUIDOnlineMapping[uid] == null
+        ? false
+        : userUIDOnlineMapping[uid];
+  }
+
+  String getPhoneNumber(String uid) {
+    return userUIDNumberMapping[uid] != null ? userUIDNumberMapping[uid] : "";
+  }
+
+  bool showPoke(String yourUID) {
+    return userUIDWaveMapping[yourUID] == null
+        ? false
+        : userUIDWaveMapping[yourUID];
+  }
+
+  // Streams
   void initialise() async {
-    notifyListeners();
     _pushNotification.initialise(this.myUID);
     await initialiseCache();
     initialiseMyDocumentStream();
@@ -279,7 +339,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     usersDocumentsSubscriptions.add(userStream.listen((event) {
       if (event.exists) {
         Map<String, dynamic> data = event.data();
-        userUIDDisplayNameMapping[uid] = data['displayName'];
         userUIDNumberMapping[uid] = data['phoneNumber'];
         userUIDOnlineMapping[uid] = data['isOnline'];
         userUIDProfilePicMapping[uid] = data['displayImageURL'];
@@ -302,41 +361,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }));
   }
 
-  getUserMood(String uid) {
-    return userUIDMoodState[uid] == "heart" ? "❤️" : userUIDMoodState[uid];
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    chatStreamSubscription?.cancel();
-    myDocumentStreamSubscription?.cancel();
-    _firestoreService.saveUserInfo(myUID, {"isOnline": false});
-    for (var stream in usersDocumentsSubscriptions) {
-      stream?.cancel;
-    }
-    for (var stream in usersChatForMeStreamSubscriptions) {
-      stream?.cancel;
-    }
-    super.dispose();
-  }
-
-  String getProfilePic(String uid) {
-    String downloadURL = userUIDProfilePicMapping[uid];
-    return downloadURL;
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached ||
-        state == AppLifecycleState.inactive) {
-      _firestoreService.saveUserInfo(myUID, {"isOnline": false});
-    } else if (state == AppLifecycleState.resumed) {
-      _firestoreService.saveUserInfo(myUID, {"isOnline": true});
-    }
-    super.didChangeAppLifecycleState(state);
-  }
-
+  // Methods related to contact fetching
   String refactorPhoneNumber(String phone) {
     phone = phone.replaceAll(" ", "");
     if (phone.startsWith('+91')) {
@@ -412,34 +437,6 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     isFetchingContacts = false;
   }
 
-  String getUserName(String uid) {
-    String number = userUIDNumberMapping[uid];
-    String contactNameFromUID = userUIDContactNameMapping[uid];
-    String contactNameFromNumber = userNumberContactNameMapping[number];
-    if (contactNameFromUID != null) {
-      return contactNameFromUID;
-    } else if (contactNameFromNumber != null) {
-      return contactNameFromNumber;
-    } else if (number != null) {
-      return number;
-    } else {
-      return "";
-    }
-  }
-
-  bool getUserOnlineState(String uid) {
-    return userUIDOnlineMapping[uid] == null
-        ? false
-        : userUIDOnlineMapping[uid];
-  }
-
-  void signOut() async {
-    bool signedOut = await _authenticationService.signOutUser();
-    if (signedOut) {
-      _navigationService.navigateReplacementTo(routes.StartupViewRoute);
-    }
-  }
-
   void refreshContacts() async {
     bool contactPermission = false;
     try {
@@ -452,35 +449,23 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }
   }
 
-  String getPhoneNumber(String uid) {
-    return userUIDNumberMapping[uid] != null ? userUIDNumberMapping[uid] : "";
+  // Other methods
+  void signOut() async {
+    bool signedOut = await _authenticationService.signOutUser();
+    if (signedOut) {
+      _navigationService.navigateReplacementTo(routes.StartupViewRoute);
+    }
   }
 
   popIt() {
     _navigationService.goBack();
   }
 
-  Icon showChatState(String yourUID) {
-    String myState = userUIDDMyChatStateMapping[yourUID];
-    String yourState = userUIDDYourChatStateMapping[yourUID];
-    if (myState == 'Received') {
-      return Icon(
-        PhosphorIcons.playFill,
-        color: Colors.deepPurpleAccent,
-      );
-    } else if ((myState == null || myState == 'Played') && yourState == null) {
-      return null;
-    } else if (yourState == 'Received') {
-      return Icon(
-        PhosphorIcons.paperPlane,
-        color: Colors.grey,
-      );
-    } else if (yourState == 'Played') {
-      return Icon(PhosphorIcons.speakerSimpleHigh, color: Colors.grey);
-    }
-    return null;
+  refreshPage() {
+    notifyListeners();
   }
 
+  // Navigation related methods
   void goToContactScreen(String uid, {bool fromContacts: false}) async {
     bool microphonePermission = await getMicrophonePermission();
     bool storagePermission = await getStoragePermission();
@@ -498,10 +483,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         arguments: {"downloadURL": myProfilePic, "displayName": myDisplayName});
   }
 
-  refreshPage() {
-    notifyListeners();
-  }
-
+  // UI
   Widget getSubtitle(String yourUID, BuildContext context) {
     int receivedTapes = userUIDReceivedTapesMapping[yourUID] == null
         ? 0
@@ -593,11 +575,5 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
                         ],
                       )
                     : Text("Tap to Tape");
-  }
-
-  bool showPoke(String yourUID) {
-    return userUIDWaveMapping[yourUID] == null
-        ? false
-        : userUIDWaveMapping[yourUID];
   }
 }

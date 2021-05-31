@@ -47,16 +47,22 @@ class ChatPageView extends StatelessWidget {
                                   backgroundColor: Colors.black,
                                   radius: 8,
                                 ),
-                                model.yourMood == null
+                                model.showPoke
                                     ? Icon(
-                                        PhosphorIcons.smiley,
-                                        color: Colors.grey.shade700,
+                                        PhosphorIcons.handWavingFill,
+                                        color: Theme.of(context).accentColor,
                                         size: 28,
                                       )
-                                    : Text(
-                                        model.yourMood,
-                                        style: TextStyle(fontSize: 28),
-                                      ),
+                                    : model.yourMood == null
+                                        ? Icon(
+                                            PhosphorIcons.smiley,
+                                            color: Colors.grey.shade700,
+                                            size: 28,
+                                          )
+                                        : Text(
+                                            model.yourMood,
+                                            style: TextStyle(fontSize: 28),
+                                          ),
                               ],
                             ),
                           ),
@@ -168,8 +174,11 @@ class Footer extends ViewModelWidget<ChatViewModel> {
                               color: Colors.white,
                             ),
                           )
-                        : Text('Hold to talk',
-                            style: TextStyle(color: Colors.grey)),
+                        : viewModel.pokeSent
+                            ? Text('You waved at ${viewModel.yourName}',
+                                style: TextStyle(color: Colors.white))
+                            : Text('Hold to talk',
+                                style: TextStyle(color: Colors.grey)),
                     Stack(
                       alignment: Alignment.center,
                       children: [
@@ -311,14 +320,17 @@ class PokeButton extends ViewModelWidget<ChatViewModel> {
         width: 48,
         height: 48,
         child: RawMaterialButton(
-          fillColor: Colors.grey.shade900,
+          fillColor: viewModel.pokeSent ? Colors.white : Colors.grey.shade900,
           onPressed: () {
             viewModel.poke();
           },
           shape: CircleBorder(),
           child: Icon(
-            PhosphorIcons.handWavingLight,
+            PhosphorIcons.handWavingFill,
             size: 28,
+            color: viewModel.pokeSent
+                ? Theme.of(context).accentColor
+                : Colors.white,
           ),
         ));
   }
@@ -393,7 +405,6 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
               onDragStarted: () {
                 if (!viewModel.boxExpanded) {
                   viewModel.startRecording();
-                  viewModel.expandBox();
                 }
               },
               data: true,

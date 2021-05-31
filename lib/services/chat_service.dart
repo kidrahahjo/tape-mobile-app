@@ -14,18 +14,13 @@ class ChatService with ReactiveServiceMixin {
   // player related variables;
   FlutterSoundPlayer _flutterSoundPlayer = new FlutterSoundPlayer();
   StreamSubscription _flutterSoundPlayerSubscription;
-  ReactiveValue<bool> _loadingShout = ReactiveValue<bool>(false);
-  ReactiveValue<bool> _playingShout = ReactiveValue<bool>(false);
   ReactiveValue<bool> _recordingShout = ReactiveValue<bool>(false);
 
   String get recordingTime => _recordingTime.value;
-  bool get isLoadingShout => _loadingShout.value;
-  bool get isPlayingShout => _playingShout.value;
   bool get isRecordingShout => _recordingShout.value;
 
   ChatService() {
-    listenToReactiveValues(
-        [_recordingTime, _recordingShout, _loadingShout, _playingShout]);
+    listenToReactiveValues([_recordingTime, _recordingShout]);
   }
 
   cancelSubscriptions() {
@@ -34,8 +29,6 @@ class ChatService with ReactiveServiceMixin {
   }
 
   suspendPlaying() async {
-    _playingShout.value = false;
-    _loadingShout.value = false;
     await _flutterSoundPlayerSubscription?.cancel();
     await _flutterSoundPlayer?.stopPlayer();
     await _flutterSoundPlayer?.closeAudioSession();
@@ -49,7 +42,7 @@ class ChatService with ReactiveServiceMixin {
     await _flutterSoundRecorder?.closeAudioSession();
   }
 
-  startRecording(String audioUID, String audioPath) async {
+  startRecording(String audioUID, String audioPath, Function onError) async {
     this.audioUID = audioUID;
     this.audioPath = audioPath;
     try {
@@ -67,6 +60,7 @@ class ChatService with ReactiveServiceMixin {
         codec: Codec.aacADTS,
       );
     } catch (e) {
+      onError();
       _recordingTime.value = "";
       _recordingShout.value = false;
       print(e);
@@ -91,8 +85,6 @@ class ChatService with ReactiveServiceMixin {
         fromURI: downloadURL,
         codec: Codec.mp3,
         whenFinished: () {
-          _playingShout.value = false;
-          _loadingShout.value = false;
           whenFinished(thisAudioUID);
         });
   }

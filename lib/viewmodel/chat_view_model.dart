@@ -20,11 +20,7 @@ import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:just_audio/just_audio.dart';
 
 class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
-  final String yourUID;
-  final String yourName;
-  final BuildContext context;
-
-  // services
+  // Variables related to services
   final NavigationService _navigationService = locator<NavigationService>();
   final ChatService _chatService = locator<ChatService>();
   final AuthenticationService _authenticationService =
@@ -32,64 +28,58 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final FirebaseStorageService _firebaseStorageService =
       locator<FirebaseStorageService>();
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-  //sfx variables
-  AudioPlayer player;
-  void playSound(String name) async {
-    if (
-      WidgetsBinding.instance.lifecycleState == AppLifecycleState.detached ||
-      WidgetsBinding.instance.lifecycleState == AppLifecycleState.inactive ||
-      WidgetsBinding.instance.lifecycleState == AppLifecycleState.paused) {
-    } else {
-      try {
-        player = AudioPlayer();
-        await player.setAsset('assets/sfx/$name.wav');
-        player.play();
-      } catch (e) {
-        print(e);
-      }
-    }
-  }
-
-  // Tape related variables
+  // Variables related to you
+  final String yourUID;
+  final String yourName;
+  String profilePic;
   bool youAreOnline = false;
-  String yourChatState;
 
-  // current state related variables
+  // Streams related to you
+  Stream<DocumentSnapshot> yourDocumentStream;
+  StreamSubscription<DocumentSnapshot> yourDocumentStreamSubscription;
+
+  // Context variables
+  final BuildContext context;
+
+  // Variables related to your chat state
   bool youAreRecording = false;
-  bool hasPlayed = false;
-  String currentTapePlaying;
 
+  // Streams related to your chat state
+  Stream<DocumentSnapshot> chatStateStream;
+  StreamSubscription<DocumentSnapshot> chatStateStreamSubscription;
+
+  // Variables related to Tape Area
+  ScrollController scrollController = new ScrollController();
+  Map<String, double> gapBetweenShouts = {};
+  Map<String, double> bubbleTail = {};
+  Queue<String> allTapes = new Queue();
+  Queue<Map<String, bool>> tapeList = new Queue<Map<String, bool>>();
   Map<String, String> tapeRecorderState = {};
   Map<String, DateTime> tapesByDateTime = {};
   Map<String, String> tapePlayerState = {};
   Map<String, bool> tapePlayedState = {};
   Set<String> yourTapes = {};
   Set<String> playedTapes = {};
-  Queue<String> allTapes = new Queue();
+  String currentTapePlaying;
 
-  // recording related variables
-  bool _record = false;
+  // Streams related to Tape Area
+  Stream<QuerySnapshot> tapesForMeStream;
+  StreamSubscription<QuerySnapshot> tapesForMeStreamSubscription;
+  Stream<QuerySnapshot> myTapesSentStateStream;
+  StreamSubscription<QuerySnapshot> myTapesSentStateStreamSubscription;
 
-  // player related variables
-  bool autoplay = false;
+  // Variables related to Wave
+  bool showPoke = false;
+  bool pokeSent = false;
 
-  //new chat related variables
-  Queue<Map<String, bool>> tapeList = new Queue<Map<String, bool>>();
-  ScrollController scrollController = new ScrollController();
-  String lastTapeSource = "your";
-  bool lastTapeSourceWasSame = false;
-  Map<String, double> gapBetweenShouts = {};
-  Map<String, double> bubbleTail = {};
-  String profilePic;
-  double drawerHeight = 144;
-  bool drawerOpen = false;
-  double buttonSize = 64;
-  String myMood, yourMood;
-  bool shakeYourMood = false;
-  bool playYourMood = false;
-  bool showGlow = false;
+  // Streams related to Waves
+  Stream<QuerySnapshot> pokesForMeStream;
+  StreamSubscription<QuerySnapshot> pokesForMeStreamSubscription;
+
+  // Variables related to mood
   Map<dynamic, String> moodEmojiMapping = {
     "😂": "Face With Tears of Joy",
     "heart": "Heavy Black Heart",
@@ -112,30 +102,22 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     "😎": "Smirking Face",
     "😄": "Smiling Face With Open Mouth and Smiling Eyes"
   };
+  AudioPlayer player = AudioPlayer();
+  bool showGlow = false;
+  String myMood, yourMood;
+  DateTime yourMoodTime;
+  bool playYourMood = false;
 
-//recording widget related variables
+  // Streams related to mood
+  Stream<DocumentSnapshot> yourMoodStream;
+  StreamSubscription<DocumentSnapshot> yourMoodStreamSubscription;
+
+  // Variables related to my recording
   double boxLength = 72;
   bool boxExpanded = false;
   Widget deleteIcon = SizedBox.shrink();
   Widget sendIcon = SizedBox.shrink();
-
-  // Streams
-
-  Stream<DocumentSnapshot> yourMoodStream;
-  StreamSubscription<DocumentSnapshot> yourMoodStreamSubscription;
-
-  Stream<QuerySnapshot> pokesForMeStream;
-  StreamSubscription<QuerySnapshot> pokesForMeStreamSubscription;
-  bool newPoke = false;
-
-  Stream<DocumentSnapshot> yourDocumentStream;
-  StreamSubscription<DocumentSnapshot> yourDocumentStreamSubscription;
-  Stream<QuerySnapshot> tapesForMeStream;
-  StreamSubscription<QuerySnapshot> tapesForMeStreamSubscription;
-  Stream<DocumentSnapshot> chatStateStream;
-  StreamSubscription<DocumentSnapshot> chatStateStreamSubscription;
-  Stream<QuerySnapshot> myTapesSentStateStream;
-  StreamSubscription<QuerySnapshot> myTapesSentStateStreamSubscription;
+  Directory tempDir;
 
   ChatViewModel(this.yourUID, this.yourName, this.context) {
     WidgetsBinding.instance.addObserver(this);
@@ -144,7 +126,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     _firestoreService.getChatStateData(chatForYouUID).then((doc) {
       Map<String, dynamic> data = doc.data();
       myMood = data["mood"];
-
       notifyListeners();
     });
     flutterLocalNotificationsPlugin.cancel(0, tag: yourUID);
@@ -152,17 +133,36 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     initialiseStreams();
   }
 
-  initialiseStreams() async {
-    await getInitialChatData();
-    await getMyMood();
-    enableYourDocumentStream();
-    enableYourMoodStream();
-    enableTapesForMeStream();
-    enableChatForMeStateStream();
-    enableTapesSentStateSream();
-    enablePokeStream();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached ||
+        state == AppLifecycleState.inactive) {
+      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
+          {"isOnline": false, "chattingWith": null});
+    } else if (state == AppLifecycleState.resumed) {
+      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
+          {"isOnline": true, "chattingWith": yourUID});
+    }
+    super.didChangeAppLifecycleState(state);
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _firestoreService.saveUserInfo(
+        _authenticationService.currentUser.uid, {"chattingWith": null});
+    pokesForMeStreamSubscription?.cancel();
+    yourMoodStreamSubscription?.cancel();
+    yourDocumentStreamSubscription?.cancel();
+    _chatService.cancelSubscriptions();
+    tapesForMeStreamSubscription?.cancel();
+    chatStateStreamSubscription?.cancel();
+    myTapesSentStateStreamSubscription?.cancel();
+    player?.dispose();
+    super.dispose();
+  }
+
+  // Getters
   @override
   List<ReactiveServiceMixin> get reactiveServices => [_chatService];
 
@@ -174,58 +174,29 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   String get recordingTimer => _chatService.recordingTime;
 
-  bool get isLoadingShout => _chatService.isLoadingShout;
-
-  bool get iAmListening => _chatService.isPlayingShout;
-
   bool get iAmRecording => _chatService.isRecordingShout;
 
-  updateMyMood(String emoji) async {
-    await _firestoreService.updateChatState(
-        chatForYouUID, {"mood": emoji, "lastMoodModifiedAt": DateTime.now()});
-    myMood = emoji == "heart" ? "❤️" : emoji;
-    playSound(moodEmojiMapping[emoji]);
-    notifyListeners();
+  double getGap(int index) {
+    return gapBetweenShouts[allTapes.elementAt(index)] == null
+        ? 4
+        : gapBetweenShouts[allTapes.elementAt(index)];
   }
 
-  enableYourMoodStream() {
-    yourMoodStream = _firestoreService.getChatState(chatForMeUID);
-    yourMoodStreamSubscription = yourMoodStream.listen((event) {
-      if (event.exists) {
-        Map<String, dynamic> data = event.data();
-        yourMood = data["mood"] == null
-            ? null
-            : data["mood"] == "heart"
-                ? "❤️"
-                : data["mood"];
-
-        // shakeYourMood = true;
-        notifyListeners();
-
-        if (playYourMood == true) {
-          showGlow = true;
-          notifyListeners();
-          Future.delayed(Duration(milliseconds: 1500), () {
-            showGlow = false;
-            notifyListeners();
-          });
-          playSound(moodEmojiMapping[data["mood"]]);
-        } else {
-          playYourMood = true;
-        }
-      }
-    });
-  }
-
-  getMyMood() async {
-    await _firestoreService.getChatStateData(chatForYouUID).then((value) {
-      Map<String, dynamic> data = value.data();
-      myMood = data["mood"] == "heart" ? "❤️" : data["mood"];
-      notifyListeners();
-    });
+  // Streams
+  initialiseStreams() async {
+    await getInitialChatData();
+    await getMyMood();
+    enableYourDocumentStream();
+    enableYourMoodStream();
+    enableTapesForMeStream();
+    enableChatForMeStateStream();
+    enablePokeStream();
+    enableTapesSentStateSream();
   }
 
   getInitialChatData() async {
+    tempDir = await getTemporaryDirectory();
+
     await _firestoreService.getChatsForMe(chatForMeUID).then((value) {
       value.docs.forEach((element) {
         Map<String, dynamic> data = element.data();
@@ -280,10 +251,12 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     });
   }
 
-  double getGap(int index) {
-    return gapBetweenShouts[allTapes.elementAt(index)] == null
-        ? 4
-        : gapBetweenShouts[allTapes.elementAt(index)];
+  getMyMood() async {
+    await _firestoreService.getChatStateData(chatForYouUID).then((value) {
+      Map<String, dynamic> data = value.data();
+      myMood = data["mood"] == "heart" ? "❤️" : data["mood"];
+      notifyListeners();
+    });
   }
 
   enableYourDocumentStream() {
@@ -295,6 +268,38 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         profilePic =
             data['displayImageURL'] == null ? null : data['displayImageURL'];
         notifyListeners();
+      }
+    });
+  }
+
+  enableYourMoodStream() {
+    yourMoodStream = _firestoreService.getChatState(chatForMeUID);
+    yourMoodStreamSubscription = yourMoodStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        yourMood = data["mood"] == null
+            ? null
+            : data["mood"] == "heart"
+                ? "❤️"
+                : data["mood"];
+        DateTime time = convertTimestampToDateTime(data["lastMoodModifiedAt"]);
+
+        if (playYourMood == true) {
+          if (time != null &&
+              compareDateTimeGreaterThan(time, yourMoodTime) == 1) {
+            yourMoodTime = time;
+            showGlow = true;
+            notifyListeners();
+            Future.delayed(Duration(milliseconds: 1500), () {
+              showGlow = false;
+              notifyListeners();
+            });
+            playSound(moodEmojiMapping[data["mood"]]);
+          }
+        } else {
+          playYourMood = true;
+          notifyListeners();
+        }
       }
     });
   }
@@ -343,7 +348,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         Map<String, dynamic> data = event.data();
         this.youAreRecording =
             data['isRecording'] != null ? data['isRecording'] : false;
-        this.yourChatState = data['chatState'];
         notifyListeners();
       }
     });
@@ -353,28 +357,14 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     pokesForMeStream = _firestoreService.fetchPokesForMe(chatForMeUID);
     pokesForMeStreamSubscription = pokesForMeStream.listen((event) {
       if (event.docs.length > 0) {
-        // ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     shape:
-        //         RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-        //     margin: EdgeInsets.fromLTRB(16, 0, 16, 160),
-        //     backgroundColor: Theme.of(context).accentColor,
-        //     behavior: SnackBarBehavior.floating,
-        //     content: Row(
-        //       crossAxisAlignment: CrossAxisAlignment.center,
-        //       mainAxisAlignment: MainAxisAlignment.center,
-        //       children: [
-        //         Icon(PhosphorIcons.handWavingFill),
-        //         SizedBox(width: 8),
-        //         Text(
-        //           "$yourName waved at you!",
-        //           style: TextStyle(fontSize: 16, color: Colors.white),
-        //         ),
-        //       ],
-        //     ),
-        //   ),
-        // );
+        showGlow = true;
+        showPoke = true;
+        notifyListeners();
+        Future.delayed(Duration(milliseconds: 1500), () {
+          showGlow = false;
+          showPoke = false;
+          notifyListeners();
+        });
       }
       event.docs.forEach((element) {
         _firestoreService.expirePoke(element.id, chatForMeUID);
@@ -401,86 +391,22 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     });
   }
 
-  backToHome() {
-    // ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    _firestoreService.saveUserInfo(
-        _authenticationService.currentUser.uid, {"chattingWith": null});
-    _chatService.suspendPlaying();
-    _chatService.suspendRecording();
-    _navigationService.goBack();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached ||
-        state == AppLifecycleState.inactive) {
-      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
-          {"isOnline": false, "chattingWith": null});
-    } else if (state == AppLifecycleState.resumed) {
-      _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
-          {"isOnline": true, "chattingWith": yourUID});
-    }
-    super.didChangeAppLifecycleState(state);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _firestoreService.saveUserInfo(
-        _authenticationService.currentUser.uid, {"chattingWith": null});
-    pokesForMeStreamSubscription?.cancel();
-    yourMoodStreamSubscription?.cancel();
-    yourDocumentStreamSubscription?.cancel();
-    _chatService.cancelSubscriptions();
-    tapesForMeStreamSubscription?.cancel();
-    chatStateStreamSubscription?.cancel();
-    myTapesSentStateStreamSubscription?.cancel();
-    player?.dispose();
-    super.dispose();
-  }
-
-  void expandBox() {
-    boxLength = 280;
-    notifyListeners();
-    Future.delayed(Duration(milliseconds: 300), () {
-      boxExpanded = true;
-      notifyListeners();
-    });
-  }
-
-  void contractBox() {
-    boxLength = 72;
-    notifyListeners();
-    Future.delayed(Duration(milliseconds: 300), () {
-      boxExpanded = false;
-      notifyListeners();
-    });
-  }
-
+  // I am recording related methods
   void startRecording() async {
-    _record = true;
-    bool continueRecording = true;
-
-    notifyListeners();
+    expandBox();
     String audioUID = Uuid().v4().replaceAll("-", "");
-    var tempDir = await getTemporaryDirectory();
     String audioPath = '${tempDir.path}/$audioUID.aac';
-    if (continueRecording == _record) {
-      _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
-
-      _chatService.startRecording(audioUID, audioPath);
-    }
+    _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
+    _chatService.startRecording(audioUID, audioPath, contractBox);
   }
 
   void deleteRecording() async {
-    _record = false;
     notifyListeners();
     await _chatService.stopRecording();
     _firestoreService.setRecordingStateToDatabase(chatForYouUID, false);
   }
 
   void stopRecording() async {
-    _record = false;
     String audioUID, audioPath;
     if (_chatService.recordingTime == "" ||
         _chatService.recordingTime == "0s") {
@@ -535,6 +461,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     });
   }
 
+  // I am playing
   void playTape(audioUID) async {
     playedTapes.add(audioUID);
     if (currentTapePlaying != null) {
@@ -588,14 +515,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     currentTapePlaying = null;
     tapePlayerState[audioUID] = "Played";
     notifyListeners();
-    // update message and chat state
-    if (audioUID == yourTapes.last) {
-      _firestoreService.updateChatState(chatForYouUID,
-          {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
-      if (yourChatState == 'Played') {
-        _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
-      }
-    }
     int index = allTapes.toList().indexOf(audioUID);
     for (int i = index + 1; i < allTapes.length; i++) {
       String uid = allTapes.elementAt(i);
@@ -608,9 +527,58 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     }
   }
 
+  // Wave related methods
   void poke() {
+    pokeSent = true;
+    notifyListeners();
     _firestoreService.sendPoke(
         this.chatForYouUID, {"sentAt": DateTime.now(), "isExpired": false});
+    Future.delayed(Duration(milliseconds: 1500), () {
+      pokeSent = false;
+      notifyListeners();
+    });
+  }
+
+  // Reaction related methods
+  updateMyMood(String emoji) async {
+    await _firestoreService.updateChatState(
+        chatForYouUID, {"mood": emoji, "lastMoodModifiedAt": DateTime.now()});
+    myMood = emoji == "heart" ? "❤️" : emoji;
+    playSound(moodEmojiMapping[emoji]);
+    notifyListeners();
+  }
+
+  void playSound(String name) async {
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.detached ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.inactive ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.paused) {
+    } else {
+      try {
+        await player.setAsset('assets/sfx/$name.wav');
+        player.play();
+      } catch (e) {
+        print(e);
+      }
+    }
+  }
+
+  // UI Related Methods
+  void expandBox() {
+    boxLength = 280;
+    notifyListeners();
+    Future.delayed(Duration(milliseconds: 300), () {
+      boxExpanded = true;
+      notifyListeners();
+    });
+  }
+
+  void contractBox() {
+    boxLength = 72;
+    notifyListeners();
+    Future.delayed(Duration(milliseconds: 300), () {
+      boxExpanded = false;
+      notifyListeners();
+    });
   }
 
   Widget playerButton(String tapeUID, BuildContext context, int index) {
@@ -767,5 +735,14 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         ],
       );
     }
+  }
+
+  // Other methods
+  backToHome() {
+    _firestoreService.saveUserInfo(
+        _authenticationService.currentUser.uid, {"chattingWith": null});
+    _chatService.suspendPlaying();
+    _chatService.suspendRecording();
+    _navigationService.goBack();
   }
 }
