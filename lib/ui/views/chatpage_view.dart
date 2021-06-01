@@ -45,7 +45,8 @@ class ChatPageView extends StatelessWidget {
                               alignment: Alignment.center,
                               children: [
                                 CircleAvatar(
-                                  backgroundColor: Colors.black,
+                                  backgroundColor:
+                                      Theme.of(context).scaffoldBackgroundColor,
                                   radius: 8,
                                 ),
                                 model.showPoke
