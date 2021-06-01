@@ -72,7 +72,9 @@ Future<void> showNotification(RemoteMessage message) async {
       new IOSInitializationSettings();
   InitializationSettings initializationSettings = new InitializationSettings(
       android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
-  _flutterLocalNotificationsPlugin.initialize(initializationSettings,);
+  _flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+  );
 
   // Code to send notification
   String channel_id = message.data['notificationChannelID'];
@@ -137,4 +139,3 @@ Future<void> showNotification(RemoteMessage message) async {
     print(err);
   }
 }
-

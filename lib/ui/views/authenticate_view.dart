@@ -19,7 +19,7 @@ class AuthenticationView extends StatelessWidget {
                 )
               : model.authState == "OTP Sent"
                   ? OTPFormWidget()
-                    : model.authState == "Mobile"
+                  : model.authState == "Mobile"
                       ? MobileFormWidget()
                       : null;
         });

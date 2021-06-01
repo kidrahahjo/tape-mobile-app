@@ -1,9 +1,13 @@
 import 'dart:async';
-
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:stacked/stacked.dart';
+import 'package:tapemobileapp/app/locator.dart';
+import 'package:tapemobileapp/services/firestore_service.dart';
 
 class ChatService with ReactiveServiceMixin {
+  // services
+  final FirestoreService _firestoreService = locator<FirestoreService>();
+
   // recorder related variables
   FlutterSoundRecorder _flutterSoundRecorder = new FlutterSoundRecorder();
   var _flutterSoundRecorderSubscription;
@@ -42,7 +46,8 @@ class ChatService with ReactiveServiceMixin {
     await _flutterSoundRecorder?.closeAudioSession();
   }
 
-  startRecording(String audioUID, String audioPath, Function onError) async {
+  startRecording(String audioUID, String audioPath, Function onError,
+      String chatForYouUID) async {
     this.audioUID = audioUID;
     this.audioPath = audioPath;
     try {
@@ -63,6 +68,7 @@ class ChatService with ReactiveServiceMixin {
       onError();
       _recordingTime.value = "";
       _recordingShout.value = false;
+      _firestoreService.setRecordingStateToDatabase(chatForYouUID, false);
       print(e);
       // code for toast
     }

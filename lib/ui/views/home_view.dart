@@ -258,7 +258,7 @@ class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
     return RefreshIndicator(
       color: Theme.of(context).accentColor,
       onRefresh: () async {
-        await viewModel.refreshContacts();
+        viewModel.refreshContacts();
         return;
       },
       child: Scaffold(

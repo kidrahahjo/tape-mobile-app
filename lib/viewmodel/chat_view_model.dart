@@ -20,6 +20,8 @@ import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:progress_indicators/progress_indicators.dart';
 
+import '../utils/time_utils.dart';
+
 class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   // Variables related to services
   final NavigationService _navigationService = locator<NavigationService>();
@@ -125,11 +127,6 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": yourUID});
-    _firestoreService.getChatStateData(chatForYouUID).then((doc) {
-      Map<String, dynamic> data = doc.data();
-      myMood = data["mood"];
-      notifyListeners();
-    });
     flutterLocalNotificationsPlugin.cancel(0, tag: yourUID);
     flutterLocalNotificationsPlugin.cancel(1, tag: yourUID);
     initialiseStreams();
@@ -187,6 +184,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   // Streams
   initialiseStreams() async {
     await getInitialChatData();
+    await getYourMood();
     await getMyMood();
     isLoading = false;
     enableYourDocumentStream();
@@ -254,6 +252,15 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     });
   }
 
+  getYourMood() async {
+    await _firestoreService.getChatStateData(chatForMeUID).then((value) {
+      Map<String, dynamic> data = value.data();
+      yourMood = data["mood"] == "heart" ? "❤️" : data["mood"];
+      yourMoodTime = convertTimestampToDateTime(data["lastMoodModifiedAt"]);
+      notifyListeners();
+    });
+  }
+
   getMyMood() async {
     await _firestoreService.getChatStateData(chatForYouUID).then((value) {
       Map<String, dynamic> data = value.data();
@@ -317,19 +324,25 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           if (allTapes.length == 0) {
             gapBetweenShouts[element.id] = 4;
             bubbleTail[element.id] = 4;
+            allTapes.add(element.id);
           } else {
             String lastTape = allTapes.last;
             if (lastTape == "Recording") {
               bubbleTail[element.id] = 32;
               allTapes.removeLast();
               gapBetweenShouts["Recording"] = 4;
-              lastTape = allTapes.last;
-              if (yourTapes.contains(lastTape)) {
-                bubbleTail[lastTape] = 32;
-                gapBetweenShouts[element.id] = 4;
+              if (allTapes.length != 0) {
+                lastTape = allTapes.last;
+                if (yourTapes.contains(lastTape)) {
+                  bubbleTail[lastTape] = 32;
+                  gapBetweenShouts[element.id] = 4;
+                } else {
+                  bubbleTail[lastTape] = 4;
+                  gapBetweenShouts[element.id] = 16;
+                }
               } else {
-                bubbleTail[lastTape] = 4;
-                gapBetweenShouts[element.id] = 16;
+                gapBetweenShouts[element.id] = 4;
+                bubbleTail[lastTape] = 32;
               }
               allTapes.add(element.id);
               allTapes.add("Recording");
@@ -372,12 +385,16 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
           youAreRecording = recording;
           if (recording == false) {
             allTapes.remove("Recording");
-            if (yourTapes.contains(allTapes.last)) {
+            if (allTapes.length == 0) {
+              //
+            } else if (yourTapes.contains(allTapes.last)) {
               bubbleTail[allTapes.last] = 4;
             }
             notifyListeners();
           } else if (!allTapes.contains("Recording")) {
-            if (yourTapes.contains(allTapes.last)) {
+            if (allTapes.length == 0) {
+              gapBetweenShouts["Recording"] = 4;
+            } else if (yourTapes.contains(allTapes.last)) {
               gapBetweenShouts["Recording"] = 4;
               bubbleTail[allTapes.last] = 32;
             } else {
@@ -442,7 +459,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     String audioUID = Uuid().v4().replaceAll("-", "");
     String audioPath = '${tempDir.path}/$audioUID.aac';
     _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
-    _chatService.startRecording(audioUID, audioPath, contractBox);
+    _chatService.startRecording(
+        audioUID, audioPath, contractBox, chatForYouUID);
   }
 
   void deleteRecording() async {
@@ -464,6 +482,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         audioUID = audioVariables[1];
         if (allTapes.length == 0) {
           gapBetweenShouts[audioUID] = 4;
+          allTapes.add(audioUID);
         } else {
           String lastTape = allTapes.last;
           if (lastTape == "Recording") {
@@ -789,12 +808,12 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
               SizedBox(width: 12),
               Text("Recording"),
               SizedBox(width: 4),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
+              Container(
+                transform: Matrix4.translationValues(0, -5, 0),
                 child: JumpingDotsProgressIndicator(
                   fontSize: 20,
                   color: Colors.white,
-                  dotSpacing: 2,
+                  dotSpacing: 0,
                 ),
               ),
             ]));
