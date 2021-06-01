@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +29,7 @@ class HomeView extends StatelessWidget {
             return Scaffold(
               resizeToAvoidBottomInset: true,
               body: RefreshIndicator(
+                color: Theme.of(context).accentColor,
                 onRefresh: () async {
                   model.refreshPage();
                   return;
@@ -38,9 +41,22 @@ class HomeView extends StatelessWidget {
                     CustomSliverAppBar(),
                     SliverToBoxAdapter(
                         child: Divider(
-                      height: 16,
+                      height: 1,
                     )),
-                    AllChatsView(),
+                    model.isLoading
+                        ? SliverFillRemaining(
+                            child: Center(
+                              child:
+                                  Text("Hang in there! Getting your Tapes..."),
+                            ),
+                          )
+                        : model.chatsList.isEmpty
+                            ? SliverFillRemaining(
+                                child: Center(
+                                    child: Text(
+                                        "It's feels lonely here. Send a Tape!")),
+                              )
+                            : AllChatsView(),
                   ],
                 ),
               ),
@@ -56,91 +72,77 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
     return SliverAppBar(
-      leading: GestureDetector(
-        onLongPressStart: (details) async {
-          //SECRET LOGOUT BUTTON FOR TESTING!!!
-          viewModel.signOut();
-        },
-        child: IconButton(
-          onPressed: null,
-          icon: Icon(
-            PhosphorIcons.eject,
-            color: Colors.transparent,
-          ),
-        ),
-      ),
-      elevation: 1,
-      expandedHeight: 120,
-      pinned: true,
-      stretch: true,
-      actions: <Widget>[
-        TextButton(
-            onPressed: () async {
-              bool contactPermissionGranted = await getContactPermission();
-              if (contactPermissionGranted) {
-                final myModel =
-                    Provider.of<HomeViewModel>(context, listen: false);
-                showModalBottomSheet<void>(
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    context: context,
-                    enableDrag: true,
-                    builder: (BuildContext context) {
-                      return ListenableProvider.value(
-                        value: myModel,
-                        child: ContactModalSheet(),
-                      );
-                    });
-              } else {
-                final ScaffoldMessengerState scaffoldMessenger =
-                    ScaffoldMessenger.of(context);
-                scaffoldMessenger.showSnackBar(SnackBar(
-                    content: Text("Please grant contact permission.")));
-              }
-            },
-            child: Text(
-              "New Tape",
-              style:
-                  TextStyle(fontSize: 16, color: Theme.of(context).accentColor),
-            )),
-        SizedBox(width: 12),
-        GestureDetector(
-          onTap: viewModel.goToProfileView,
-          child: Center(
-            child: CircleAvatar(
-              backgroundImage: viewModel.myProfilePic != null
-                  ? ResizeImage(NetworkImage(viewModel.myProfilePic),
-                      height: 200, width: 200)
-                  : null,
-              radius: 20,
-              child: viewModel.myProfilePic == null
-                  ? Text(
-                      viewModel.myDisplayName != null
-                          ? viewModel.myDisplayName[0]
-                          : "",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
+        elevation: 1,
+        pinned: true,
+        expandedHeight: 144,
+        stretch: true,
+        actions: <Widget>[
+          TextButton(
+              onPressed: () async {
+                bool contactPermissionGranted = await getContactPermission();
+                if (contactPermissionGranted) {
+                  final myModel =
+                      Provider.of<HomeViewModel>(context, listen: false);
+
+                  Navigator.of(context).push(new MaterialPageRoute<Null>(
+                      builder: (BuildContext context) {
+                        return ListenableProvider.value(
+                          value: myModel,
+                          child: ContactModalSheet(),
+                        );
+                      },
+                      fullscreenDialog: true));
+                } else {
+                  final ScaffoldMessengerState scaffoldMessenger =
+                      ScaffoldMessenger.of(context);
+                  scaffoldMessenger.showSnackBar(SnackBar(
+                      content: Text("Please grant contact permission.")));
+                }
+              },
+              child: Text(
+                "New Tape",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).accentColor,
+                ),
+              )),
+          SizedBox(width: 12),
+          GestureDetector(
+            onTap: viewModel.goToProfileView,
+            child: Center(
+              child: CircleAvatar(
+                backgroundImage: viewModel.myProfilePic != null
+                    ? ResizeImage(NetworkImage(viewModel.myProfilePic),
+                        height: 200, width: 200)
+                    : null,
+                radius: 20,
+                child: viewModel.myProfilePic == null
+                    ? Text(
+                        viewModel.myDisplayName != null
+                            ? viewModel.myDisplayName[0]
+                            : "",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
             ),
           ),
-        ),
-        SizedBox(width: 16),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          'Tapes',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
+          SizedBox(width: 24),
+        ],
+        flexibleSpace: FlexibleSpaceBar(
+          titlePadding: EdgeInsets.only(bottom: 10, left: 16),
+          title: Text(
+            'Tapes',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        centerTitle: false,
-        titlePadding: EdgeInsets.all(16),
-      ),
-    );
+          centerTitle: false,
+        ));
   }
 }
 
@@ -158,9 +160,8 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
               uid,
             ),
             Divider(
-              height: 16,
-              indent: 72,
-              endIndent: 16,
+              height: 1,
+              indent: 86,
             ),
           ]);
         },
@@ -179,123 +180,120 @@ class ChatTile extends ViewModelWidget<HomeViewModel> {
   Widget build(BuildContext context, HomeViewModel viewModel) {
     final String yourName = viewModel.getUserName(yourUID);
     final String yourProfilePic = viewModel.getProfilePic(yourUID);
-    return GestureDetector(
-        onTap: () async {
-          viewModel.goToContactScreen(yourUID);
-        },
-        child: ListTile(
-          trailing: viewModel.showPoke(yourUID)
-              ? Icon(
-                  PhosphorIcons.handWavingFill,
-                  color: Theme.of(context).accentColor,
-                  size: 28,
-                )
-              : Text(
-                  viewModel.getUserMood(yourUID) == null
-                      ? ""
-                      : viewModel.getUserMood(yourUID),
-                  style: TextStyle(fontSize: 28),
+    return ListTile(
+      onTap: () async {
+        viewModel.goToContactScreen(yourUID);
+      },
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      trailing: viewModel.showPoke(yourUID)
+          ? Icon(
+              PhosphorIcons.handWavingFill,
+              color: Theme.of(context).accentColor,
+              size: 28,
+            )
+          : Text(
+              viewModel.getUserMood(yourUID) == null
+                  ? ""
+                  : viewModel.getUserMood(yourUID),
+              style: TextStyle(fontSize: 28),
+            ),
+      leading: CircleAvatar(
+        backgroundImage: yourProfilePic != null
+            ? ResizeImage(NetworkImage(yourProfilePic), width: 200, height: 200)
+            : null,
+        radius: 28,
+        child: yourProfilePic == null
+            ? Text(
+                '${yourName[0]}'.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 24,
                 ),
-          leading: CircleAvatar(
-            backgroundImage: yourProfilePic != null
-                ? ResizeImage(NetworkImage(yourProfilePic),
-                    width: 200, height: 200)
-                : null,
-            radius: 28,
-            child: yourProfilePic == null
-                ? Text(
-                    '${yourName[0]}'.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+              )
+            : null,
+      ),
+      title: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            LimitedBox(
+              maxWidth: MediaQuery.of(context).size.width * 0.5,
+              child: Text(
+                viewModel.getUserName(yourUID),
+                style: TextStyle(fontSize: 18),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: 8),
+            viewModel.getUserOnlineState(yourUID)
+                ? Icon(
+                    PhosphorIcons.circleFill,
+                    color: Colors.green,
+                    size: 8,
                   )
-                : null,
-          ),
-          title: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.75),
-                  child: Text(
-                    viewModel.getUserName(yourUID),
-                    style: TextStyle(),
-                    overflow: TextOverflow.ellipsis,
+                : Icon(
+                    PhosphorIcons.circleFill,
+                    color: Colors.transparent,
+                    size: 8,
                   ),
-                ),
-                SizedBox(width: 8),
-                viewModel.getUserOnlineState(yourUID)
-                    ? Icon(
-                        PhosphorIcons.circleFill,
-                        color: Colors.green,
-                        size: 8,
-                      )
-                    : Icon(
-                        PhosphorIcons.circleFill,
-                        color: Colors.transparent,
-                        size: 8,
-                      ),
-              ]),
-          subtitle: viewModel.isRecording(yourUID)
-              ? Text(
-                  "Recording...",
-                  style: TextStyle(
-                      color: Theme.of(context).accentColor,
-                      fontWeight: FontWeight.bold),
-                )
-              : viewModel.getSubtitle(yourUID, context),
-        ));
+          ]),
+      subtitle: viewModel.isRecording(yourUID)
+          ? Text(
+              "Recording...",
+              style: TextStyle(
+                  color: Theme.of(context).accentColor,
+                  fontWeight: FontWeight.bold),
+            )
+          : viewModel.getSubtitle(yourUID, context),
+    );
   }
 }
 
 class ContactModalSheet extends ViewModelWidget<HomeViewModel> {
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 480,
-        child: Scaffold(
-          appBar: AppBar(
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            title: Text(
-              "Contacts",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            actions: [
-              viewModel.isFetchingContacts
-                  ? Center(
-                      child: CircleAvatar(
-                          radius: 12,
-                          backgroundColor: Colors.transparent,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          )),
-                    )
-                  : TextButton(
-                      onPressed: () {
-                        viewModel.refreshContacts();
-                      },
-                      child: Text("Refresh",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).accentColor,
-                          )),
-                    ),
-              SizedBox(
-                width: 8,
-              )
-            ],
-          ),
-          body: ContactsList(),
+    return RefreshIndicator(
+      color: Theme.of(context).accentColor,
+      onRefresh: () async {
+        await viewModel.refreshContacts();
+        return;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: false,
+          title: Text("Send a Tape..."),
+          actions: [
+            viewModel.isFetchingContacts
+                ? Center(
+                    child: CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.transparent,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        )),
+                  )
+                : TextButton(
+                    onPressed: () {
+                      viewModel.refreshContacts();
+                    },
+                    child: Text("Refresh",
+                        style: TextStyle(
+                          color: Theme.of(context).accentColor,
+                          fontSize: 16,
+                        )),
+                  ),
+            SizedBox(
+              width: 16,
+            )
+          ],
         ),
+        body: viewModel.contactsMap.length > 0
+            ? ContactsList()
+            : Center(
+                child: Text(viewModel.isFetchingContacts
+                    ? "Looking for your friends on Tape, just a sec!"
+                    : "No contacts on Tape, yet."),
+              ),
       ),
     );
   }
@@ -305,6 +303,7 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
     return ListView.builder(
+      physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       itemCount: viewModel.contactsMap.length,
       itemBuilder: (BuildContext context, int index) {
         String uid = viewModel.contactsMap.elementAt(index);
@@ -316,14 +315,13 @@ class ContactsList extends ViewModelWidget<HomeViewModel> {
             },
             leading: CircleAvatar(
               child: Icon(
-                PhosphorIcons.user,
+                PhosphorIcons.userFill,
               ),
             ),
             title: Text(viewModel.getUserName(uid)),
             subtitle: Text(viewModel.getPhoneNumber(uid)),
           ),
           Divider(
-            height: 1,
             indent: 72,
             endIndent: 16,
           ),

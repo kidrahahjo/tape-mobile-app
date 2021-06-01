@@ -56,8 +56,9 @@ class ChatPageView extends StatelessWidget {
                                       )
                                     : model.yourMood == null
                                         ? Icon(
-                                            PhosphorIcons.smiley,
-                                            color: Colors.grey.shade700,
+                                            PhosphorIcons.smileyFill,
+                                            color: Theme.of(context)
+                                                .primaryColorLight,
                                             size: 28,
                                           )
                                         : Text(
@@ -79,40 +80,44 @@ class ChatPageView extends StatelessWidget {
                       collapseMode: CollapseMode.pin,
                       centerTitle: true,
                       background: Center(child: ProfilePic(yourName)),
-                      title: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              PhosphorIcons.circleFill,
-                              color: Colors.transparent,
-                              size: 8,
+                      title: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            PhosphorIcons.circleFill,
+                            color: Colors.transparent,
+                            size: 8,
+                          ),
+                          SizedBox(width: 8),
+                          LimitedBox(
+                            maxWidth: MediaQuery.of(context).size.width * 0.5,
+                            child: Text(
+                              yourName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            SizedBox(width: 8),
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: Text(
-                                yourName,
-                                maxLines: 1,
-                                overflow: TextOverflow.clip,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Icon(
-                              PhosphorIcons.circleFill,
-                              color: model.youAreOnline
-                                  ? Colors.green
-                                  : Colors.transparent,
-                              size: 8,
-                            )
-                          ],
-                        ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(
+                            PhosphorIcons.circleFill,
+                            color: model.youAreOnline
+                                ? Colors.green
+                                : Colors.transparent,
+                            size: 8,
+                          )
+                        ],
                       ),
                     ),
                   ),
-                  TapeArea(),
+                  model.isLoading
+                      ? SliverToBoxAdapter(
+                          child: Center(child: Text("Getting Tapes, hang on!")),
+                        )
+                      : model.allTapes.length > 0
+                          ? TapeArea()
+                          : SliverToBoxAdapter(
+                              child: Center(child: Text("Knock knock!"))),
                 ],
               ),
             ),
@@ -173,13 +178,16 @@ class Footer extends ViewModelWidget<ChatViewModel> {
                             "${viewModel.recordingTimer}",
                             style: TextStyle(
                               color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           )
                         : viewModel.pokeSent
                             ? Text('You waved at ${viewModel.yourName}',
-                                style: TextStyle(color: Colors.white))
+                                style: TextStyle())
                             : Text('Tap to talk',
-                                style: TextStyle(color: Colors.grey)),
+                                style: TextStyle(
+                                  color: Theme.of(context).primaryColorLight,
+                                )),
                     Stack(
                       alignment: Alignment.center,
                       children: [
@@ -237,6 +245,9 @@ class MoodButton extends ViewModelWidget<ChatViewModel> {
       height: 48,
       width: 48,
       child: RawMaterialButton(
+          fillColor: Theme.of(context).primaryColorDark,
+          shape: CircleBorder(),
+          elevation: 0,
           onPressed: () {
             showModalBottomSheet(
                 isDismissible: true,
@@ -244,72 +255,64 @@ class MoodButton extends ViewModelWidget<ChatViewModel> {
                 context: context,
                 enableDrag: true,
                 builder: (BuildContext context) {
-                  return Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        AppBar(
-                          automaticallyImplyLeading: false,
-                          centerTitle: false,
-                          title: Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 12,
-                            children: [
-                              Text("React with earmojis"),
-                              Icon(
-                                PhosphorIcons.speakerSimpleHighFill,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ],
+                  return Column(mainAxisSize: MainAxisSize.min, children: [
+                    AppBar(
+                      automaticallyImplyLeading: false,
+                      centerTitle: false,
+                      title: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        children: [
+                          Text("React with earmojis"),
+                          Icon(
+                            PhosphorIcons.speakerSimpleHighFill,
+                            color: Colors.white,
+                            size: 20,
                           ),
-                        ),
-                        Container(
-                          height: 360,
-                          child: GridView.builder(
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: viewModel.moodEmojiMapping.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 5),
-                            itemBuilder: (context, index) {
-                              return RawMaterialButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  viewModel.updateMyMood(viewModel
-                                      .moodEmojiMapping.keys
-                                      .toList()[index]);
-                                },
-                                shape: CircleBorder(),
-                                child: Text(
-                                  viewModel.moodEmojiMapping.keys
-                                              .toList()[index] ==
-                                          "heart"
-                                      ? "❤️"
-                                      : viewModel.moodEmojiMapping.keys
-                                          .toList()[index],
-                                  style: TextStyle(fontSize: 40),
-                                ),
-                              );
+                        ],
+                      ),
+                    ),
+                    Container(
+                      height: 360,
+                      child: GridView.builder(
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: viewModel.moodEmojiMapping.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 5),
+                        itemBuilder: (context, index) {
+                          return RawMaterialButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              viewModel.updateMyMood(viewModel
+                                  .moodEmojiMapping.keys
+                                  .toList()[index]);
                             },
-                          ),
-                        ),
-                      ]));
+                            shape: CircleBorder(),
+                            child: Text(
+                              viewModel.moodEmojiMapping.keys.toList()[index] ==
+                                      "heart"
+                                  ? "❤️"
+                                  : viewModel.moodEmojiMapping.keys
+                                      .toList()[index],
+                              style: TextStyle(fontSize: 40),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ]);
                 });
           },
-          child: CircleAvatar(
-            backgroundColor: Colors.grey.shade900,
-            child: viewModel.myMood == null
-                ? Icon(
-                    PhosphorIcons.smiley,
-                    color: Colors.white,
-                    size: 28,
-                  )
-                : Text(
-                    viewModel.myMood,
-                    style: TextStyle(fontSize: 28),
-                  ),
-            radius: 24,
-          )),
+          child: viewModel.myMood == null
+              ? Icon(
+                  PhosphorIcons.smileyFill,
+                  color: Colors.white,
+                  size: 28,
+                )
+              : Text(
+                  viewModel.myMood,
+                  style: TextStyle(fontSize: 28),
+                )),
     );
   }
 }
@@ -321,7 +324,10 @@ class PokeButton extends ViewModelWidget<ChatViewModel> {
         width: 48,
         height: 48,
         child: RawMaterialButton(
-          fillColor: viewModel.pokeSent ? Colors.white : Colors.grey.shade900,
+          elevation: 0,
+          fillColor: viewModel.pokeSent
+              ? Colors.white
+              : Theme.of(context).primaryColorDark,
           onPressed: () {
             viewModel.poke();
           },
@@ -349,7 +355,7 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
       width: viewModel.boxLength,
       height: 72,
       decoration: BoxDecoration(
-          color: Colors.grey.shade900,
+          color: Theme.of(context).primaryColorDark,
           borderRadius: BorderRadius.circular(100)),
       child: Stack(
         children: [
@@ -417,12 +423,11 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
                     shape: CircleBorder(),
                     fillColor: Colors.white,
                     onPressed: null,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+                    child: Container(
+                      transform: Matrix4.translationValues(0, -20, 0),
                       child: JumpingDotsProgressIndicator(
-                        fontSize: 24,
+                        fontSize: 48,
                         color: Theme.of(context).accentColor,
-                        // dotSpacing: 2,
                       ),
                     )),
               ),
@@ -431,17 +436,16 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
                 width: 64,
                 child: RawMaterialButton(
                   shape: CircleBorder(),
-                  fillColor: viewModel.boxExpanded
+                  fillColor: viewModel.boxLength == 280
                       ? Colors.white
                       : Theme.of(context).accentColor,
                   onPressed: null,
-                  child: viewModel.boxExpanded
-                      ? Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+                  child: viewModel.boxLength == 280
+                      ? Container(
+                          transform: Matrix4.translationValues(0, -20, 0),
                           child: JumpingDotsProgressIndicator(
-                            fontSize: 24,
+                            fontSize: 48,
                             color: Theme.of(context).accentColor,
-                            // dotSpacing: 2,
                           ),
                         )
                       : Icon(
@@ -452,7 +456,7 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
               ),
               childWhenDragging: CircleAvatar(
                 radius: 32,
-                backgroundColor: Colors.black,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               ),
             ),
           ),

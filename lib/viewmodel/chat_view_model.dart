@@ -44,6 +44,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   // Context variables
   final BuildContext context;
+  bool isLoading = true;
 
   // Variables related to your chat state
   bool youAreRecording = false;
@@ -187,6 +188,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   initialiseStreams() async {
     await getInitialChatData();
     await getMyMood();
+    isLoading = false;
     enableYourDocumentStream();
     enableYourMoodStream();
     enableTapesForMeStream();
@@ -587,8 +589,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   void poke() {
     pokeSent = true;
     notifyListeners();
-    _firestoreService.sendPoke(
-        this.chatForYouUID, {"sentAt": DateTime.now(), "isExpired": false});
+    _firestoreService.sendPoke(this.chatForYouUID, this.chatForMeUID,
+        {"sentAt": DateTime.now(), "isExpired": false});
     Future.delayed(Duration(milliseconds: 1500), () {
       pokeSent = false;
       notifyListeners();
@@ -650,17 +652,18 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         child: Container(
           height: 52,
           decoration: BoxDecoration(
-              borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                  bottomLeft: Radius.circular(
-                      bubbleTail[allTapes.elementAt(index)] == null
-                          ? 4
-                          : bubbleTail[allTapes.elementAt(index)]),
-                  bottomRight: Radius.circular(32)),
-              color: playerState == null
-                  ? Theme.of(context).accentColor
-                  : Colors.grey.shade900),
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(32),
+                topRight: Radius.circular(32),
+                bottomLeft: Radius.circular(
+                    bubbleTail[allTapes.elementAt(index)] == null
+                        ? 4
+                        : bubbleTail[allTapes.elementAt(index)]),
+                bottomRight: Radius.circular(32)),
+            color: playerState == null
+                ? Theme.of(context).accentColor
+                : Theme.of(context).primaryColorDark,
+          ),
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: playerState == "Played"
               ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
@@ -723,19 +726,20 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
                         bubbleTail[allTapes.elementAt(index)] == null
                             ? 4
                             : bubbleTail[allTapes.elementAt(index)])),
-                color: Colors.grey.shade900),
+                color: Theme.of(context).primaryColorDark),
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: playedState
                 ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
                     Icon(
                       PhosphorIcons.speakerSimpleHighFill,
-                      color: Colors.grey,
+                      color: Theme.of(context).primaryColorLight,
                       size: 20,
                     ),
                     SizedBox(width: 14),
                     Text(
                       "Played",
-                      style: TextStyle(color: Colors.grey),
+                      style:
+                          TextStyle(color: Theme.of(context).primaryColorLight),
                     )
                   ])
                 : recorderState == "Sending"
@@ -774,7 +778,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
                 topRight: Radius.circular(32),
                 bottomLeft: Radius.circular(4),
                 bottomRight: Radius.circular(32)),
-            color: Colors.grey.shade900),
+            color: Theme.of(context).primaryColorDark),
         padding: EdgeInsets.symmetric(horizontal: 16),
         child: Row(
             mainAxisAlignment: MainAxisAlignment.start,

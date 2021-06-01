@@ -104,7 +104,7 @@ class OTPFormWidget extends ViewModelWidget<AuthenticationViewModel> {
       appBar: AppBar(
         elevation: 0,
         leading: IconButton(
-          icon: Icon(PhosphorIcons.arrowLeft),
+          icon: Icon(PhosphorIcons.caretLeft),
           onPressed: () {
             model.backToMobile();
           },
