@@ -187,8 +187,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       myDisplayName = null;
     }
     try {
-      contactsMap = List<String>.from(await cache.load('contactsMap'));
-      if (chatsList == null) {
+      contactsMap = List<String>.from(await cache.load('contactsList'));
+      if (contactsMap == null) {
         contactsMap = <String>[];
       } else {
         notifyListeners();
@@ -198,7 +198,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     }
     try {
       userUIDContactNameMapping = Map<String, String>.from(
-          await cache.load('userUIDContactNameMapping'));
+          await cache.load('userUIDContactNameMappingNew'));
       if (userUIDContactNameMapping == null) {
         userUIDContactNameMapping = {};
       } else {
@@ -435,11 +435,12 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
 
     await cache.write(
         'userNumberContactNameMapping', userNumberContactNameMapping);
-    await cache.write('userUIDContactNameMapping', userUIDContactNameMapping);
+    await cache.write(
+        'userUIDContactNameMappingNew', userUIDContactNameMapping);
     await cache.write('userUIDNumberMapping', userUIDNumberMapping);
     contactsMap.clear();
     contactsMap.addAll(contactsData);
-    await cache.write('contactsMap', contactsMap);
+    await cache.write('contactsList', contactsMap);
     notifyListeners();
     isFetchingContacts = false;
   }

@@ -8,12 +8,6 @@ class FirebaseAnalyticsService {
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
 
-  FirebaseAnalyticsService() {
-    if (_authenticationService.currentUser.uid != null) {
-      setUserProperties(_authenticationService.currentUser.uid);
-    }
-  }
-
   FirebaseAnalyticsObserver getAnalyticsObserver() =>
       FirebaseAnalyticsObserver(analytics: _firebaseAnalytics);
 
