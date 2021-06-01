@@ -1,9 +1,9 @@
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/locator.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
-import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/routing_constants.dart' as routes;
+import 'package:tapemobileapp/utils/phone_utils.dart';
 
 class AuthenticationViewModel extends ReactiveViewModel {
   final AuthenticationService _authenticationService =
@@ -15,15 +15,12 @@ class AuthenticationViewModel extends ReactiveViewModel {
   String _mobileNumber = "";
   String refactoredMobileNumber = "";
 
-
   @override
   List<ReactiveServiceMixin> get reactiveServices => [_authenticationService];
-
 
   bool get mobileError => _hasMobileError;
 
   bool get otpError => _hasOTPError;
-
 
   String get mobileNumber => _mobileNumber;
 
@@ -31,39 +28,19 @@ class AuthenticationViewModel extends ReactiveViewModel {
 
   String get authState => _authenticationService.authState;
 
-
   setMobileVariables(String mobileNumber, bool mobileError) {
     this._mobileNumber = mobileNumber;
     this._hasMobileError = mobileError;
     notifyListeners();
   }
 
-
   setOTPVariables(bool otpError) {
     this._hasOTPError = otpError;
     notifyListeners();
   }
 
-
-  String refactorMobileNumber(String mobileNumber) {
-    try {
-      if (mobileNumber.startsWith("+91")) {
-        return mobileNumber;
-      }
-      String result = int.parse(mobileNumber).toString();
-      if (result.length == 10) {
-        return "+91" + result;
-      } else {
-        return null;
-      }
-    } catch (e) {
-      return null;
-    }
-  }
-
-
   getOTP(String mobileNumber) async {
-    String refactoredNumber = refactorMobileNumber(mobileNumber);
+    String refactoredNumber = refactorPhoneNumber(mobileNumber);
     if (refactoredNumber == null) {
       setMobileVariables(mobileNumber, true);
     } else {
@@ -71,16 +48,6 @@ class AuthenticationViewModel extends ReactiveViewModel {
       setMobileVariables(mobileNumber, false);
     }
   }
-
-
-  String refactorOTP(String otp) {
-    if (otp == null || otp.length != 6) {
-      return null;
-    } else {
-      return otp;
-    }
-  }
-
 
   verifyOTP(String otp) async {
     String refactoredOTP = refactorOTP(otp);
@@ -108,12 +75,10 @@ class AuthenticationViewModel extends ReactiveViewModel {
     }
   }
 
-
   resendOTP() async {
     await _authenticationService.resendOTP();
     setOTPVariables(false);
   }
-
 
   backToMobile() {
     this._hasMobileError = false;
