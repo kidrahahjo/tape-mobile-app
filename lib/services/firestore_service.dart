@@ -37,7 +37,7 @@ class FirestoreService {
         .get();
   }
 
-  Stream<QuerySnapshot> fetchEndToEndShoutsFromDatabase(String chatUID) {
+  Stream<QuerySnapshot> fetchReceivedTapesFromDatabase(String chatUID) {
     // Get the shouts in the current chat
     return _chatsCollectionReference
         .doc(chatUID)
@@ -45,6 +45,69 @@ class FirestoreService {
         .where("isListened", isEqualTo: false)
         .orderBy("sentAt", descending: false)
         .snapshots();
+  }
+
+  Stream<QuerySnapshot> fetchPokesForMe(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("waves")
+        .where("isExpired", isEqualTo: false)
+        .orderBy("sentAt", descending: true)
+        .snapshots();
+  }
+
+  expirePoke(String waveID, String chatUID) {
+    _chatsCollectionReference
+        .doc(chatUID)
+        .collection("waves")
+        .doc(waveID)
+        .set({"isExpired": true}, SetOptions(merge: true));
+  }
+
+  Future<QuerySnapshot> getChatsForMe(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .where("isListened", isEqualTo: false)
+        .orderBy("sentAt", descending: false)
+        .get();
+  }
+
+  Stream<QuerySnapshot> fetchSentTapesFromDatabase(String chatUID,
+      {bool descending = false}) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .where("isExpired", isEqualTo: false)
+        .orderBy("sentAt", descending: descending)
+        .snapshots();
+  }
+
+  Future<QuerySnapshot> getChatsForYou(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .where("isExpired", isEqualTo: false)
+        .orderBy("sentAt", descending: false)
+        .get();
+  }
+
+  Stream<QuerySnapshot> getLastTapeStateStream(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .orderBy("sentAt", descending: true)
+        .limit(1)
+        .snapshots();
+  }
+
+  Future<QuerySnapshot> getLastTapeListenedDoc(String chatUID) {
+    return _chatsCollectionReference
+        .doc(chatUID)
+        .collection("messages")
+        .orderBy("sentAt", descending: true)
+        .limit(1)
+        .get();
   }
 
   Stream<DocumentSnapshot> getChatState(String chatUID) {
@@ -76,25 +139,13 @@ class FirestoreService {
         .set(data, SetOptions(merge: true));
   }
 
-  Stream<QuerySnapshot> getStatuses(String userUID) {
-    return _userCollectionReference
-        .doc(userUID)
-        .collection("statuses")
-        .where("isDeleted", isEqualTo: false)
-        .orderBy("lastModifiedAt", descending: true)
-        .snapshots();
-  }
-
-  updateStatusState(
-      String userUID, String statusUID, Map<String, dynamic> data) {
-    _userCollectionReference
-        .doc(userUID)
-        .collection("statuses")
-        .doc(statusUID)
-        .set(data, SetOptions(merge: true));
-  }
-
-  sendPoke(String chatUID, Map<String, dynamic> data) {
-    _chatsCollectionReference.doc(chatUID).collection("pokes").add(data);
+  sendPoke(String chatForMe, String chatForYou, Map<String, dynamic> data) {
+    _chatsCollectionReference.doc(chatForMe).collection("waves").add(data);
+    _chatsCollectionReference
+        .doc(chatForMe)
+        .set({"lastModifiedAt": DateTime.now()}, SetOptions(merge: true));
+    _chatsCollectionReference
+        .doc(chatForYou)
+        .set({"lastModifiedAt": DateTime.now()}, SetOptions(merge: true));
   }
 }

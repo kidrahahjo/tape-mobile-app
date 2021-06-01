@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:tapemobileapp/routing_constants.dart';
+import 'package:tapemobileapp/app/routing_constants.dart';
 import 'package:tapemobileapp/ui/views/authenticate_view.dart';
 import 'package:tapemobileapp/ui/views/chatpage_view.dart';
 import 'package:tapemobileapp/ui/views/home_view.dart';
@@ -15,7 +15,8 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case AuthenticationViewRoute:
       return MaterialPageRoute(builder: (context) => AuthenticationView());
     case HomeViewRoute:
-      Map<String, String> arguments = settings.arguments as Map<String, String>;
+      Map<String, dynamic> arguments =
+          settings.arguments as Map<String, String>;
       return MaterialPageRoute(
           builder: (context) =>
               HomeView(arguments['userUID'], arguments['phoneNumber']));

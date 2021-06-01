@@ -4,21 +4,26 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
+import 'package:tapemobileapp/utils/time_utils.dart';
 import 'package:uuid/uuid.dart';
-import 'package:tapemobileapp/locator.dart';
+import 'package:tapemobileapp/app/locator.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/services/chat_service.dart';
 import 'package:tapemobileapp/services/firebase_storage_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:progress_indicators/progress_indicators.dart';
+
+import '../utils/time_utils.dart';
 
 class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
-  final String yourUID;
-  final String yourName;
-
-  // services
+  // Variables related to services
   final NavigationService _navigationService = locator<NavigationService>();
   final ChatService _chatService = locator<ChatService>();
   final AuthenticationService _authenticationService =
@@ -26,155 +31,110 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final FirebaseStorageService _firebaseStorageService =
       locator<FirebaseStorageService>();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-  // shout related variables
-  Queue<String> shoutQueue = new Queue<String>();
-  int currentShoutPlaying = 1;
-  Map<String, DateTime> shoutsToTimeStamp = {};
-
-  // status related variables
-  String yourStatus;
+  // Variables related to you
+  final String yourUID;
+  final String yourName;
+  String profilePic;
   bool youAreOnline = false;
 
-  // current state related variables
-  bool youAreRecording = false;
-  bool hasPlayed = false;
-  String myChatState;
-  String yourChatState;
-  DateTime lastSentTime;
-  DateTime lastPlayedTime;
-
-  // recording related variables
-  bool _record = false;
-  bool _sendingShout = false;
-
-  // player related variables
-  bool autoplay = false;
-
-  // poke related variables
-  bool poked = false;
-
-  // Streams
+  // Streams related to you
   Stream<DocumentSnapshot> yourDocumentStream;
   StreamSubscription<DocumentSnapshot> yourDocumentStreamSubscription;
-  Stream<QuerySnapshot> shoutsStream;
-  StreamSubscription<QuerySnapshot> shoutsStreamSubscription;
+
+  // Context variables
+  final BuildContext context;
+  bool isLoading = true;
+
+  // Variables related to your chat state
+  bool youAreRecording = false;
+
+  // Streams related to your chat state
   Stream<DocumentSnapshot> chatStateStream;
   StreamSubscription<DocumentSnapshot> chatStateStreamSubscription;
-  Stream<DocumentSnapshot> myShoutsSentStateStream;
-  StreamSubscription<DocumentSnapshot> myShoutsSentStateStreamSubscription;
 
-  ChatViewModel(this.yourUID, this.yourName) {
+  // Variables related to Tape Area
+  ScrollController scrollController = new ScrollController();
+  Map<String, double> gapBetweenShouts = {};
+  Map<String, double> bubbleTail = {};
+  Queue<String> allTapes = new Queue();
+  Queue<Map<String, bool>> tapeList = new Queue<Map<String, bool>>();
+  Map<String, String> tapeRecorderState = {};
+  Map<String, DateTime> tapesByDateTime = {};
+  Map<String, String> tapePlayerState = {};
+  Map<String, bool> tapePlayedState = {};
+  Set<String> yourTapes = {};
+  Set<String> playedTapes = {};
+  String currentTapePlaying;
+
+  // Streams related to Tape Area
+  Stream<QuerySnapshot> tapesForMeStream;
+  StreamSubscription<QuerySnapshot> tapesForMeStreamSubscription;
+  Stream<QuerySnapshot> myTapesSentStateStream;
+  StreamSubscription<QuerySnapshot> myTapesSentStateStreamSubscription;
+
+  // Variables related to Wave
+  bool showPoke = false;
+  bool pokeSent = false;
+
+  // Streams related to Waves
+  Stream<QuerySnapshot> pokesForMeStream;
+  StreamSubscription<QuerySnapshot> pokesForMeStreamSubscription;
+
+  // Variables related to mood
+  Map<dynamic, String> moodEmojiMapping = {
+    "😂": "Face With Tears of Joy",
+    "heart": "Heavy Black Heart",
+    "😢": "Crying Face",
+    "😱": "Face Screaming in Fear",
+    "💋": "Kiss Mark",
+    "💩": "Pile of Poo",
+    "😘": "Face Throwing a Kiss",
+    "😒": "Unamused Face",
+    "😍": "Smiling Face With Heart-Shaped Eyes",
+    "😡": "Pouting Face",
+    "😳": "Flushed Face",
+    "😐": "Neutral Face",
+    "👌": "OK Hand Sign",
+    "😉": "Winking Face",
+    "😕": "Confused Face",
+    "👍": "Thumbs Up Sign",
+    "😔": "Disappointed Face",
+    "😃": "Smiling Face With Open Mouth",
+    "😎": "Smirking Face",
+    "😄": "Smiling Face With Open Mouth and Smiling Eyes"
+  };
+  AudioPlayer player = AudioPlayer();
+  bool showGlow = false;
+  String myMood, yourMood;
+  DateTime yourMoodTime;
+  bool playYourMood = false;
+
+  // Streams related to mood
+  Stream<DocumentSnapshot> yourMoodStream;
+  StreamSubscription<DocumentSnapshot> yourMoodStreamSubscription;
+
+  // Variables related to my recording
+  double boxLength = 72;
+  bool boxExpanded = false;
+  Widget deleteIcon = SizedBox.shrink();
+  Widget sendIcon = SizedBox.shrink();
+  Directory tempDir;
+
+  ChatViewModel(this.yourUID, this.yourName, this.context) {
     WidgetsBinding.instance.addObserver(this);
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": yourUID});
-    enableYourDocumentStream();
-    enableShoutsStream();
-    enableChatForMeStateStream();
-    enableChatForYouStateStream();
-  }
-
-  @override
-  List<ReactiveServiceMixin> get reactiveServices => [_chatService];
-
-  String get myUID => _authenticationService.currentUser.uid;
-
-  String get chatForMeUID => yourUID + '_' + myUID;
-
-  String get chatForYouUID => myUID + '_' + yourUID;
-
-  String get recordingTimer => _chatService.recordingTime;
-
-  bool get isLoadingShout => _chatService.isLoadingShout;
-
-  bool get iAmListening => _chatService.isPlayingShout;
-
-  bool get iAmRecording => _chatService.isRecordingShout;
-
-  bool get sendingShout => _sendingShout;
-
-  int get totalShouts => shoutQueue.length;
-
-  String get status => yourStatus == null ? "" : yourStatus;
-
-  enableYourDocumentStream() {
-    yourDocumentStream = _firestoreService.getUserDataStream(yourUID);
-    yourDocumentStreamSubscription = yourDocumentStream.listen((event) {
-      if (event.exists) {
-        Map<String, dynamic> data = event.data();
-        yourStatus = data['currentStatus'];
-        youAreOnline = data['isOnline'] == null ? false : data['isOnline'];
-        notifyListeners();
-      }
-    });
-  }
-
-  convertToDateTime(Timestamp time) {
-    if (time == null) {
-      return null;
-    } else {
-      return DateTime.fromMicrosecondsSinceEpoch(time.microsecondsSinceEpoch);
-    }
-  }
-
-  enableShoutsStream() {
-    shoutsStream =
-        _firestoreService.fetchEndToEndShoutsFromDatabase(chatForMeUID);
-    shoutsStreamSubscription = shoutsStream.listen((event) {
-      event.docs.forEach((element) {
-        if (!shoutQueue.contains(element.id)) {
-          shoutQueue.add(element.id);
-          Map<String, dynamic> data = element.data();
-          shoutsToTimeStamp[element.id] = convertToDateTime(data['sentAt']);
-          notifyListeners();
-          if (shoutQueue.length == 1 && autoplay) {
-            currentShoutPlaying = 1;
-            startPlaying();
-          }
-        }
-      });
-    });
-  }
-
-  enableChatForMeStateStream() {
-    chatStateStream = _firestoreService.getChatState(chatForMeUID);
-    chatStateStreamSubscription = chatStateStream.listen((event) {
-      if (event.exists) {
-        Map<String, dynamic> data = event.data();
-        this.youAreRecording =
-            data['isRecording'] != null ? data['isRecording'] : false;
-        this.yourChatState = data['chatState'];
-        this.lastPlayedTime = convertToDateTime(data['lastListenedAt']);
-        notifyListeners();
-      }
-    });
-  }
-
-  enableChatForYouStateStream() {
-    myShoutsSentStateStream = _firestoreService.getChatState(chatForYouUID);
-    myShoutsSentStateStreamSubscription =
-        myShoutsSentStateStream.listen((event) {
-      if (event.exists) {
-        Map<String, dynamic> data = event.data();
-        this.myChatState = data['chatState'];
-        this.lastSentTime = convertToDateTime(data['lastSentAt']);
-      }
-      notifyListeners();
-    });
-  }
-
-  backToHome() {
-    _firestoreService.saveUserInfo(
-        _authenticationService.currentUser.uid, {"chattingWith": null});
-    _chatService.suspendPlaying();
-    _chatService.suspendRecording();
-    _navigationService.goBack();
+    flutterLocalNotificationsPlugin.cancel(0, tag: yourUID);
+    flutterLocalNotificationsPlugin.cancel(1, tag: yourUID);
+    initialiseStreams();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached ||
+    if (state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
       _firestoreService.saveUserInfo(_authenticationService.currentUser.uid,
           {"isOnline": false, "chattingWith": null});
@@ -190,72 +150,376 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _firestoreService.saveUserInfo(
         _authenticationService.currentUser.uid, {"chattingWith": null});
-
+    pokesForMeStreamSubscription?.cancel();
+    yourMoodStreamSubscription?.cancel();
     yourDocumentStreamSubscription?.cancel();
     _chatService.cancelSubscriptions();
-    shoutsStreamSubscription?.cancel();
+    tapesForMeStreamSubscription?.cancel();
     chatStateStreamSubscription?.cancel();
-    myShoutsSentStateStreamSubscription?.cancel();
+    myTapesSentStateStreamSubscription?.cancel();
+    player?.dispose();
     super.dispose();
   }
 
-  void playNextShout() {
-    currentShoutPlaying += 1;
-    notifyListeners();
-    if (autoplay) {
-      startPlaying();
-    }
+  // Getters
+  @override
+  List<ReactiveServiceMixin> get reactiveServices => [_chatService];
+
+  String get myUID => _authenticationService.currentUser.uid;
+
+  String get chatForMeUID => yourUID + '_' + myUID;
+
+  String get chatForYouUID => myUID + '_' + yourUID;
+
+  String get recordingTimer => _chatService.recordingTime;
+
+  bool get iAmRecording => _chatService.isRecordingShout;
+
+  double getGap(int index) {
+    return gapBetweenShouts[allTapes.elementAt(index)] == null
+        ? 4
+        : gapBetweenShouts[allTapes.elementAt(index)];
   }
 
-  void skip() {
-    _firestoreService.updateYourShoutState(
-      chatForMeUID,
-      shoutQueue.elementAt(currentShoutPlaying - 1),
-      {
-        "isListened": true,
-        "listenedAt": DateTime.now(),
-      },
-    );
-    if (currentShoutPlaying == shoutQueue.length) {
-      _firestoreService.updateChatState(chatForYouUID,
-          {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
-      if (yourChatState == 'Played') {
-        _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
+  // Streams
+  initialiseStreams() async {
+    await getInitialChatData();
+    await getYourMood();
+    await getMyMood();
+    isLoading = false;
+    enableYourDocumentStream();
+    enableYourMoodStream();
+    enableTapesForMeStream();
+    enableChatForMeStateStream();
+    enablePokeStream();
+    enableTapesSentStateSream();
+  }
+
+  getInitialChatData() async {
+    tempDir = await getTemporaryDirectory();
+
+    await _firestoreService.getChatsForMe(chatForMeUID).then((value) {
+      value.docs.forEach((element) {
+        Map<String, dynamic> data = element.data();
+        yourTapes.add(element.id);
+        tapesByDateTime[element.id] =
+            convertTimestampToDateTime(data['sentAt']);
+      });
+    });
+    await _firestoreService.getChatsForYou(chatForYouUID).then((value) {
+      value.docs.forEach((element) {
+        Map<String, dynamic> data = element.data();
+        tapesByDateTime[element.id] =
+            convertTimestampToDateTime(data['sentAt']);
+        tapeRecorderState[element.id] = "Sent";
+        if (data['isListened'] == true) {
+          tapePlayedState[element.id] = data['isListened'];
+          _firestoreService.updateYourShoutState(
+              chatForYouUID, element.id, {"isExpired": true});
+        }
+      });
+    });
+    List<String> sortedKeys = tapesByDateTime.keys.toList(growable: false)
+      ..sort((k1, k2) =>
+          compareDateTimeGreaterThan(tapesByDateTime[k1], tapesByDateTime[k2]));
+    allTapes.addAll(List<String>.from(sortedKeys));
+    for (int i = 0; i < allTapes.length; i++) {
+      if (i == 0) {
+        gapBetweenShouts[allTapes.elementAt(i)] = 4;
+        bubbleTail[allTapes.elementAt(i)] = 4;
+      } else {
+        String last = allTapes.elementAt(i - 1);
+        String curr = allTapes.elementAt(i);
+        if (yourTapes.contains(last) && yourTapes.contains(curr)) {
+          bubbleTail[allTapes.elementAt(i - 1)] = 32;
+          gapBetweenShouts[allTapes.elementAt(i)] = 4;
+        } else if (!yourTapes.contains(last) && !yourTapes.contains(curr)) {
+          bubbleTail[allTapes.elementAt(i - 1)] = 32;
+          gapBetweenShouts[allTapes.elementAt(i)] = 4;
+        } else {
+          bubbleTail[allTapes.elementAt(i - 1)] = 4;
+          gapBetweenShouts[allTapes.elementAt(i)] = 16;
+        }
       }
-      shoutQueue = new Queue();
-      currentShoutPlaying = 1;
-    } else {
-      _chatService.stopPlaying();
-      playNextShout();
     }
+    notifyListeners();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
+  getYourMood() async {
+    await _firestoreService.getChatStateData(chatForMeUID).then((value) {
+      Map<String, dynamic> data = value.data();
+      yourMood = data["mood"] == "heart" ? "❤️" : data["mood"];
+      yourMoodTime = convertTimestampToDateTime(data["lastMoodModifiedAt"]);
+      notifyListeners();
+    });
+  }
+
+  getMyMood() async {
+    await _firestoreService.getChatStateData(chatForYouUID).then((value) {
+      Map<String, dynamic> data = value.data();
+      myMood = data["mood"] == "heart" ? "❤️" : data["mood"];
+      notifyListeners();
+    });
+  }
+
+  enableYourDocumentStream() {
+    yourDocumentStream = _firestoreService.getUserDataStream(yourUID);
+    yourDocumentStreamSubscription = yourDocumentStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        youAreOnline = data['isOnline'] == null ? false : data['isOnline'];
+        profilePic =
+            data['displayImageURL'] == null ? null : data['displayImageURL'];
+        notifyListeners();
+      }
+    });
+  }
+
+  enableYourMoodStream() {
+    yourMoodStream = _firestoreService.getChatState(chatForMeUID);
+    yourMoodStreamSubscription = yourMoodStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        yourMood = data["mood"] == null
+            ? null
+            : data["mood"] == "heart"
+                ? "❤️"
+                : data["mood"];
+        DateTime time = convertTimestampToDateTime(data["lastMoodModifiedAt"]);
+
+        if (playYourMood == true) {
+          if (time != null &&
+              compareDateTimeGreaterThan(time, yourMoodTime) == 1) {
+            yourMoodTime = time;
+            showGlow = true;
+            notifyListeners();
+            Future.delayed(Duration(milliseconds: 1500), () {
+              showGlow = false;
+              notifyListeners();
+            });
+            playSound(moodEmojiMapping[data["mood"]]);
+          }
+        } else {
+          playYourMood = true;
+          notifyListeners();
+        }
+      }
+    });
+  }
+
+  enableTapesForMeStream() {
+    tapesForMeStream =
+        _firestoreService.fetchReceivedTapesFromDatabase(chatForMeUID);
+    tapesForMeStreamSubscription = tapesForMeStream.listen((event) {
+      event.docs.forEach((element) {
+        if (!allTapes.contains(element.id)) {
+          yourTapes.add(element.id);
+          if (allTapes.length == 0) {
+            gapBetweenShouts[element.id] = 4;
+            bubbleTail[element.id] = 4;
+            allTapes.add(element.id);
+          } else {
+            String lastTape = allTapes.last;
+            if (lastTape == "Recording") {
+              bubbleTail[element.id] = 32;
+              allTapes.removeLast();
+              gapBetweenShouts["Recording"] = 4;
+              if (allTapes.length != 0) {
+                lastTape = allTapes.last;
+                if (yourTapes.contains(lastTape)) {
+                  bubbleTail[lastTape] = 32;
+                  gapBetweenShouts[element.id] = 4;
+                } else {
+                  bubbleTail[lastTape] = 4;
+                  gapBetweenShouts[element.id] = 16;
+                }
+              } else {
+                gapBetweenShouts[element.id] = 4;
+                bubbleTail[lastTape] = 32;
+              }
+              allTapes.add(element.id);
+              allTapes.add("Recording");
+              notifyListeners();
+            } else if (yourTapes.contains(allTapes.last)) {
+              gapBetweenShouts[element.id] = 4;
+              bubbleTail[element.id] = 4;
+              bubbleTail[allTapes.last] = 32;
+              allTapes.add(element.id);
+            } else {
+              gapBetweenShouts[element.id] = 16;
+              bubbleTail[element.id] = 4;
+              allTapes.add(element.id);
+            }
+          }
+          Map<String, dynamic> data = element.data();
+          tapesByDateTime[element.id] =
+              convertTimestampToDateTime(data['sentAt']);
+          notifyListeners();
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            scrollController.animateTo(
+              scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOut,
+            );
+          });
+        }
+      });
+    });
+  }
+
+  enableChatForMeStateStream() {
+    chatStateStream = _firestoreService.getChatState(chatForMeUID);
+    chatStateStreamSubscription = chatStateStream.listen((event) {
+      if (event.exists) {
+        Map<String, dynamic> data = event.data();
+        bool recording =
+            data['isRecording'] != null ? data['isRecording'] : false;
+        if (recording != youAreRecording) {
+          youAreRecording = recording;
+          if (recording == false) {
+            allTapes.remove("Recording");
+            if (allTapes.length == 0) {
+              //
+            } else if (yourTapes.contains(allTapes.last)) {
+              bubbleTail[allTapes.last] = 4;
+            }
+            notifyListeners();
+          } else if (!allTapes.contains("Recording")) {
+            if (allTapes.length == 0) {
+              gapBetweenShouts["Recording"] = 4;
+            } else if (yourTapes.contains(allTapes.last)) {
+              gapBetweenShouts["Recording"] = 4;
+              bubbleTail[allTapes.last] = 32;
+            } else {
+              gapBetweenShouts["Recording"] = 16;
+            }
+            allTapes.add("Recording");
+            notifyListeners();
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              scrollController.animateTo(
+                scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+              );
+            });
+          }
+        }
+      }
+    });
+  }
+
+  enablePokeStream() {
+    pokesForMeStream = _firestoreService.fetchPokesForMe(chatForMeUID);
+    pokesForMeStreamSubscription = pokesForMeStream.listen((event) {
+      if (event.docs.length > 0) {
+        showGlow = true;
+        showPoke = true;
+        notifyListeners();
+        Future.delayed(Duration(milliseconds: 1500), () {
+          showGlow = false;
+          showPoke = false;
+          notifyListeners();
+        });
+      }
+      event.docs.forEach((element) {
+        _firestoreService.expirePoke(element.id, chatForMeUID);
+      });
+    });
+  }
+
+  enableTapesSentStateSream() {
+    myTapesSentStateStream =
+        _firestoreService.fetchSentTapesFromDatabase(chatForYouUID);
+    myTapesSentStateStreamSubscription = myTapesSentStateStream.listen((event) {
+      event.docs.forEach((element) {
+        if (allTapes.contains(element.id) &&
+            (tapePlayedState[element.id] == null)) {
+          Map<String, dynamic> data = element.data();
+          if (data['isListened'] == true) {
+            tapePlayedState[element.id] = data['isListened'];
+            notifyListeners();
+            _firestoreService.updateYourShoutState(
+                chatForYouUID, element.id, {"isExpired": true});
+          }
+        }
+      });
+    });
+  }
+
+  // I am recording related methods
   void startRecording() async {
-    _record = true;
-    bool continueRecording = true;
+    expandBox();
     String audioUID = Uuid().v4().replaceAll("-", "");
-    var tempDir = await getTemporaryDirectory();
     String audioPath = '${tempDir.path}/$audioUID.aac';
-    if (continueRecording == _record) {
-      _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
-      _chatService.startRecording(audioUID, audioPath);
-    }
+    _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
+    _chatService.startRecording(
+        audioUID, audioPath, contractBox, chatForYouUID);
+  }
+
+  void deleteRecording() async {
+    notifyListeners();
+    await _chatService.stopRecording();
+    _firestoreService.setRecordingStateToDatabase(chatForYouUID, false);
   }
 
   void stopRecording() async {
-    _record = false;
+    String audioUID, audioPath;
     if (_chatService.recordingTime == "" ||
         _chatService.recordingTime == "0s") {
       await _chatService.stopRecording();
       // show snackbar
     } else {
       try {
-        _sendingShout = true;
-        notifyListeners();
         List<String> audioVariables = await _chatService.stopRecording();
-        _uploadAudio(audioVariables[0], audioVariables[1]);
+        audioPath = audioVariables[0];
+        audioUID = audioVariables[1];
+        if (allTapes.length == 0) {
+          gapBetweenShouts[audioUID] = 4;
+          allTapes.add(audioUID);
+        } else {
+          String lastTape = allTapes.last;
+          if (lastTape == "Recording") {
+            allTapes.removeLast();
+            gapBetweenShouts["Recording"] = 16;
+            lastTape = allTapes.last;
+            if (yourTapes.contains(allTapes.last)) {
+              bubbleTail[allTapes.last] = 4;
+            } else {
+              bubbleTail[allTapes.last] = 32;
+            }
+            allTapes.add(audioUID);
+            allTapes.add("Recording");
+          } else {
+            allTapes.add(audioUID);
+          }
+          if (yourTapes.contains(lastTape)) {
+            gapBetweenShouts[audioUID] = 16;
+          } else {
+            gapBetweenShouts[audioUID] = 4;
+            bubbleTail[allTapes.last] = 32;
+            bubbleTail[audioUID] = 4;
+          }
+        }
+        tapeRecorderState[audioUID] = "Sending";
+        notifyListeners();
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          scrollController.animateTo(
+            scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutCubic,
+          );
+        });
+        _uploadAudio(audioPath, audioUID);
       } catch (e) {
-        _sendingShout = false;
+        print(e);
+        tapeRecorderState[audioUID] = "Some Error Occured";
         notifyListeners();
         // show failed to send snackbar
       }
@@ -269,120 +533,336 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         .getLocationReference(chatForYouUID, currentAudioUID)
         .putFile(file)
         .whenComplete(() {
-      _sendingShout = false;
+      tapeRecorderState[currentAudioUID] = "Sent";
+      notifyListeners();
     });
   }
 
-  void startPlaying() async {
-    autoplay = true;
-    int current = currentShoutPlaying;
-    if (current > shoutQueue.length) {
-      currentShoutPlaying = shoutQueue.length;
-      notifyListeners();
-    } else {
-      try {
-        notifyListeners();
-        String thisAudioUID = shoutQueue.elementAt(current - 1);
-        String downloadURL = await _firebaseStorageService
-            .getLocationReference(chatForMeUID, thisAudioUID)
-            .getDownloadURL();
-        if (current == currentShoutPlaying) {
-          _chatService.startPlaying(downloadURL, whenFinished, thisAudioUID);
-        }
-      } catch (e) {
-        notifyListeners();
-        _chatService.stopPlaying();
+  // I am playing
+  void playTape(audioUID) async {
+    playedTapes.add(audioUID);
+    if (currentTapePlaying != null) {
+      if (playedTapes.contains(currentTapePlaying)) {
+        tapePlayerState[currentTapePlaying] = "Played";
+      } else {
+        tapePlayerState[currentTapePlaying] = null;
       }
     }
-  }
-
-  void stopPlaying() {
-    autoplay = false;
+    currentTapePlaying = audioUID;
+    tapePlayerState[audioUID] = "Loading";
     notifyListeners();
-    _chatService.stopPlaying();
-  }
-
-  void whenFinished(String audioUID) {
-    // update message and chat state
+    bool yourTape = yourTapes.contains(audioUID);
+    String downloadURL = await _firebaseStorageService
+        .getLocationReference(yourTape ? chatForMeUID : chatForYouUID, audioUID)
+        .getDownloadURL();
+    tapePlayerState[audioUID] = "Playing";
+    notifyListeners();
+    _chatService.startPlaying(
+        downloadURL,
+        yourTape
+            ? whenFinished
+            : (audioUID) {
+                tapePlayerState[audioUID] = null;
+                notifyListeners();
+              },
+        audioUID);
     _firestoreService.updateYourShoutState(
       chatForMeUID,
       audioUID,
       {
         "isListened": true,
         "listenedAt": DateTime.now(),
+        "count": FieldValue.increment(1),
       },
     );
-    if (currentShoutPlaying == shoutQueue.length) {
-      _firestoreService.updateChatState(chatForYouUID,
-          {"chatState": 'Played', 'lastListenedAt': DateTime.now()});
-      if (yourChatState == 'Played') {
-        _firestoreService.updateChatState(chatForMeUID, {"chatState": null});
-      }
-      shoutQueue = new Queue();
-      currentShoutPlaying = 1;
-      autoplay = false;
+  }
+
+  void stopTape(audioUID) {
+    if (playedTapes.contains(currentTapePlaying)) {
+      tapePlayerState[currentTapePlaying] = "Played";
     } else {
-      playNextShout();
+      tapePlayerState[currentTapePlaying] = null;
+    }
+    notifyListeners();
+    _chatService.stopPlaying();
+  }
+
+  void whenFinished(String audioUID) {
+    playedTapes.add(audioUID);
+    currentTapePlaying = null;
+    tapePlayerState[audioUID] = "Played";
+    notifyListeners();
+    int index = allTapes.toList().indexOf(audioUID);
+    for (int i = index + 1; i < allTapes.length; i++) {
+      String uid = allTapes.elementAt(i);
+      if (yourTapes.contains(uid)) {
+        if (!playedTapes.contains(uid)) {
+          playTape(uid);
+        }
+        break;
+      }
     }
   }
 
+  // Wave related methods
   void poke() {
-    poked = true;
+    pokeSent = true;
     notifyListeners();
-    _firestoreService.sendPoke(this.chatForYouUID, {"sendAt": DateTime.now()});
-    Future.delayed(Duration(milliseconds: 1400), () {
-      poked = false;
+    _firestoreService.sendPoke(this.chatForYouUID, this.chatForMeUID,
+        {"sentAt": DateTime.now(), "isExpired": false});
+    Future.delayed(Duration(milliseconds: 1500), () {
+      pokeSent = false;
       notifyListeners();
     });
   }
 
-  bool showPlayer() {
-    return totalShouts > 0;
+  // Reaction related methods
+  updateMyMood(String emoji) async {
+    await _firestoreService.updateChatState(
+        chatForYouUID, {"mood": emoji, "lastMoodModifiedAt": DateTime.now()});
+    myMood = emoji == "heart" ? "❤️" : emoji;
+    playSound(moodEmojiMapping[emoji]);
+    notifyListeners();
   }
 
-  bool showClear() {
-    return (myChatState == null || myChatState == 'Played') &&
-        yourChatState == null;
-  }
-
-  bool showSent() {
-    return yourChatState == 'Received';
-  }
-
-  bool showShoutPlayed() {
-    return yourChatState == 'Played';
-  }
-
-  String convertTime(DateTime dateTime) {
-    Duration difference = DateTime.now().difference(dateTime);
-    int day = difference.inDays;
-    int hours = difference.inHours;
-    int minutes = difference.inMinutes;
-    int seconds = difference.inSeconds;
-    if (day != 0) {
-      return day.toString() + 'd ago';
-    } else if (hours != 0) {
-      return hours.toString() + 'h ago';
-    } else if (minutes != 0) {
-      return minutes.toString() + 'm ago';
-    } else if (seconds >= 20) {
-      return seconds.toString() + 's ago';
+  void playSound(String name) async {
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.detached ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.inactive ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.paused) {
     } else {
-      return 'Just now';
+      try {
+        await player.setAsset('assets/sfx/$name.wav');
+        player.play();
+      } catch (e) {
+        print(e);
+      }
     }
   }
 
-  String getTime() {
-    if (showPlayer()) {
-      DateTime time =
-          shoutsToTimeStamp[shoutQueue.elementAt(currentShoutPlaying - 1)];
-      return time == null ? "" : convertTime(time);
-    } else if (showSent()) {
-      return lastSentTime == null ? "" : convertTime(lastSentTime);
-    } else if (showShoutPlayed()) {
-      return lastPlayedTime == null ? "" : convertTime(lastPlayedTime);
+  // UI Related Methods
+  void expandBox() {
+    boxLength = 280;
+    notifyListeners();
+    Future.delayed(Duration(milliseconds: 300), () {
+      boxExpanded = true;
+      notifyListeners();
+    });
+  }
+
+  void contractBox() {
+    boxLength = 72;
+    notifyListeners();
+    Future.delayed(Duration(milliseconds: 300), () {
+      boxExpanded = false;
+      notifyListeners();
+    });
+  }
+
+  Widget playerButton(String tapeUID, BuildContext context, int index) {
+    String playerState = tapePlayerState[tapeUID];
+    return GestureDetector(
+        onTap: () {
+          if (playerState == null || playerState == "Played") {
+            playTape(tapeUID);
+          } else if (playerState == "Playing") {
+            stopTape(tapeUID);
+          }
+        },
+        child: Container(
+          height: 52,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(32),
+                topRight: Radius.circular(32),
+                bottomLeft: Radius.circular(
+                    bubbleTail[allTapes.elementAt(index)] == null
+                        ? 4
+                        : bubbleTail[allTapes.elementAt(index)]),
+                bottomRight: Radius.circular(32)),
+            color: playerState == null
+                ? Theme.of(context).accentColor
+                : Theme.of(context).primaryColorDark,
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: playerState == "Played"
+              ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+                  Icon(
+                    PhosphorIcons.arrowCounterClockwiseBold,
+                    size: 20,
+                    color: Theme.of(context).accentColor,
+                  ),
+                  SizedBox(width: 12),
+                  Text("Tap to replay")
+                ])
+              : playerState == null
+                  ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+                      Icon(PhosphorIcons.playFill, size: 20),
+                      SizedBox(width: 12),
+                      Text("Tap to play")
+                    ])
+                  : playerState == "Playing"
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                              Icon(
+                                PhosphorIcons.stopFill,
+                                size: 20,
+                                color: Theme.of(context).accentColor,
+                              ),
+                              SizedBox(width: 12),
+                              Text("Playing...")
+                            ])
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                              Icon(
+                                PhosphorIcons.stopFill,
+                                size: 20,
+                                color: Theme.of(context).accentColor,
+                              ),
+                              SizedBox(width: 12),
+                              Text("Loading...")
+                            ]),
+        ));
+  }
+
+  Widget senderButton(String tapeUID, BuildContext context, int index) {
+    String recorderState = tapeRecorderState[tapeUID];
+    bool playedState =
+        tapePlayedState[tapeUID] == null ? false : tapePlayedState[tapeUID];
+    return GestureDetector(
+        onTap: () {
+          // TODO: code for resend
+        },
+        child: Container(
+            height: 52,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(
+                        bubbleTail[allTapes.elementAt(index)] == null
+                            ? 4
+                            : bubbleTail[allTapes.elementAt(index)])),
+                color: Theme.of(context).primaryColorDark),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: playedState
+                ? Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+                    Icon(
+                      PhosphorIcons.speakerSimpleHighFill,
+                      color: Theme.of(context).primaryColorLight,
+                      size: 20,
+                    ),
+                    SizedBox(width: 14),
+                    Text(
+                      "Played",
+                      style:
+                          TextStyle(color: Theme.of(context).primaryColorLight),
+                    )
+                  ])
+                : recorderState == "Sending"
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                            Icon(PhosphorIcons.paperPlaneFill, size: 20),
+                            SizedBox(width: 14),
+                            Text("Sending...")
+                          ])
+                    : recorderState == "Some Error Occured"
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                                Icon(PhosphorIcons.warningFill, size: 20),
+                                SizedBox(width: 14),
+                                Text("Not delivered. Try again.")
+                              ])
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                                Icon(PhosphorIcons.paperPlaneFill,
+                                    color: Theme.of(context).accentColor,
+                                    size: 20),
+                                SizedBox(width: 14),
+                                Text("Delivered")
+                              ])));
+  }
+
+  Widget recordingIndicator(BuildContext context) {
+    return Container(
+        height: 52,
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(32),
+                topRight: Radius.circular(32),
+                bottomLeft: Radius.circular(4),
+                bottomRight: Radius.circular(32)),
+            color: Theme.of(context).primaryColorDark),
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(PhosphorIcons.microphoneFill,
+                  color: Theme.of(context).accentColor, size: 20),
+              SizedBox(width: 12),
+              Text("Recording"),
+              SizedBox(width: 4),
+              Container(
+                transform: Matrix4.translationValues(0, -5, 0),
+                child: JumpingDotsProgressIndicator(
+                  fontSize: 20,
+                  color: Colors.white,
+                  dotSpacing: 0,
+                ),
+              ),
+            ]));
+  }
+
+  Widget showTape(int index, BuildContext context) {
+    String tapeUID = allTapes.elementAt(index);
+    if (yourTapes.contains(tapeUID)) {
+      return Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: playerButton(tapeUID, context, index),
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+        ],
+      );
+    } else if (tapeUID == "Recording") {
+      return Row(
+        children: [
+          Expanded(flex: 2, child: recordingIndicator(context)),
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+        ],
+      );
     } else {
-      return "";
+      return Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: Container(),
+          ),
+          Expanded(flex: 2, child: senderButton(tapeUID, context, index)),
+        ],
+      );
     }
+  }
+
+  // Other methods
+  backToHome() {
+    _firestoreService.saveUserInfo(
+        _authenticationService.currentUser.uid, {"chattingWith": null});
+    _chatService.suspendPlaying();
+    _chatService.suspendRecording();
+    _navigationService.goBack();
   }
 }

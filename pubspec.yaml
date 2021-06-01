@@ -46,16 +46,28 @@ dependencies:
   provider: ^5.0.0
   shared_preferences: ^2.0.5
   stacked: ^2.1.4
+  injectable:
+  get_it:
+  stacked_services: ^0.8.6
   uuid: ^3.0.4
   flutter_svg: ^0.22.0
   image_picker: ^0.7.5+3
-  crop: ^0.5.1
   image: ^3.0.2
-  
+  emoji_picker_flutter: ^1.0.5
+  image_cropper: ^1.4.0
+  just_audio: ^0.7.5
+  avatar_glow: ^2.0.1
+  progress_indicators: ^1.0.0
+
 dev_dependencies:
   flutter_launcher_icons: ^0.9.0
   flutter_test:
     sdk: flutter
+  injectable_generator:
+  build_runner:
+  auto_route_generator:
+
+
 
 
 
@@ -68,7 +80,7 @@ flutter_icons:
 # The following section is specific to Flutter.
 flutter:
   assets:
-    - assets/icon/
+    - assets/sfx/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -89,6 +101,7 @@ flutter:
         - asset: fonts/DMSans-Regular.ttf
         - asset: fonts/DMSans-Bold.ttf
           weight: 700
+
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

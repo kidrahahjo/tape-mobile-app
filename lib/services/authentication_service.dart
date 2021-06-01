@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tapemobileapp/app/locator.dart';
 import 'package:stacked/stacked.dart';
-import 'package:tapemobileapp/locator.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 
 class AuthenticationService with ReactiveServiceMixin {
@@ -13,29 +13,22 @@ class AuthenticationService with ReactiveServiceMixin {
 
   ReactiveValue<String> _authState = ReactiveValue<String>("Mobile");
 
-
-  AuthenticationService () {
+  AuthenticationService() {
     listenToReactiveValues([_authState]);
   }
 
-
   String get verificationID => _verificationID;
-
 
   int get resendingToken => _resendingToken;
 
-
   User get currentUser => auth.currentUser;
 
-
   String get authState => _authState.value;
-
 
   Future<bool> isUserLoggedIn() async {
     User user = auth.currentUser;
     return user != null;
   }
-
 
   signOutUser() async {
     try {
@@ -46,16 +39,13 @@ class AuthenticationService with ReactiveServiceMixin {
     }
   }
 
-
   onVerificationCompleted(PhoneAuthCredential phoneAuthCredential) {
     _authState.value = "OTP Sent";
   }
 
-
   onVerificationFailed(FirebaseAuthException exception) {
     _authState.value = "Mobile";
   }
-
 
   onCodeSent(String verificationID, int resendingToken) {
     _authState.value = "OTP Sent";
@@ -63,16 +53,13 @@ class AuthenticationService with ReactiveServiceMixin {
     this._resendingToken = resendingToken;
   }
 
-
   onCodeAutoRetrievalTimeout(String verificationID) {
     return null;
   }
 
-
   resetAuthState() {
     _authState.value = "Mobile";
   }
-
 
   Future sendOTP(String mobileNumber) async {
     _authState.value = "Loading";
@@ -91,11 +78,9 @@ class AuthenticationService with ReactiveServiceMixin {
         codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout);
   }
 
-
   Future resendOTP() async {
     return sendOTP(_refactoredNumber);
   }
-
 
   signInWithPhoneAuthCredential(String otp) async {
     _authState.value = "Loading";

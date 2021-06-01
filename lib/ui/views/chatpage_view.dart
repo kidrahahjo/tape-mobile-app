@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:progress_indicators/progress_indicators.dart';
 import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/viewmodel/chat_view_model.dart';
-
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:avatar_glow/avatar_glow.dart';
 
 class ChatPageView extends StatelessWidget {
   final String yourUID;
@@ -15,120 +15,307 @@ class ChatPageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ViewModelBuilder<ChatViewModel>.reactive(
-      viewModelBuilder: () => ChatViewModel(yourUID, yourName),
+      viewModelBuilder: () => ChatViewModel(yourUID, yourName, context),
       builder: (context, model, child) {
-        return SafeArea(
-          child: Container(
-            child: Padding(
-                padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
-                child: Column(children: <Widget>[
-                  SizedBox(height: 48),
-                  Container(
-                    height: 6,
-                    width: 40,
-                    decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(.4),
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  SizedBox(height: 32),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    subtitle: CurrentStatus(),
-                    title: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        children: [
-                          Text(
-                            yourName,
-                            style: TextStyle(fontSize: 28),
+        return Scaffold(
+          body: Column(children: [
+            Expanded(
+              child: CustomScrollView(
+                controller: model.scrollController,
+                physics: BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()),
+                slivers: [
+                  SliverAppBar(
+                    expandedHeight: 250,
+                    actions: [
+                      SizedBox(
+                        height: 64,
+                        width: 64,
+                        child: AvatarGlow(
+                          animate: model.showGlow,
+                          curve: Curves.easeOutCubic,
+                          glowColor: Colors.white,
+                          endRadius: 32.0,
+                          duration: Duration(milliseconds: 1500),
+                          repeat: false,
+                          showTwoGlows: true,
+                          repeatPauseDuration: Duration(milliseconds: 100),
+                          child: Center(
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: Colors.black,
+                                  radius: 8,
+                                ),
+                                model.showPoke
+                                    ? Icon(
+                                        PhosphorIcons.handWavingFill,
+                                        color: Theme.of(context).accentColor,
+                                        size: 28,
+                                      )
+                                    : model.yourMood == null
+                                        ? Icon(
+                                            PhosphorIcons.smileyFill,
+                                            color: Theme.of(context)
+                                                .primaryColorLight,
+                                            size: 28,
+                                          )
+                                        : Text(
+                                            model.yourMood,
+                                            style: TextStyle(fontSize: 28),
+                                          ),
+                              ],
+                            ),
                           ),
+                        ),
+                      ),
+                    ],
+                    leading: IconButton(
+                        onPressed: () => model.backToHome(),
+                        icon: Icon(PhosphorIcons.caretLeft)),
+                    pinned: true,
+                    stretch: true,
+                    flexibleSpace: FlexibleSpaceBar(
+                      collapseMode: CollapseMode.pin,
+                      centerTitle: true,
+                      background: Center(child: ProfilePic(yourName)),
+                      title: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            PhosphorIcons.circleFill,
+                            color: Colors.transparent,
+                            size: 8,
+                          ),
+                          SizedBox(width: 8),
+                          LimitedBox(
+                            maxWidth: MediaQuery.of(context).size.width * 0.5,
+                            child: Text(
+                              yourName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(width: 8),
                           Icon(
                             PhosphorIcons.circleFill,
                             color: model.youAreOnline
                                 ? Colors.green
                                 : Colors.transparent,
-                            size: 12,
+                            size: 8,
                           )
-                        ]),
-                  ),
-                  SizedBox(
-                    height: 24,
-                  ),
-                  AspectRatio(
-                    aspectRatio: 1,
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        color: Theme.of(context).primaryColorLight,
+                        ],
                       ),
-                      child: Center(child: CenterImageDisplay()),
                     ),
                   ),
-                  SizedBox(
-                    height: 32,
-                  ),
-                  CenterStatusDisplay(),
-                  SizedBox(
-                    height: 32,
-                  ),
-                  Divider(
-                    height: 1,
-                  ),
-                  Expanded(child: MainFooter()),
-                ])),
-          ),
+                  model.isLoading
+                      ? SliverToBoxAdapter(
+                          child: Center(child: Text("Getting Tapes, hang on!")),
+                        )
+                      : model.allTapes.length > 0
+                          ? TapeArea()
+                          : SliverToBoxAdapter(
+                              child: Center(
+                                  child: Text("Knock knock!",
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .primaryColorLight)))),
+                ],
+              ),
+            ),
+            Footer(),
+          ]),
         );
       },
     );
   }
 }
 
-class CurrentStatus extends ViewModelWidget<ChatViewModel> {
-  CurrentStatus() : super(reactive: true);
-
+class ProfilePic extends ViewModelWidget<ChatViewModel> {
+  final String yourName;
+  ProfilePic(this.yourName);
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return viewModel.youAreRecording
-        ? Text(
-            "Recording...",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).accentColor,
-            ),
-          )
-        : YourStatus();
+    return CircleAvatar(
+      radius: 60,
+      child: viewModel.profilePic == null
+          ? Text(
+              '${this.yourName[0]}'.toUpperCase(),
+              style: TextStyle(
+                fontSize: 48,
+              ),
+            )
+          : null,
+      backgroundImage: viewModel.profilePic == null
+          ? null
+          : NetworkImage(viewModel.profilePic),
+    );
   }
 }
 
-class YourStatus extends ViewModelWidget<ChatViewModel> {
+class Footer extends ViewModelWidget<ChatViewModel> {
+  Footer() : super(reactive: true);
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Text(
-      viewModel.status,
-      textAlign: TextAlign.left,
-      style: TextStyle(
-        fontSize: 16,
+    return Container(
+      height: 180,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Divider(),
+              SizedBox(height: 8),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    viewModel.iAmRecording
+                        ? Text(
+                            "${viewModel.recordingTimer}",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : viewModel.pokeSent
+                            ? Text('You waved at ${viewModel.yourName}',
+                                style: TextStyle())
+                            : Text('Tap to talk',
+                                style: TextStyle(
+                                  color: Theme.of(context).primaryColorLight,
+                                )),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            PokeButton(),
+                            SizedBox(width: 120),
+                            MoodButton()
+                          ],
+                        ),
+                        RecordButton(),
+                      ],
+                    ),
+                    SizedBox(height: 0),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class MainFooter extends ViewModelWidget<ChatViewModel> {
-  MainFooter() : super(reactive: false);
+class TapeArea extends ViewModelWidget<ChatViewModel> {
+  TapeArea() : super(reactive: true);
 
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        PokeButton(),
-        SizedBox(width: 16),
-        RecordButton(),
-        SizedBox(width: 16),
-        SkipButton(),
-      ],
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (BuildContext context, int index) {
+            return Column(
+              children: [
+                SizedBox(height: viewModel.getGap(index)),
+                viewModel.showTape(index, context),
+              ],
+            );
+          },
+          childCount: viewModel.allTapes.length,
+        ),
+      ),
+    );
+  }
+}
+
+class MoodButton extends ViewModelWidget<ChatViewModel> {
+  @override
+  Widget build(BuildContext context, ChatViewModel viewModel) {
+    return SizedBox(
+      height: 48,
+      width: 48,
+      child: RawMaterialButton(
+          fillColor: Theme.of(context).primaryColorDark,
+          shape: CircleBorder(),
+          elevation: 0,
+          onPressed: () {
+            showModalBottomSheet(
+                isDismissible: true,
+                isScrollControlled: true,
+                context: context,
+                enableDrag: true,
+                builder: (BuildContext context) {
+                  return Column(mainAxisSize: MainAxisSize.min, children: [
+                    AppBar(
+                      automaticallyImplyLeading: false,
+                      centerTitle: false,
+                      title: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        children: [
+                          Text("React with earmojis"),
+                          Icon(
+                            PhosphorIcons.speakerSimpleHighFill,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      height: 360,
+                      child: GridView.builder(
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: viewModel.moodEmojiMapping.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 5),
+                        itemBuilder: (context, index) {
+                          return RawMaterialButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              viewModel.updateMyMood(viewModel
+                                  .moodEmojiMapping.keys
+                                  .toList()[index]);
+                            },
+                            shape: CircleBorder(),
+                            child: Text(
+                              viewModel.moodEmojiMapping.keys.toList()[index] ==
+                                      "heart"
+                                  ? "❤️"
+                                  : viewModel.moodEmojiMapping.keys
+                                      .toList()[index],
+                              style: TextStyle(fontSize: 40),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ]);
+                });
+          },
+          child: viewModel.myMood == null
+              ? Icon(
+                  PhosphorIcons.smileyFill,
+                  color: Colors.white,
+                  size: 28,
+                )
+              : Text(
+                  viewModel.myMood,
+                  style: TextStyle(fontSize: 28),
+                )),
     );
   }
 }
@@ -137,16 +324,23 @@ class PokeButton extends ViewModelWidget<ChatViewModel> {
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
     return SizedBox(
-        width: 72,
-        height: 72,
+        width: 48,
+        height: 48,
         child: RawMaterialButton(
+          elevation: 0,
+          fillColor: viewModel.pokeSent
+              ? Colors.white
+              : Theme.of(context).primaryColorDark,
           onPressed: () {
             viewModel.poke();
           },
           shape: CircleBorder(),
           child: Icon(
-            PhosphorIcons.handWaving,
-            size: 32,
+            PhosphorIcons.handWavingFill,
+            size: 28,
+            color: viewModel.pokeSent
+                ? Theme.of(context).accentColor
+                : Colors.white,
           ),
         ));
   }
@@ -158,230 +352,118 @@ class RecordButton extends ViewModelWidget<ChatViewModel> {
 
   @override
   Widget build(BuildContext context, ChatViewModel viewModel) {
-    return GestureDetector(
-        onTapDown: (details) {
-          viewModel.startRecording();
-        },
-        onTapUp: (details) {
-          viewModel.stopRecording();
-        },
-        onVerticalDragEnd: (value) {
-          viewModel.stopRecording();
-        },
-        onHorizontalDragEnd: (value) {
-          viewModel.stopRecording();
-        },
-        child: SizedBox(
-          height: 72,
-          width: 72,
-          child: RawMaterialButton(
-            shape: CircleBorder(),
-            fillColor: Theme.of(context).accentColor,
-            onPressed: null,
-            child: SvgPicture.asset(
-              tapeIcon,
-              semanticsLabel: 'Tape Logo',
-              height: 56,
-              width: 56,
-            ),
-          ),
-        ));
-  }
-}
-
-class SkipButton extends ViewModelWidget<ChatViewModel> {
-  SkipButton() : super(reactive: true);
-
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return SizedBox(
-      width: 72,
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      width: viewModel.boxLength,
       height: 72,
-      child: viewModel.totalShouts != 0
-          ? RawMaterialButton(
-              onPressed: () {
-                viewModel.skip();
-              },
-              shape: CircleBorder(),
-              child: Icon(
-                PhosphorIcons.skipForward,
-                size: 32,
-              ),
-            )
-          : null,
-    );
-  }
-}
-
-class CenterImageDisplay extends ViewModelWidget<ChatViewModel> {
-  CenterImageDisplay() : super(reactive: true);
-
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        viewModel.poked
-            ? CircleAvatar(
-                backgroundColor: Colors.transparent,
-                radius: 72,
-                child: Icon(
-                  PhosphorIcons.handWavingThin,
-                  size: 60,
-                  color: Theme.of(context).accentColor,
-                ),
-              )
-            : viewModel.iAmRecording
-                ? RecordingDisplay()
-                : viewModel.sendingShout
-                    ? CircleAvatar(
-                        backgroundColor: Colors.transparent,
-                        radius: 72,
-                        child: Stack(children: [
-                          Center(
-                            child: Icon(
-                              PhosphorIcons.paperPlaneThin,
-                              size: 60,
-                              color: Theme.of(context).accentColor,
-                            ),
-                          ),
-                          Center(
-                            child: Container(
-                              width: 144,
-                              height: 144,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          ),
-                        ]),
-                      )
-                    : viewModel.shoutQueue.length == 0
-                        ? CircularStatusAvatar()
-                        : ShoutsPlayerDisplay(),
-      ],
-    );
-  }
-}
-
-class RecordingDisplay extends ViewModelWidget<ChatViewModel> {
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return CircleAvatar(
-      backgroundColor: Colors.transparent,
-      radius: 72,
-      child: Text(
-        viewModel.recordingTimer,
-        style: TextStyle(
-          fontSize: 48,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).accentColor,
-        ),
-      ),
-    );
-  }
-}
-
-class CenterStatusDisplay extends ViewModelWidget<ChatViewModel> {
-  CenterStatusDisplay() : super(reactive: true);
-
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return Column(
-      children: [
-        Text(
-          viewModel.poked
-              ? "You waved at ${viewModel.yourName}"
-              : viewModel.iAmRecording
-                  ? "Recording..."
-                  : viewModel.sendingShout
-                      ? "Sending..."
-                      : viewModel.showPlayer()
-                          ? viewModel.totalShouts == 1
-                              ? "${viewModel.yourName} sent a Tape!"
-                              : "${viewModel.currentShoutPlaying.toString()} of ${viewModel.totalShouts.toString()}"
-                          : viewModel.showClear()
-                              ? "Hold to record, release to send!"
-                              : viewModel.showSent()
-                                  ? "You sent a Tape!"
-                                  : viewModel.showShoutPlayed()
-                                      ? "${viewModel.yourName} played your Tape!"
-                                      : "Hold to record, and release to send!",
-          style: TextStyle(
-            fontSize: 16,
+      decoration: BoxDecoration(
+          color: Theme.of(context).primaryColorDark,
+          borderRadius: BorderRadius.circular(100)),
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: DragTarget<bool>(onMove: (data) {
+              viewModel.deleteRecording();
+              viewModel.contractBox();
+            }, builder: (context, button, rejects) {
+              return button.length > 0
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: CircleAvatar(
+                          radius: 32,
+                          backgroundColor: Colors.transparent,
+                          child: Icon(
+                            PhosphorIcons.trashFill,
+                            size: 28,
+                            color: Colors.deepOrange,
+                          )),
+                    );
+            }),
           ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(
-          height: 4,
-        ),
-        Text(
-          viewModel.iAmRecording ||
-                  viewModel.poked ||
-                  viewModel.sendingShout ||
-                  viewModel.showClear()
-              ? ""
-              : viewModel.getTime(),
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-        ),
-      ],
-    );
-  }
-}
-
-class ShoutsPlayerDisplay extends ViewModelWidget<ChatViewModel> {
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return CircleAvatar(
-      backgroundColor: Colors.transparent,
-      radius: 72,
-      child: viewModel.isLoadingShout
-          ? Container(
-              width: 240,
-              height: 240,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-              ),
-            )
-          : IconButton(
-              iconSize: 64,
-              icon: viewModel.iAmListening
-                  ? Icon(
-                      PhosphorIcons.stopFill,
-                      color: Theme.of(context).iconTheme.color,
-                    )
-                  : Icon(
-                      PhosphorIcons.playFill,
-                      color: Theme.of(context).accentColor,
-                    ),
-              onPressed: () {
-                if (viewModel.iAmListening) {
-                  viewModel.stopPlaying();
-                } else {
-                  viewModel.startPlaying();
+          Align(
+            alignment: Alignment.centerRight,
+            child: DragTarget<bool>(
+              onMove: (value) {
+                if (viewModel.boxExpanded) {
+                  viewModel.contractBox();
+                  viewModel.stopRecording();
                 }
               },
+              builder: (context, button, rejects) {
+                return button.length > 0
+                    ? null
+                    : Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: CircleAvatar(
+                            radius: 32,
+                            backgroundColor: Colors.transparent,
+                            child: Icon(
+                              PhosphorIcons.paperPlaneFill,
+                              size: 28,
+                              color: Theme.of(context).accentColor,
+                            )),
+                      );
+              },
             ),
-    );
-  }
-}
-
-class CircularStatusAvatar extends ViewModelWidget<ChatViewModel> {
-  @override
-  Widget build(BuildContext context, ChatViewModel viewModel) {
-    return CircleAvatar(
-      backgroundColor: Colors.transparent,
-      radius: 72,
-      child: Icon(
-        viewModel.showClear()
-            ? PhosphorIcons.voicemailThin
-            : viewModel.showSent()
-                ? PhosphorIcons.paperPlaneThin
-                : viewModel.showShoutPlayed()
-                    ? PhosphorIcons.speakerSimpleHighThin
-                    : PhosphorIcons.voicemailThin,
-        size: 60,
-        color: Colors.grey,
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: Draggable<bool>(
+              onDragStarted: () {
+                if (!viewModel.boxExpanded) {
+                  viewModel.startRecording();
+                }
+              },
+              data: true,
+              axis: Axis.horizontal,
+              feedback: SizedBox(
+                height: 64,
+                width: 64,
+                child: RawMaterialButton(
+                    shape: CircleBorder(),
+                    fillColor: Colors.white,
+                    onPressed: null,
+                    child: Container(
+                      transform: Matrix4.translationValues(0, -20, 0),
+                      child: JumpingDotsProgressIndicator(
+                        fontSize: 48,
+                        color: Theme.of(context).accentColor,
+                      ),
+                    )),
+              ),
+              child: SizedBox(
+                height: 64,
+                width: 64,
+                child: RawMaterialButton(
+                  shape: CircleBorder(),
+                  fillColor: viewModel.boxLength == 280
+                      ? Colors.white
+                      : Theme.of(context).accentColor,
+                  onPressed: null,
+                  child: viewModel.boxLength == 280
+                      ? Container(
+                          transform: Matrix4.translationValues(0, -20, 0),
+                          child: JumpingDotsProgressIndicator(
+                            fontSize: 48,
+                            color: Theme.of(context).accentColor,
+                          ),
+                        )
+                      : Icon(
+                          PhosphorIcons.microphoneFill,
+                          color: Colors.white,
+                        ),
+                ),
+              ),
+              childWhenDragging: CircleAvatar(
+                radius: 32,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
