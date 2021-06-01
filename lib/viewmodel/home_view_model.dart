@@ -4,6 +4,7 @@ import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:tapemobileapp/services/firebase_analytics_service.dart';
 import 'package:tapemobileapp/services/push_notification_service.dart';
 import 'package:tapemobileapp/app/permissions.dart';
 import 'package:tapemobileapp/app/routing_constants.dart' as routes;
@@ -32,6 +33,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       locator<AuthenticationService>();
   final NavigationService _navigationService = locator<NavigationService>();
   final PushNotification _pushNotification = locator<PushNotification>();
+  final FirebaseAnalyticsService _firebaseAnalyticsService =
+      locator<FirebaseAnalyticsService>();
 
   // variables related to users
   Map<String, String> userUIDNumberMapping = {};
@@ -71,7 +74,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Map<String, String> userNumberContactNameMapping = {};
   Map<String, String> userUIDContactNameMapping = {};
 
-// other variables
+  // other variables
   bool isLoading = true;
 
   HomeViewModel(this.myUID, this.myPhoneNumber) {
@@ -449,8 +452,18 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       contactPermission = false;
     }
     if (!this.isFetchingContacts && contactPermission) {
+      logEvent("Contacts", {"state": "initialise"});
       await fetchAllContacts();
+    } else if (contactPermission) {
+      logEvent("Contacts", {"state": "already fetching"});
+    } else {
+      logEvent("Contacts", {"state": "no permission granted"});
     }
+  }
+
+  // Analytics Methods
+  void logEvent(String eventName, Map<String, dynamic> data) {
+    _firebaseAnalyticsService.logEvent(eventName, parameters: data);
   }
 
   // Other methods

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tapemobileapp/app/locator.dart';
 import 'package:tapemobileapp/app/routing_constants.dart';
+import 'package:tapemobileapp/services/firebase_analytics_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/app/router.dart' as router;
 import 'package:tapemobileapp/utils/notification_utls.dart';
@@ -24,6 +25,9 @@ void main() async {
       onGenerateRoute: router.generateRoute,
       initialRoute: StartupViewRoute,
       navigatorKey: locator<NavigationService>().navigatorKey,
+      navigatorObservers: [
+        locator<FirebaseAnalyticsService>().getAnalyticsObserver(),
+      ],
       title: "Tape",
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
+import 'package:tapemobileapp/services/firebase_analytics_service.dart';
 import 'package:tapemobileapp/services/firebase_storage_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,6 +17,8 @@ class ProfileViewModel extends BaseModel {
   final FirestoreService _firestoreService = locator<FirestoreService>();
   final FirebaseStorageService _firebaseStorageService =
       locator<FirebaseStorageService>();
+  final FirebaseAnalyticsService _firebaseAnalyticsService =
+      locator<FirebaseAnalyticsService>();
 
   File selectedPic;
   String downloadURL;
@@ -32,8 +35,8 @@ class ProfileViewModel extends BaseModel {
   String get myUID => _authenticationService.currentUser.uid;
 
   Future updateDisplayName(String newName) async {
+    logEvent("Profile", {"type": "displayName"});
     await _firestoreService.saveUserInfo(myUID, {"displayName": newName});
-
     notifyListeners();
   }
 
@@ -50,6 +53,11 @@ class ProfileViewModel extends BaseModel {
     } else {
       print('No image selected.');
     }
+  }
+
+  // Analytics Methods
+  void logEvent(String eventName, Map<String, dynamic> data) {
+    _firebaseAnalyticsService.logEvent(eventName, parameters: data);
   }
 
   Future<Null> showCropView(BuildContext context) async {
@@ -99,6 +107,7 @@ class ProfileViewModel extends BaseModel {
   }
 
   _uploadProfilePic(String filePath) async {
+    logEvent("Profile", {"type": "displayImage"});
     File file = File(filePath);
     await _firebaseStorageService
         .getProfilePicLocationReference(myUID)

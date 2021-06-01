@@ -1,4 +1,5 @@
 import 'package:tapemobileapp/services/authentication_service.dart';
+import 'package:tapemobileapp/services/firebase_analytics_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/viewmodel/base_model.dart';
@@ -11,10 +12,14 @@ class StartupViewModel extends BaseModel {
       locator<AuthenticationService>();
   final NavigationService _navigationService = locator<NavigationService>();
   final FirestoreService _firestoreService = locator<FirestoreService>();
+  final FirebaseAnalyticsService _firebaseAnalyticsService =
+      locator<FirebaseAnalyticsService>();
 
   Future handleStartupLogic() async {
     bool hasLoggedIn = await _authenticationService.isUserLoggedIn();
     if (hasLoggedIn) {
+      _firebaseAnalyticsService
+          .setUserProperties(_authenticationService.currentUser.uid);
       await _firestoreService
           .getUserData(_authenticationService.currentUser.uid)
           .then((value) {

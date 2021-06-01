@@ -87,6 +87,7 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
                       Provider.of<HomeViewModel>(context, listen: false);
 
                   Navigator.of(context).push(new MaterialPageRoute<Null>(
+                      settings: RouteSettings(name: "/contacts"),
                       builder: (BuildContext context) {
                         return ListenableProvider.value(
                           value: myModel,
