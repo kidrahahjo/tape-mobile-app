@@ -117,7 +117,11 @@ class ChatPageView extends StatelessWidget {
                       : model.allTapes.length > 0
                           ? TapeArea()
                           : SliverToBoxAdapter(
-                              child: Center(child: Text("Knock knock!"))),
+                              child: Center(
+                                  child: Text("Knock knock!",
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .primaryColorLight)))),
                 ],
               ),
             ),
