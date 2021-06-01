@@ -41,6 +41,8 @@ class HomeView extends StatelessWidget {
                     CustomSliverAppBar(),
                     SliverToBoxAdapter(
                         child: Divider(
+                      endIndent: 16,
+                      indent: 16,
                       height: 1,
                     )),
                     model.isLoading
@@ -161,7 +163,8 @@ class AllChatsView extends ViewModelWidget<HomeViewModel> {
             ),
             Divider(
               height: 1,
-              indent: 86,
+              indent: 88,
+              endIndent: 16,
             ),
           ]);
         },
