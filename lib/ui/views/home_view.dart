@@ -125,7 +125,6 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
                             : "",
                         style: TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
                         ),
                       )
                     : null,

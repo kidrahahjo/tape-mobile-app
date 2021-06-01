@@ -145,7 +145,6 @@ class ProfilePic extends ViewModelWidget<ChatViewModel> {
               '${this.yourName[0]}'.toUpperCase(),
               style: TextStyle(
                 fontSize: 48,
-                fontWeight: FontWeight.bold,
               ),
             )
           : null,

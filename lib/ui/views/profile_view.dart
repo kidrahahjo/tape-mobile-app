@@ -46,8 +46,7 @@ class ProfileView extends StatelessWidget {
                                               ? displayName[0]
                                               : "Profile Pic",
                                           style: TextStyle(
-                                            fontSize: 56,
-                                            fontWeight: FontWeight.bold,
+                                            fontSize: 48,
                                           ),
                                         )
                                       : null,
