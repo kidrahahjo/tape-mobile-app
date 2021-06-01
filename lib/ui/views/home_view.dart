@@ -109,7 +109,7 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
                   color: Theme.of(context).accentColor,
                 ),
               )),
-          SizedBox(width: 12),
+          SizedBox(width: 8),
           GestureDetector(
             onTap: viewModel.goToProfileView,
             child: Center(
@@ -132,7 +132,7 @@ class CustomSliverAppBar extends ViewModelWidget<HomeViewModel> {
               ),
             ),
           ),
-          SizedBox(width: 24),
+          SizedBox(width: 16),
         ],
         flexibleSpace: FlexibleSpaceBar(
           titlePadding: EdgeInsets.only(bottom: 10, left: 16),
