@@ -23,9 +23,7 @@ class FirebaseAnalyticsService {
 
   Future logEvent(String eventName,
       {Map<String, dynamic> parameters = const {}}) async {
-    print(eventName);
     if (_authenticationService.currentUser.uid != null) {
-      print('loggin');
       await _firebaseAnalytics.logEvent(
           name: eventName, parameters: parameters);
     }
