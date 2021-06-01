@@ -1,78 +1,55 @@
 import 'package:tapemobileapp/app/locator.dart';
+import 'package:stacked/stacked.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
-import 'package:tapemobileapp/viewmodel/base_model.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/app/routing_constants.dart' as routes;
+import 'package:tapemobileapp/utils/phone_utils.dart';
 
-class AuthenticationViewModel extends BaseModel {
+class AuthenticationViewModel extends ReactiveViewModel {
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
   final NavigationService _navigationService = locator<NavigationService>();
 
   bool _hasMobileError = false;
   bool _hasOTPError = false;
-  bool _showMobile = true;
   String _mobileNumber = "";
   String refactoredMobileNumber = "";
+
+  @override
+  List<ReactiveServiceMixin> get reactiveServices => [_authenticationService];
 
   bool get mobileError => _hasMobileError;
 
   bool get otpError => _hasOTPError;
 
-  bool get mobileState => _showMobile;
-
   String get mobileNumber => _mobileNumber;
 
   String get refactoredNumber => "+91-$_mobileNumber";
 
-  setMobileVariables(String mobileNumber, bool showMobile, bool mobileError) {
+  String get authState => _authenticationService.authState;
+
+  setMobileVariables(String mobileNumber, bool mobileError) {
     this._mobileNumber = mobileNumber;
-    this._showMobile = showMobile;
     this._hasMobileError = mobileError;
+    notifyListeners();
   }
 
   setOTPVariables(bool otpError) {
     this._hasOTPError = otpError;
+    notifyListeners();
   }
 
-  String refactorMobileNumber(String mobileNumber) {
-    try {
-      if (mobileNumber.startsWith("+91")) {
-        return mobileNumber;
-      }
-      String result = int.parse(mobileNumber).toString();
-      if (result.length == 10) {
-        return "+91" + result;
-      } else {
-        return null;
-      }
-    } catch (e) {
-      return null;
-    }
-  }
-
-  getOTP(String mobileNumber, {int resendingToken}) async {
-    setBusy(true);
-    String refactoredNumber = refactorMobileNumber(mobileNumber);
+  getOTP(String mobileNumber) async {
+    String refactoredNumber = refactorPhoneNumber(mobileNumber);
     if (refactoredNumber == null) {
-      setMobileVariables(mobileNumber, true, true);
+      setMobileVariables(mobileNumber, true);
     } else {
-      await _authenticationService.sendOTP(refactoredNumber, resendingToken);
-      setMobileVariables(mobileNumber, false, false);
-    }
-    setBusy(false);
-  }
-
-  String refactorOTP(String otp) {
-    if (otp == null || otp.length != 6) {
-      return null;
-    } else {
-      return otp;
+      await _authenticationService.sendOTP(refactoredNumber);
+      setMobileVariables(mobileNumber, false);
     }
   }
 
   verifyOTP(String otp) async {
-    setBusy(true);
     String refactoredOTP = refactorOTP(otp);
     if (refactoredOTP != null) {
       Map<String, dynamic> result =
@@ -89,27 +66,23 @@ class AuthenticationViewModel extends BaseModel {
           _navigationService.navigateReplacementTo(routes.OnboardingViewRoute,
               arguments: data);
         }
+        _authenticationService.resetAuthState();
       } else {
         setOTPVariables(true);
       }
-      setBusy(false);
     } else {
       setOTPVariables(true);
-      setBusy(false);
     }
   }
 
-  resendOTP(String refactoredMobileNumber) async {
-    setBusy(true);
-    await _authenticationService.resendOTP(refactoredNumber);
+  resendOTP() async {
+    await _authenticationService.resendOTP();
     setOTPVariables(false);
-    setBusy(false);
   }
 
   backToMobile() {
-    this._showMobile = true;
     this._hasMobileError = false;
     this._hasOTPError = false;
-    notifyListeners();
+    _authenticationService.resetAuthState();
   }
 }

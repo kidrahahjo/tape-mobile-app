@@ -11,31 +11,29 @@ class AuthenticationView extends StatelessWidget {
     return ViewModelBuilder<AuthenticationViewModel>.reactive(
         viewModelBuilder: () => AuthenticationViewModel(),
         builder: (context, model, child) {
-          return model.busy
+          return model.authState == "Loading"
               ? Scaffold(
                   body: Center(
                     child: CircularProgressIndicator(),
                   ),
                 )
-              : model.mobileState
-                  ? MobileFormWidget(model)
-                  : OTPFormWidget(model);
+              : model.authState == "OTP Sent"
+                  ? OTPFormWidget()
+                    : model.authState == "Mobile"
+                      ? MobileFormWidget()
+                      : null;
         });
   }
 }
 
-class MobileFormWidget extends StatelessWidget {
-  final AuthenticationViewModel model;
+class MobileFormWidget extends ViewModelWidget<AuthenticationViewModel> {
   final TextEditingController phoneController = TextEditingController();
 
-  MobileFormWidget(this.model) {
+  @override
+  Widget build(BuildContext context, AuthenticationViewModel model) {
     phoneController.text = model.mobileNumber;
     phoneController.selection = TextSelection.fromPosition(
         TextPosition(offset: phoneController.text.length));
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -97,14 +95,11 @@ class MobileFormWidget extends StatelessWidget {
   }
 }
 
-class OTPFormWidget extends StatelessWidget {
-  final AuthenticationViewModel model;
+class OTPFormWidget extends ViewModelWidget<AuthenticationViewModel> {
   final TextEditingController otpController = TextEditingController();
 
-  OTPFormWidget(this.model);
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, AuthenticationViewModel model) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -163,7 +158,9 @@ class OTPFormWidget extends StatelessWidget {
                           textStyle: TextStyle(),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8))),
-                      onPressed: () {},
+                      onPressed: () {
+                        model.resendOTP();
+                      },
                     ),
                   ),
                   SizedBox(height: 12),
