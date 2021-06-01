@@ -16,6 +16,7 @@ class ProfileView extends StatelessWidget {
         builder: (context, model, child) {
           return Scaffold(
               appBar: AppBar(
+                centerTitle: false,
                 title: Text(
                     model.titleName == null ? displayName : model.titleName),
               ),
@@ -74,7 +75,7 @@ class ProfileView extends StatelessWidget {
                             hintText: "Your Name",
                             contentPadding: EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
-                            fillColor: Colors.grey.shade900,
+                            fillColor: Theme.of(context).primaryColorDark,
                             filled: true,
                             suffixIcon: Icon(
                               PhosphorIcons.pencilFill,

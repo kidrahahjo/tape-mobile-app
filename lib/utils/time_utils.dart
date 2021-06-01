@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 String getTimeDifference(DateTime dateTime) {
+  if (dateTime == null) return "";
   Duration difference = DateTime.now().difference(dateTime);
   int day = difference.inDays;
   int hours = difference.inHours;

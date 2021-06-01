@@ -17,7 +17,7 @@ void main() async {
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
   setupLocator();
-  final bgDark = Color(0xff000000);
+  final bgDark = Color(0xff111111);
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -27,8 +27,8 @@ void main() async {
       title: "Tape",
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
-        primaryColorDark: Color(0xff444444),
-        primaryColorLight: Color(0xff222222),
+        primaryColorDark: Colors.grey.shade900,
+        primaryColorLight: Colors.grey,
         scaffoldBackgroundColor: bgDark,
         backgroundColor: bgDark,
         bottomSheetTheme: BottomSheetThemeData(backgroundColor: bgDark),

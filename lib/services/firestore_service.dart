@@ -139,7 +139,13 @@ class FirestoreService {
         .set(data, SetOptions(merge: true));
   }
 
-  sendPoke(String chatUID, Map<String, dynamic> data) {
-    _chatsCollectionReference.doc(chatUID).collection("waves").add(data);
+  sendPoke(String chatForMe, String chatForYou, Map<String, dynamic> data) {
+    _chatsCollectionReference.doc(chatForMe).collection("waves").add(data);
+    _chatsCollectionReference
+        .doc(chatForMe)
+        .set({"lastModifiedAt": DateTime.now()}, SetOptions(merge: true));
+    _chatsCollectionReference
+        .doc(chatForYou)
+        .set({"lastModifiedAt": DateTime.now()}, SetOptions(merge: true));
   }
 }

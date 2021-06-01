@@ -71,6 +71,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
   Map<String, String> userNumberContactNameMapping = {};
   Map<String, String> userUIDContactNameMapping = {};
 
+// other variables
+  bool isLoading = true;
+
   HomeViewModel(this.myUID, this.myPhoneNumber) {
     WidgetsBinding.instance.addObserver(this);
     _firestoreService.saveUserInfo(myUID, {"isOnline": true});
@@ -264,8 +267,9 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
         }
         chatsList.clear();
         chatsList.addAll(chatListChanged);
-        notifyListeners();
       }
+      isLoading = false;
+      notifyListeners();
     });
   }
 
@@ -437,7 +441,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
     isFetchingContacts = false;
   }
 
-  void refreshContacts() async {
+  Future<void> refreshContacts() async {
     bool contactPermission = false;
     try {
       contactPermission = await getContactPermission();
@@ -445,7 +449,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
       contactPermission = false;
     }
     if (!this.isFetchingContacts && contactPermission) {
-      fetchAllContacts();
+      await fetchAllContacts();
     }
   }
 
@@ -511,7 +515,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
               ),
               Text(
                 "• ${getTimeDifference(userUIDReceivedTapesTimeMapping[yourUID])}",
-                style: TextStyle(color: Colors.grey.shade700),
+                style: TextStyle(color: Theme.of(context).primaryColorLight),
               )
             ],
           )
@@ -531,7 +535,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
                   ),
                   Text(
                     "• ${getTimeDifference(userUIDLastSentTapeTimeMapping[yourUID])}",
-                    style: TextStyle(color: Colors.grey.shade700),
+                    style:
+                        TextStyle(color: Theme.of(context).primaryColorLight),
                   )
                 ],
               )
@@ -543,14 +548,15 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
                       Icon(
                         PhosphorIcons.chatTeardropFill,
                         size: 16,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).primaryColorLight,
                       ),
                       Text(
                         "Received",
                       ),
                       Text(
                         "• ${getTimeDifference(userUIDReceivedTapesTimeMapping[yourUID])}",
-                        style: TextStyle(color: Colors.grey.shade700),
+                        style: TextStyle(
+                            color: Theme.of(context).primaryColorLight),
                       )
                     ],
                   )
@@ -562,7 +568,7 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
                           Icon(
                             PhosphorIcons.speakerSimpleHighFill,
                             size: 16,
-                            color: Colors.grey.shade700,
+                            color: Theme.of(context).primaryColorLight,
                           ),
                           Text(
                             "Played",
@@ -570,7 +576,8 @@ class HomeViewModel extends BaseModel with WidgetsBindingObserver {
                           ),
                           Text(
                             "• ${getTimeDifference(userUIDLastSentTapeTimeMapping[yourUID])}",
-                            style: TextStyle(color: Colors.grey.shade700),
+                            style: TextStyle(
+                                color: Theme.of(context).primaryColorLight),
                           )
                         ],
                       )

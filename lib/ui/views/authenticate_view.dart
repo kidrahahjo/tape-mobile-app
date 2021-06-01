@@ -109,7 +109,7 @@ class OTPFormWidget extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         leading: IconButton(
-          icon: Icon(PhosphorIcons.arrowLeft),
+          icon: Icon(PhosphorIcons.caretLeft),
           onPressed: () {
             model.backToMobile();
           },
