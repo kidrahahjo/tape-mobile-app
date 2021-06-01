@@ -1,5 +1,6 @@
 import 'package:tapemobileapp/app/locator.dart';
 import 'package:stacked/stacked.dart';
+import 'package:tapemobileapp/services/firebase_analytics_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/app/routing_constants.dart' as routes;
@@ -9,6 +10,8 @@ class AuthenticationViewModel extends ReactiveViewModel {
   final AuthenticationService _authenticationService =
       locator<AuthenticationService>();
   final NavigationService _navigationService = locator<NavigationService>();
+  final FirebaseAnalyticsService _firebaseAnalyticsService =
+      locator<FirebaseAnalyticsService>();
 
   bool _hasMobileError = false;
   bool _hasOTPError = false;
@@ -55,6 +58,8 @@ class AuthenticationViewModel extends ReactiveViewModel {
       Map<String, dynamic> result =
           await _authenticationService.signInWithPhoneAuthCredential(otp);
       if (result['userVerified']) {
+        _firebaseAnalyticsService
+            .setUserProperties(_authenticationService.currentUser.uid);
         Map<String, String> data = {
           'userUID': _authenticationService.currentUser.uid,
           'phoneNumber': _authenticationService.currentUser.phoneNumber,

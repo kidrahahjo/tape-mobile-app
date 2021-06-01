@@ -30,6 +30,7 @@ dependencies:
   firebase_messaging: ^10.0.0
   firebase_storage: ^8.0.5
   cloud_firestore: ^2.1.0
+  firebase_analytics: ^8.1.0
   # caching
   flutter_cache: ^0.1.0
   # icons dependencies

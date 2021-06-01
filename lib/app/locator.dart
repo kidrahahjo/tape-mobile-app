@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:tapemobileapp/services/authentication_service.dart';
 import 'package:tapemobileapp/services/chat_service.dart';
+import 'package:tapemobileapp/services/firebase_analytics_service.dart';
 import 'package:tapemobileapp/services/firebase_storage_service.dart';
 import 'package:tapemobileapp/services/firestore_service.dart';
 import 'package:tapemobileapp/services/navigation_service.dart';
@@ -15,4 +16,5 @@ void setupLocator() {
   locator.registerLazySingleton(() => ChatService());
   locator.registerLazySingleton(() => FirebaseStorageService());
   locator.registerLazySingleton(() => PushNotification());
+  locator.registerLazySingleton(() => FirebaseAnalyticsService());
 }

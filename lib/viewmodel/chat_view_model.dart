@@ -9,6 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:stacked/stacked.dart';
+import 'package:tapemobileapp/services/firebase_analytics_service.dart';
 import 'package:tapemobileapp/utils/time_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tapemobileapp/app/locator.dart';
@@ -33,6 +34,8 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
       locator<FirebaseStorageService>();
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  final FirebaseAnalyticsService _firebaseAnalyticsService =
+      locator<FirebaseAnalyticsService>();
 
   // Variables related to you
   final String yourUID;
@@ -459,17 +462,22 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
     String audioUID = Uuid().v4().replaceAll("-", "");
     String audioPath = '${tempDir.path}/$audioUID.aac';
     _firestoreService.setRecordingStateToDatabase(chatForYouUID, true);
+    logEvent("Tapes", {"type": "record", "time": null, "state": "started"});
     _chatService.startRecording(
         audioUID, audioPath, contractBox, chatForYouUID);
   }
 
   void deleteRecording() async {
+    logEvent("Tapes",
+        {"type": "record", "time": recordingTimer, "state": "deleted"});
     notifyListeners();
     await _chatService.stopRecording();
     _firestoreService.setRecordingStateToDatabase(chatForYouUID, false);
   }
 
   void stopRecording() async {
+    logEvent("Tapes",
+        {"type": "record", "time": recordingTimer, "state": "stopped"});
     String audioUID, audioPath;
     if (_chatService.recordingTime == "" ||
         _chatService.recordingTime == "0s") {
@@ -540,6 +548,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   // I am playing
   void playTape(audioUID) async {
+    logEvent("Tapes", {"type": "play", "uid": audioUID});
     playedTapes.add(audioUID);
     if (currentTapePlaying != null) {
       if (playedTapes.contains(currentTapePlaying)) {
@@ -578,6 +587,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
   }
 
   void stopTape(audioUID) {
+    logEvent("Tapes", {"type": "stop", "uid": audioUID});
     if (playedTapes.contains(currentTapePlaying)) {
       tapePlayerState[currentTapePlaying] = "Played";
     } else {
@@ -606,6 +616,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   // Wave related methods
   void poke() {
+    logEvent("Pokes", {});
     pokeSent = true;
     notifyListeners();
     _firestoreService.sendPoke(this.chatForYouUID, this.chatForMeUID,
@@ -618,6 +629,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   // Reaction related methods
   updateMyMood(String emoji) async {
+    logEvent("Mood", {"type": emoji});
     await _firestoreService.updateChatState(
         chatForYouUID, {"mood": emoji, "lastMoodModifiedAt": DateTime.now()});
     myMood = emoji == "heart" ? "❤️" : emoji;
@@ -637,6 +649,11 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         print(e);
       }
     }
+  }
+
+  // Analytics Related Methods
+  void logEvent(String eventName, Map<String, dynamic> data) {
+    _firebaseAnalyticsService.logEvent(eventName, parameters: data);
   }
 
   // UI Related Methods
