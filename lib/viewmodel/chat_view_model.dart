@@ -257,18 +257,22 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   getYourMood() async {
     await _firestoreService.getChatStateData(chatForMeUID).then((value) {
-      Map<String, dynamic> data = value.data();
-      yourMood = data["mood"] == "heart" ? "❤️" : data["mood"];
-      yourMoodTime = convertTimestampToDateTime(data["lastMoodModifiedAt"]);
-      notifyListeners();
+      if (value.exists) {
+        Map<String, dynamic> data = value.data();
+        yourMood = data["mood"] == "heart" ? "❤️" : data["mood"];
+        yourMoodTime = convertTimestampToDateTime(data["lastMoodModifiedAt"]);
+        notifyListeners();
+      }
     });
   }
 
   getMyMood() async {
     await _firestoreService.getChatStateData(chatForYouUID).then((value) {
-      Map<String, dynamic> data = value.data();
-      myMood = data["mood"] == "heart" ? "❤️" : data["mood"];
-      notifyListeners();
+      if (value.exists) {
+        Map<String, dynamic> data = value.data();
+        myMood = data["mood"] == "heart" ? "❤️" : data["mood"];
+        notifyListeners();
+      }
     });
   }
 
@@ -511,7 +515,7 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
             gapBetweenShouts[audioUID] = 16;
           } else {
             gapBetweenShouts[audioUID] = 4;
-            bubbleTail[allTapes.last] = 32;
+            bubbleTail[lastTape] = 32;
             bubbleTail[audioUID] = 4;
           }
         }
@@ -548,16 +552,17 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
 
   // I am playing
   void playTape(audioUID) async {
-    logEvent("Tapes", {"type": "play", "uid": audioUID});
+    String current = currentTapePlaying;
+    currentTapePlaying = audioUID;
     playedTapes.add(audioUID);
-    if (currentTapePlaying != null) {
-      if (playedTapes.contains(currentTapePlaying)) {
-        tapePlayerState[currentTapePlaying] = "Played";
+    logEvent("Tapes", {"type": "play", "uid": audioUID});
+    if (current != null) {
+      if (playedTapes.contains(current)) {
+        tapePlayerState[current] = "Played";
       } else {
-        tapePlayerState[currentTapePlaying] = null;
+        tapePlayerState[current] = null;
       }
     }
-    currentTapePlaying = audioUID;
     tapePlayerState[audioUID] = "Loading";
     notifyListeners();
     bool yourTape = yourTapes.contains(audioUID);
@@ -584,6 +589,9 @@ class ChatViewModel extends ReactiveViewModel with WidgetsBindingObserver {
         "count": FieldValue.increment(1),
       },
     );
+    if (currentTapePlaying != audioUID) {
+      tapePlayerState[audioUID] = "Played";
+    }
   }
 
   void stopTape(audioUID) {
